@@ -2,12 +2,10 @@
 # This file defines all DOMO DataSets to be synced to MinIO
 
 datasets:
-  # APAC DOT Due Date DataSet
-  - name: "APAC DOT Due Date"
+  - name: "APAC DOT join Due Date change(first time)"
     domo_dataset_id: "c1cddf9d-3c25-4464-81bf-ee13e9ab1dd2"
     minio_dataset_id: "apac-dot-due-date"
     partition_column: "delivery completed date"
-    description: "APAC DOT join Due Date change (first time)"
     enabled: true
 
   # Add more datasets here following the same structure:
