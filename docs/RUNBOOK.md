@@ -96,14 +96,32 @@ aws logs tail /ecs/bi-dashboard --follow
 | `S3_SECRET_KEY` | IAM シークレットキー | AWS Secrets Manager より取得（IAMロール使用時は不要） |
 | `BASIC_AUTH_USERNAME` | 認証ユーザー名 | 本番は SAML に置き換え（Phase 3） |
 | `BASIC_AUTH_PASSWORD` | 認証パスワード | AWS Secrets Manager より取得 |
-| `SECRET_KEY` | Flaskセッション秘密鍵 | AWS Secrets Manager より取得（ランダム文字列） |
-| `RDS_HOST` | RDS エンドポイント | RDS インスタンスのエンドポイント（ETL使用時） |
-| `RDS_PORT` | RDS ポート | 通常 `5432`（ETL使用時） |
-| `RDS_USER` | RDS ユーザー | Secrets Manager より取得（ETL使用時） |
-| `RDS_PASSWORD` | RDS パスワード | AWS Secrets Manager より取得（ETL使用時） |
-| `RDS_DATABASE` | データベース名 | -（ETL使用時） |
-| `GOOGLE_APPLICATION_CREDENTIALS` | GCP サービスアカウント JSON | Phase 2 以降（Vertex AI） |
-| `VERTEX_AI_PROJECT` | GCP プロジェクト ID | Phase 2 以降 |
+| `SECRET_KEY` | Flaskセッション秘密鍵 | AWS Secrets Manager より取得（ランダム文字列。本番では必ず固定値を設定すること） |
+| `AUTH_PROVIDER_TYPE` | 認証プロバイダ種別 | `form`（Phase 3で `saml` に切替可能） |
+
+### DOMO ETL用環境変数（ETLサーバーのみ）
+
+| 変数 | 説明 | 備考 |
+|------|------|------|
+| `DOMO_CLIENT_ID` | DOMO API Client ID | DOMO Developer Portalで発行 |
+| `DOMO_CLIENT_SECRET` | DOMO API Client Secret | DOMO Developer Portalで発行 |
+
+### RDS用環境変数（ETL使用時のみ）
+
+| 変数 | 説明 | 備考 |
+|------|------|------|
+| `RDS_HOST` | RDS エンドポイント | RDS インスタンスのエンドポイント |
+| `RDS_PORT` | RDS ポート | 通常 `5432` |
+| `RDS_USER` | RDS ユーザー | Secrets Manager より取得 |
+| `RDS_PASSWORD` | RDS パスワード | AWS Secrets Manager より取得 |
+| `RDS_DATABASE` | データベース名 | - |
+
+### 将来の環境変数（Phase 2: LLM機能）
+
+| 変数 | 説明 | 備考 |
+|------|------|------|
+| `GOOGLE_APPLICATION_CREDENTIALS` | GCP サービスアカウント JSON | Vertex AI |
+| `VERTEX_AI_PROJECT` | GCP プロジェクト ID | - |
 | `VERTEX_AI_LOCATION` | Vertex AI リージョン | `asia-northeast1` |
 
 ### AWS Secrets Manager でシークレット管理
@@ -112,7 +130,7 @@ aws logs tail /ecs/bi-dashboard --follow
 # 本番シークレットの登録例
 aws secretsmanager create-secret \
   --name bi-dashboard-secrets \
-  --secret-string '{"S3_ACCESS_KEY":"xxx","S3_SECRET_KEY":"yyy",...}'
+  --secret-string '{"S3_ACCESS_KEY":"xxx","S3_SECRET_KEY":"yyy","SECRET_KEY":"zzz","BASIC_AUTH_PASSWORD":"aaa"}'
 
 # ECS タスク定義から参照
 "secrets": [
@@ -167,9 +185,9 @@ aws cloudwatch put-metric-alarm \
 
 ### Issue 1: ダッシュボードが起動しない
 
-**症状**: ECS タスクが起動直後に停止
+症状: ECS タスクが起動直後に停止
 
-**原因の調査**:
+原因の調査:
 
 ```bash
 # ログを確認
@@ -179,18 +197,17 @@ aws logs tail /ecs/bi-dashboard --follow
 aws ecs describe-tasks --cluster bi-dashboard-cluster --tasks <TASK_ARN>
 ```
 
-**解決策**:
+解決策:
 
-- 環境変数が正しく設定されているか確認
+- 環境変数が正しく設定されているか確認（特に `SECRET_KEY` が本番環境で設定されているか）
 - S3 バケットへのアクセス権限確認
-- RDS へのネットワーク接続確認
 - Docker イメージのビルドエラーを確認
 
 ### Issue 2: S3 からデータが読み込めない
 
-**症状**: "Failed to load Parquet files from S3"
+症状: "Dataset file not found" エラー、または空のダッシュボード
 
-**原因の調査**:
+原因の調査:
 
 ```bash
 # IAM アクセスキーの権限確認
@@ -200,21 +217,21 @@ aws iam get-user
 aws s3 ls s3://bi-datasets/
 
 # オブジェクトの確認
-aws s3 ls s3://bi-datasets/ --recursive
+aws s3 ls s3://bi-datasets/datasets/ --recursive
 ```
 
-**解決策**:
+解決策:
 
 - IAM ポリシーが `s3:GetObject` / `s3:ListBucket` を含むか確認
 - バケットのリージョンが正しいか確認
-- ファイル名にタイポがないか確認
+- `datasets/<dataset_id>/data/part-0000.parquet` または `datasets/<dataset_id>/partitions/` のパス構造を確認
 - ファイル形式が Parquet か確認
 
 ### Issue 3: メモリ不足エラー
 
-**症状**: "MemoryError" / "OOM Killed"
+症状: "MemoryError" / "OOM Killed"
 
-**解決策**:
+解決策:
 
 - ECS タスク定義のメモリ制限を増加
 - 大きな Parquet ファイルを分割
@@ -222,23 +239,67 @@ aws s3 ls s3://bi-datasets/ --recursive
 
 ### Issue 4: キャッシュが効いていない
 
-**症状**: 毎回フル読み込みされている
+症状: 毎回フル読み込みされている（ログでキャッシュミスが頻発）
 
-**確認方法**:
+確認方法:
 
-```bash
-# キャッシュディレクトリの確認
-ls -la /tmp/flask_cache
+- キャッシュは `flask-caching` の `SimpleCache`（インメモリ）を使用
+- TTL はデフォルト300秒（5分）
+- キャッシュキー: `dataset:<dataset_id>`
 
-# キャッシュファイルのタイムスタンプ確認
-stat /tmp/flask_cache/...
-```
-
-**解決策**:
+解決策:
 
 - キャッシュ TTL 設定を確認（`src/core/cache.py`）
-- Redis キャッシュバックエンドの使用を検討
+- プロセスが再起動されていないか確認（SimpleCacheはプロセスメモリに保持）
+- 本番でスケールアウトする場合は Redis キャッシュバックエンドの使用を検討
 - キャッシュキーの衝突確認
+
+### Issue 5: ログインできない
+
+症状: ログインフォームでユーザー名/パスワードを入力してもログインできない
+
+原因の調査:
+
+- `BASIC_AUTH_USERNAME` と `BASIC_AUTH_PASSWORD` 環境変数が正しく設定されているか確認
+- `SECRET_KEY` が設定されているか確認（セッション管理に必須）
+
+解決策:
+
+- 環境変数の値にダブルクォートが含まれていないか確認（`.env`ファイルでは `BASIC_AUTH_PASSWORD=changeme` と記載、`"changeme"` は誤り）
+- `SECRET_KEY` を固定値に設定（プロセス再起動でセッションが無効化されるのを防ぐ）
+
+### Issue 6: DOMO ETLが失敗する
+
+症状: `load_domo.py` 実行時にエラー
+
+原因の調査:
+
+```bash
+# 設定ファイルを確認
+cat backend/config/domo_datasets.yaml
+
+# ドライランで設定内容確認
+python backend/scripts/load_domo.py --all --dry-run
+```
+
+解決策:
+
+- `DOMO_CLIENT_ID` と `DOMO_CLIENT_SECRET` が `.env` に設定されているか確認
+- `.env` の値にダブルクォートが含まれていないか確認
+- DOMO Dataset IDが正しいか確認（DOMOのURL末尾のUUID）
+- ネットワーク接続を確認（`api.domo.com` へのアクセス）
+
+### Issue 7: Dash 4.x ドロップダウンが背面に隠れる
+
+症状: DateRangeやDropdownのプルダウンがKPIカードの背面に隠れる
+
+原因: Dash 4.x (Radix) のポップアップの z-index が低い
+
+解決策:
+
+- `assets/03-components.css` に z-index 修正が含まれているか確認
+- Docker利用時は `./assets:/app/assets` のボリュームマウントを確認
+- ブラウザのハードリロード（Ctrl+Shift+R）で確認
 
 ---
 
@@ -277,6 +338,18 @@ docker push <ACCOUNT_ID>.dkr.ecr.ap-northeast-1.amazonaws.com/bi-dashboard:lates
 aws ecs update-service --cluster bi-dashboard-cluster --service bi-dashboard-service --force-new-deployment
 ```
 
+### データのロールバック
+
+DOMO ETLで取り込んだデータに問題がある場合:
+
+```bash
+# 問題のあるデータセットを削除
+python backend/scripts/clear_dataset.py <dataset_id>
+
+# 正しいデータを再取り込み
+python backend/scripts/load_domo.py --dataset "Dataset Name"
+```
+
 ---
 
 ## 7. 定期メンテナンス
@@ -290,7 +363,7 @@ aws ecs update-service --cluster bi-dashboard-cluster --service bi-dashboard-ser
 
 - キャッシュの有効性確認
 - ダッシュボードレスポンス時間の測定
-- ETL ジョブの成功確認
+- ETL ジョブの成功確認（DOMOデータの最新性）
 
 ### 月次タスク
 
@@ -308,20 +381,55 @@ pip-audit requirements.txt
 ## 8. 本番初期設定チェックリスト
 
 - [ ] S3 バケット作成 & IAM ポリシー設定
-- [ ] RDS インスタンス作成 & 初期データロード
 - [ ] ECR リポジトリ作成
 - [ ] ECS クラスター & サービス作成
 - [ ] CloudWatch ロググループ作成
 - [ ] AWS Secrets Manager でシークレット登録
+  - [ ] S3_ACCESS_KEY / S3_SECRET_KEY
+  - [ ] BASIC_AUTH_PASSWORD
+  - [ ] SECRET_KEY（ランダム文字列）
+  - [ ] DOMO_CLIENT_ID / DOMO_CLIENT_SECRET（ETL使用時）
 - [ ] SSL/TLS 証明書の設定
 - [ ] DNS / ロードバランサー設定
 - [ ] バックアップ戦略の実装
 - [ ] 災害復旧計画の文書化
+- [ ] ETLスケジュール設定（cron / systemd timer）
 
 ---
 
-## 9. 参考資料
+## 9. ETL運用
+
+### DOMO ETL定期実行
+
+DOMO からのデータ取得はスケジューリングが必要。
+
+```bash
+# crontab例: 毎日午前6時に全有効データセットをロード
+0 6 * * * cd /path/to/project && python backend/scripts/load_domo.py --all >> /var/log/domo-etl.log 2>&1
+```
+
+### データセットの追加
+
+1. `backend/config/domo_datasets.yaml` に新しいデータセットを追加
+2. `enabled: true` に設定
+3. `python backend/scripts/load_domo.py --dataset "Name"` で取得テスト
+4. `src/pages/` に新しいダッシュボードページを作成
+
+### データセットの削除/再取り込み
+
+```bash
+# データセット削除
+python backend/scripts/clear_dataset.py <dataset_id>
+
+# 再取り込み
+python backend/scripts/load_domo.py --dataset "Name"
+```
+
+---
+
+## 10. 参考資料
 
 - AWS ECS デプロイメントガイド: https://docs.aws.amazon.com/ja_jp/AmazonECS/latest/developerguide/
 - AWS Secrets Manager: https://docs.aws.amazon.com/ja_jp/secretsmanager/
 - CloudWatch ログ: https://docs.aws.amazon.com/ja_jp/AmazonCloudWatch/latest/logs/
+- DOMO API Documentation: https://developer.domo.com/portal/3b1e3a7d5f420-data-set-api
