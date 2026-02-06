@@ -108,10 +108,11 @@
 
 /* Card Hover Animation */
 .card,
-.dash-card,
-.kpi-card {
+.dash-card {
   transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
+
+/* kpi-card: no transform to avoid stacking context issues with filter dropdowns */
 
 /* Dropdown Animation */
 .Select-menu-outer {

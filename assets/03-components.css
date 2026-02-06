@@ -43,11 +43,12 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  transition: all 0.3s ease;
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+  position: relative;
+  z-index: 1;
 }
 
 .kpi-card:hover {
-  transform: translateY(-2px);
   box-shadow: var(--shadow-md), var(--shadow-glow);
   border-color: var(--border-accent);
 }
@@ -116,11 +117,23 @@
 }
 
 /* Dropdowns */
-.Select-control,
+.Select-control {
+  background-color: var(--bg-elevated) !important;
+  border-color: var(--border-subtle) !important;
+  color: var(--text-primary) !important;
+}
+
 .Select-menu-outer {
   background-color: var(--bg-elevated) !important;
   border-color: var(--border-subtle) !important;
   color: var(--text-primary) !important;
+  z-index: 9999 !important;
+  position: absolute !important;
+}
+
+/* DatePicker popup */
+.DateRangePicker_picker {
+  z-index: 9999 !important;
 }
 
 .Select-placeholder,
@@ -142,6 +155,22 @@
 .Select-option.is-selected {
   background-color: var(--bg-card) !important;
   color: var(--accent-primary) !important;
+}
+
+/* Dash 4.x (radix) dropdown/datepicker content */
+.dash-dropdown-content,
+.dash-options-list,
+.dash-dropdown-options,
+.dash-datepicker-content,
+.dash-datepicker-popover,
+.dash-datepicker-overlay,
+[data-radix-popper-content-wrapper] {
+  position: relative !important;
+  z-index: 9999 !important;
+}
+
+[data-radix-popper-content-wrapper] > * {
+  z-index: 9999 !important;
 }
 
 /* Date Picker */

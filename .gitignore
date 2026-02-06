@@ -133,3 +133,6 @@ dmypy.json
 # OS
 .DS_Store
 Thumbs.db
+
+# Data sources
+backend/data_sources/

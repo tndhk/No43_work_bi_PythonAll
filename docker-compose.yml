@@ -8,6 +8,8 @@ services:
       - "8050:8050"
     volumes:
       - ./src:/app/src
+      - ./backend:/app/backend
+      - ./assets:/app/assets
       - ./app.py:/app/app.py
     environment:
       - ENV=local
