@@ -1,5 +1,6 @@
 from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
+import secrets
 
 
 class Settings(BaseSettings):
@@ -15,6 +16,12 @@ class Settings(BaseSettings):
     # Auth
     basic_auth_username: str = "admin"
     basic_auth_password: str = "changeme"
+    
+    # Flask session secret key
+    secret_key: str = secrets.token_urlsafe(32)
+    
+    # Auth provider type (future: "form" | "saml")
+    auth_provider_type: str = "form"
 
 
 settings = Settings()

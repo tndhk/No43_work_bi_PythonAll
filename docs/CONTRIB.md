@@ -51,16 +51,18 @@ docker compose up --build
 
 | カテゴリ | 変数名 | デフォルト値 | 説明 |
 |---------|--------|-------------|------|
-| S3 | `S3_ENDPOINT` | `http://localhost:4566` | S3エンドポイント（ローカル開発時はMinIO） |
+| S3 | `S3_ENDPOINT` | `http://localhost:9000` | S3エンドポイント（ローカル開発時はMinIO、Docker Compose使用時は `http://minio:9000` が自動設定） |
 | S3 | `S3_REGION` | `ap-northeast-1` | S3リージョン |
 | S3 | `S3_BUCKET` | `bi-datasets` | Datasetバケット名 |
-| S3 | `S3_ACCESS_KEY` | `test` | S3アクセスキー（ローカルのみ） |
-| S3 | `S3_SECRET_KEY` | `test` | S3シークレットキー（ローカルのみ） |
+| S3 | `S3_ACCESS_KEY` | `minioadmin` | S3アクセスキー（ローカル開発時はMinIOのデフォルト） |
+| S3 | `S3_SECRET_KEY` | `minioadmin` | S3シークレットキー（ローカル開発時はMinIOのデフォルト） |
 | 認証 | `BASIC_AUTH_USERNAME` | `admin` | Basic認証ユーザ名（ローカル開発） |
 | 認証 | `BASIC_AUTH_PASSWORD` | `changeme` | Basic認証パスワード（ローカル開発） |
 | Vertex AI（Phase 2） | `GOOGLE_APPLICATION_CREDENTIALS` | - | サービスアカウント JSON パス |
 | Vertex AI（Phase 2） | `VERTEX_AI_PROJECT` | - | GCP プロジェクト ID |
 | Vertex AI（Phase 2） | `VERTEX_AI_LOCATION` | `asia-northeast1` | Vertex AI リージョン |
+
+> **注意**: Docker Composeを使用する場合、`docker-compose.yml`内で環境変数が自動設定されます。`.env`ファイルはDocker Compose外で直接アプリを実行する場合に使用します。
 
 ---
 
@@ -70,9 +72,11 @@ docker compose up --build
 
 | コマンド | 説明 |
 |---------|------|
-| `python app.py` | Dashアプリ起動（開発モード） |
+| `python app.py` | Dashアプリ起動（開発モード、ポート8050） |
+| `python3 app.py` | Dashアプリ起動（Python 3の場合） |
 | `pytest` | テスト実行 |
 | `pytest --cov=src` | カバレッジ付きテスト |
+| `pytest --cov=src --cov-report=html` | HTMLカバレッジレポート生成 |
 | `pytest -v -k "test_name"` | 特定テストのみ実行 |
 | `ruff check src/` | リンティング |
 | `ruff format src/` | フォーマット |
@@ -100,7 +104,16 @@ docker compose up --build
 | `python backend/etl/etl_s3.py` | S3 ETL実行 |
 | `python backend/etl/etl_rds.py` | RDS ETL実行 |
 | `python backend/etl/etl_csv.py` | CSV ETL実行 |
-| `python scripts/upload_csv.py <file.csv>` | CSVアップロードCLI |
+| `python scripts/upload_csv.py <csv_file> --dataset-id <id> [--partition-col <col>]` | CSVアップロードCLI |
+
+**CSVアップロードCLIの使用例**:
+```bash
+# パーティションなし（単一ファイル）
+python scripts/upload_csv.py data.csv --dataset-id my-dataset
+
+# 日付カラムでパーティション分割
+python scripts/upload_csv.py data.csv --dataset-id my-dataset --partition-col date
+```
 
 ETL は cron / systemd timer で定期実行する想定。
 
@@ -176,8 +189,11 @@ type: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`
 ### PR前チェック
 
 ```bash
-# Python
+# Python（リンティング、型チェック、テスト）
 ruff check src/ && mypy src/ && pytest --cov=src
+
+# フォーマット確認（変更がある場合は自動修正）
+ruff format --check src/
 ```
 
 ---

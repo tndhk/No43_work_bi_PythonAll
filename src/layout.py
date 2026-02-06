@@ -1,12 +1,12 @@
-from dash import html, page_container
-from src.components.sidebar import create_sidebar
+from dash import html, dcc
 
 
 def create_layout() -> html.Div:
-    """Create main layout with sidebar and page container."""
+    """Create main layout container.
+    
+    Actual content is determined by layout_callbacks based on authentication.
+    """
     return html.Div([
-        create_sidebar(),
-        html.Div([
-            page_container,
-        ], className="main-content"),
+        dcc.Location(id="main-location", refresh=True),
+        html.Div(id="main-content"),
     ])

@@ -64,6 +64,29 @@
   font-weight: 600;
 }
 
+/* Sidebar Footer */
+.sidebar-footer {
+  margin-top: auto;
+  padding-top: var(--spacing-xl);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.sidebar-logout-button {
+  width: 100%;
+  color: var(--text-secondary) !important;
+  font-family: "Plus Jakarta Sans", sans-serif !important;
+  font-size: 0.875rem !important;
+  text-align: left !important;
+  padding: var(--spacing-md) var(--spacing-lg) !important;
+  border-radius: 6px !important;
+  transition: all 0.2s ease !important;
+}
+
+.sidebar-logout-button:hover {
+  background-color: var(--bg-card) !important;
+  color: var(--status-danger) !important;
+}
+
 /* Main Content Area */
 .main-content {
   margin-left: 250px;
@@ -78,6 +101,72 @@
   margin: 0 auto;
 }
 
+/* Dashboard Grid */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--spacing-lg);
+  margin-top: var(--spacing-xl);
+}
+
+.dashboard-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  height: 100%;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md), var(--shadow-glow);
+  border-color: var(--border-accent);
+}
+
+.dashboard-card-title {
+  font-family: "Syne", sans-serif;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.dashboard-card-description {
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+  margin-bottom: var(--spacing-md);
+  line-height: 1.5;
+}
+
+.dashboard-card-link {
+  color: var(--accent-primary);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.9375rem;
+  transition: color 0.2s ease;
+  display: inline-block;
+}
+
+.dashboard-card-link:hover {
+  color: var(--accent-hover);
+}
+
+/* Empty State */
+.empty-state-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  margin-top: var(--spacing-xl);
+}
+
+.empty-state {
+  color: var(--text-secondary);
+  font-size: 1.125rem;
+  text-align: center;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .sidebar {
@@ -86,5 +175,10 @@
 
   .main-content {
     margin-left: 0;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
   }
 }

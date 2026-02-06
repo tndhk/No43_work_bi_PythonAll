@@ -1,0 +1,125 @@
+/* Login Page Styles */
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-base);
+  padding: var(--spacing-xl);
+}
+
+.login-container {
+  width: 100%;
+  max-width: 420px;
+}
+
+.login-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: var(--spacing-xl);
+  box-shadow: var(--shadow-lg);
+  transition: all 0.3s ease;
+}
+
+.login-card:hover {
+  border-color: var(--border-accent);
+  box-shadow: var(--shadow-lg), var(--shadow-glow);
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: var(--spacing-xl);
+}
+
+.login-brand {
+  font-family: "Syne", sans-serif;
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--accent-primary);
+  margin: 0 0 var(--spacing-sm) 0;
+  letter-spacing: -0.02em;
+}
+
+.login-subtitle {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.login-input {
+  background-color: var(--bg-elevated) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: 6px !important;
+  padding: var(--spacing-md) var(--spacing-lg) !important;
+  color: var(--text-primary) !important;
+  font-family: "Plus Jakarta Sans", sans-serif !important;
+  font-size: 0.9375rem !important;
+  transition: all 0.2s ease !important;
+}
+
+.login-input:focus {
+  outline: none !important;
+  border-color: var(--accent-primary) !important;
+  box-shadow: 0 0 0 3px rgba(201, 165, 92, 0.1) !important;
+}
+
+.login-input::placeholder {
+  color: var(--text-muted) !important;
+}
+
+.login-button {
+  background-color: var(--accent-primary) !important;
+  border: none !important;
+  border-radius: 6px !important;
+  padding: var(--spacing-md) var(--spacing-lg) !important;
+  color: var(--bg-base) !important;
+  font-family: "Plus Jakarta Sans", sans-serif !important;
+  font-size: 0.9375rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  margin-top: var(--spacing-sm) !important;
+}
+
+.login-button:hover {
+  background-color: var(--accent-hover) !important;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.login-button:active {
+  transform: translateY(0);
+}
+
+.login-error {
+  color: var(--status-danger);
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 0.875rem;
+  min-height: 1.5rem;
+  padding: var(--spacing-xs) 0;
+  text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .login-page {
+    padding: var(--spacing-md);
+  }
+
+  .login-card {
+    padding: var(--spacing-lg);
+  }
+
+  .login-brand {
+    font-size: 1.75rem;
+  }
+}

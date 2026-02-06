@@ -89,18 +89,19 @@ aws logs tail /ecs/bi-dashboard --follow
 
 | 変数 | 説明 | 備考 |
 |------|------|------|
-| `S3_ENDPOINT` | AWS S3 エンドポイント | 本番: `https://s3.ap-northeast-1.amazonaws.com` |
+| `S3_ENDPOINT` | AWS S3 エンドポイント | 本番: `https://s3.ap-northeast-1.amazonaws.com`（空文字列でも可） |
 | `S3_REGION` | AWS リージョン | `ap-northeast-1` |
 | `S3_BUCKET` | データセットバケット | 本番用 S3 バケット名 |
-| `S3_ACCESS_KEY` | IAM アクセスキー | AWS Secrets Manager より取得 |
-| `S3_SECRET_KEY` | IAM シークレットキー | AWS Secrets Manager より取得 |
+| `S3_ACCESS_KEY` | IAM アクセスキー | AWS Secrets Manager より取得（IAMロール使用時は不要） |
+| `S3_SECRET_KEY` | IAM シークレットキー | AWS Secrets Manager より取得（IAMロール使用時は不要） |
 | `BASIC_AUTH_USERNAME` | 認証ユーザー名 | 本番は SAML に置き換え（Phase 3） |
 | `BASIC_AUTH_PASSWORD` | 認証パスワード | AWS Secrets Manager より取得 |
-| `RDS_HOST` | RDS エンドポイント | RDS インスタンスのエンドポイント |
-| `RDS_PORT` | RDS ポート | 通常 `5432` |
-| `RDS_USER` | RDS ユーザー | Secrets Manager より取得 |
-| `RDS_PASSWORD` | RDS パスワード | AWS Secrets Manager より取得 |
-| `RDS_DATABASE` | データベース名 | - |
+| `SECRET_KEY` | Flaskセッション秘密鍵 | AWS Secrets Manager より取得（ランダム文字列） |
+| `RDS_HOST` | RDS エンドポイント | RDS インスタンスのエンドポイント（ETL使用時） |
+| `RDS_PORT` | RDS ポート | 通常 `5432`（ETL使用時） |
+| `RDS_USER` | RDS ユーザー | Secrets Manager より取得（ETL使用時） |
+| `RDS_PASSWORD` | RDS パスワード | AWS Secrets Manager より取得（ETL使用時） |
+| `RDS_DATABASE` | データベース名 | -（ETL使用時） |
 | `GOOGLE_APPLICATION_CREDENTIALS` | GCP サービスアカウント JSON | Phase 2 以降（Vertex AI） |
 | `VERTEX_AI_PROJECT` | GCP プロジェクト ID | Phase 2 以降 |
 | `VERTEX_AI_LOCATION` | Vertex AI リージョン | `asia-northeast1` |

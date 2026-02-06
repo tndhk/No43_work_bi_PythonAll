@@ -2,9 +2,13 @@ from dash import Dash
 import dash_bootstrap_components as dbc
 from dotenv import load_dotenv
 
-from src.auth.basic_auth import setup_auth
+from src.auth.flask_login_setup import init_login_manager
+from src.auth.login_callbacks import register_login_callbacks
+from src.auth.layout_callbacks import register_layout_callbacks
+from src.components.sidebar_callbacks import register_sidebar_callbacks
 from src.core.cache import init_cache
 from src.layout import create_layout
+from src.data.config import settings
 
 load_dotenv()
 
@@ -20,8 +24,19 @@ app = Dash(
     suppress_callback_exceptions=True,
 )
 
-setup_auth(app)
+# Initialize Flask-Login
+app.server.config["SECRET_KEY"] = settings.secret_key
+init_login_manager(app.server)
+
+# Register callbacks
+register_login_callbacks(app)
+register_layout_callbacks(app)
+register_sidebar_callbacks(app)
+
+# Initialize cache
 init_cache(app.server)
+
+# Set layout
 app.layout = create_layout()
 
 server = app.server
