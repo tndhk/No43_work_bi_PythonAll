@@ -54,12 +54,3 @@ def init_login_manager(app) -> None:
         # For now, create a user with empty groups
         # In next phase, load groups from YAML config
         return User(user_id, [])
-
-
-def get_login_manager() -> LoginManager:
-    """Get the login manager instance.
-    
-    Returns:
-        LoginManager instance
-    """
-    return _login_manager

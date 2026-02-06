@@ -1,13 +1,10 @@
 """Tests for Flask-Login session authentication."""
 import pytest
 from flask import Flask
-from dash import Dash
-from flask_login import LoginManager, current_user
-from werkzeug.security import check_password_hash
+from flask_login import LoginManager
 
 from src.auth.flask_login_setup import init_login_manager, User
 from src.auth.providers import FormAuthProvider
-from src.data.config import Settings
 
 
 @pytest.fixture
@@ -20,25 +17,11 @@ def flask_app():
 
 
 @pytest.fixture
-def dash_app(flask_app):
-    """Dash app with Flask-Login initialized."""
-    dash_app = Dash(__name__, server=flask_app)
-    init_login_manager(flask_app)
-    return dash_app
-
-
-@pytest.fixture
 def auth_provider(monkeypatch):
     """FormAuthProvider with test credentials."""
     monkeypatch.setenv("BASIC_AUTH_USERNAME", "testuser")
     monkeypatch.setenv("BASIC_AUTH_PASSWORD", "testpass")
     return FormAuthProvider()
-
-
-@pytest.fixture
-def client(dash_app):
-    """Test client."""
-    return dash_app.server.test_client()
 
 
 class TestFormAuthProvider:
@@ -202,17 +185,3 @@ class TestFlaskLoginIntegration:
         assert user.id == "testuser"
         assert isinstance(user.groups, list)
 
-    def test_login_flow(self, client, auth_provider):
-        """TC-N-01: ログインフロー（セッション保存確認）"""
-        # Given: Test client and valid credentials
-        # Note: Actual login flow will be tested via Dash callbacks
-        # This is a placeholder for integration test
-        assert client is not None
-        assert auth_provider is not None
-
-    def test_logout_flow(self, client):
-        """TC-N-03: ログアウトフロー（セッションクリア確認）"""
-        # Given: Test client
-        # Note: Actual logout flow will be tested via Dash callbacks
-        # This is a placeholder for integration test
-        assert client is not None
