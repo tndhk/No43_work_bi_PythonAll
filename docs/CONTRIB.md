@@ -88,6 +88,9 @@ docker compose up --build
 | `docker compose down -v` | 停止 + データ削除 |
 | `docker compose logs -f dash` | Dashアプリログ確認 |
 | `docker compose logs -f minio` | MinIOログ確認 |
+| `docker compose run --rm test` | テスト実行（Docker内） |
+| `docker compose run --rm test pytest -k "test_name"` | 特定テストのみ（Docker内） |
+| `docker compose run --rm test pytest --cov=src` | カバレッジ付き（Docker内） |
 
 ### ETL実行
 
@@ -121,6 +124,22 @@ pytest
 # カバレッジ付き
 pytest --cov=src --cov-report=html
 ```
+
+### Dockerでテスト実行（推奨）
+
+```bash
+# 全テスト実行
+docker compose run --rm test
+
+# 特定テストのみ
+docker compose run --rm test pytest -v -k "test_config"
+
+# カバレッジ付き
+docker compose run --rm test pytest --cov=src --cov-report=term-missing
+```
+
+> testサービスは `profiles: [test]` を使用しているため、`docker compose up` では起動しません。
+> `tests/` ディレクトリはボリュームマウントされているため、ローカルの変更が即座に反映されます。
 
 ---
 
