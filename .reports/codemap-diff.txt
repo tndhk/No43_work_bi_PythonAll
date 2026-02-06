@@ -1,235 +1,148 @@
-# Documentation Update Report
+# Codemap Update Report
 
 Generated: 2026-02-06
+Previous Version: 2026-02-06 (initial creation)
+Trigger: Full codemap refresh based on static analysis of all source files
 
-## Summary
+## Diff Summary
 
-Complete documentation refresh to improve project onboarding, operations, and architecture understanding.
+| File | Action | Old Lines | New Lines | Change % |
+|------|--------|-----------|-----------|----------|
+| codemaps/architecture.md | CREATED | 0 | 139 | 100% (new) |
+| codemaps/backend.md | REWRITTEN | 164 | 194 | ~65% |
+| codemaps/frontend.md | REWRITTEN | 246 | 244 | ~55% |
+| codemaps/data.md | REWRITTEN | 286 | 312 | ~50% |
 
-## Changes Made
+Overall change rate: ~67% (threshold: 30% -- exceeded, user approval obtained)
 
-### 1. New Documentation Files Created
+## Detailed Changes per File
 
-#### docs/RUNBOOK.md (NEW)
-- **Purpose**: Operational guide for deployment, monitoring, and troubleshooting
-- **Sections**:
-  - Deployment procedures (AWS ECS/Fargate)
-  - Environment configuration
-  - Monitoring & alerting setup
-  - Troubleshooting guide (5 common issues)
-  - Rollback procedures
-  - Maintenance tasks (daily/weekly/monthly)
-- **Size**: ~350 lines
-- **Audience**: DevOps/SRE engineers, production operations team
+### codemaps/architecture.md (NEW)
 
-#### docs/architecture.md (NEW)
-- **Purpose**: System architecture documentation with visual diagrams
-- **Sections**:
-  - High-level architecture diagram
-  - Component structure breakdown
-  - Data flow diagrams
-  - Dependency graph
-  - Caching strategy
-  - Authentication flow
-  - Technology stack summary
-  - Deployment architecture
-  - Security considerations
-- **Size**: ~250 lines
-- **Audience**: Architects, senior developers, system designers
+New file providing system-level architecture overview.
 
-### 2. Updated Documentation Files
+Contents:
+- ASCII system architecture diagram (Browser -> Dash -> Data -> S3, ETL -> DOMO/CSV)
+- Layer overview table (10 layers with status)
+- app.py dependency flow
+- Technology stack table (13 technologies with versions)
+- Docker Compose deployment diagram
+- Environment variables table (11 variables)
+- Cross-references to other codemaps
 
-#### docs/CONTRIB.md (UPDATED)
-- **Changes**:
-  - Fixed markdown table formatting (removed leading pipes)
-  - Added reference to RUNBOOK.md in related documents
-  - Updated "Last Updated" timestamp
-- **No content loss**: All original content preserved
-- **Lines changed**: ~5 (formatting only)
+### codemaps/backend.md
 
-### 3. New Codemaps Created
+Corrections from previous version:
+- [REMOVED] data_sources/api_client.py -- file does not exist
+- [REMOVED] data_sources/rds_client.py -- file does not exist
+- [REMOVED] data_sources/s3_client.py -- file does not exist
+- [REMOVED] validate() method from BaseETL -- not in actual code
+- [CORRECTED] Class names: APIETLJob -> ApiETL, S3ETLJob -> S3RawETL,
+              RDSETLJob -> RdsETL, CSVETLJob -> CsvETL
+- [CORRECTED] BaseETL.load() signature: now includes dataset_id and partition_column params
+- [ADDED] etl_domo.py (DomoApiETL) -- DOMO API OAuth2 ETL with exclude_filter
+- [ADDED] backend/scripts/ section -- load_domo.py, load_cursor_usage.py, clear_dataset.py
+- [ADDED] scripts/upload_csv.py -- generic CSV upload CLI
+- [ADDED] backend/config/domo_datasets.yaml -- YAML configuration reference
+- [ADDED] Stub ETL status table (ApiETL, RdsETL, S3RawETL all NotImplementedError)
+- [ADDED] Test file listing (tests/etl/, tests/scripts/)
+- [REMOVED] Speculative cron/Lambda orchestration (not implemented)
+- [REMOVED] Speculative error handling patterns (retry with backoff not in BaseETL)
 
-#### codemaps/backend.md (NEW)
-- **Purpose**: Backend ETL layer documentation
-- **Coverage**:
-  - Module dependency map
-  - Key exports per module
-  - Data transformation pipeline
-  - ETL orchestration patterns
-  - Error handling strategy
-  - Testing approach
-- **Size**: ~120 lines
-- **Audience**: Backend developers, data engineers
+### codemaps/frontend.md
 
-#### codemaps/frontend.md (NEW)
-- **Purpose**: Frontend Dash application structure
-- **Coverage**:
-  - Component hierarchy
-  - Module dependencies
-  - Page structure template
-  - Callback patterns
-  - Data access flow
-  - Key exports
-  - Performance optimizations
-  - Phase 2 LLM integration notes
-- **Size**: ~200 lines
-- **Audience**: Frontend developers, Dash specialists
+Corrections from previous version:
+- [CORRECTED] Authentication: Dash-Auth -> Flask-Login with custom AuthProvider protocol
+- [CORRECTED] Layout flow: create_layout() now returns minimal shell; layout_callbacks
+              determines content based on authentication state
+- [CORRECTED] filters.py: removed non-existent create_custom_filter()
+- [CORRECTED] cards.py signature: create_kpi_card(title, value, subtitle) not (value, label, icon)
+- [CORRECTED] charts/templates.py exports: render_summary_number/render_bar_chart/etc.
+              not create_line_chart/create_bar_chart/create_scatter_plot
+- [ADDED] Full auth module: flask_login_setup.py, providers.py, login_layout.py,
+          login_callbacks.py, layout_callbacks.py
+- [ADDED] sidebar_callbacks.py (logout handling)
+- [ADDED] plotly_theme.py (dark theme with gold accent palette)
+- [ADDED] 3 actual pages with imports and callback flows:
+          dashboard_home.py, cursor_usage.py, apac_dot_due_date.py
+- [ADDED] Chart Template Registry table (6 chart types)
+- [ADDED] Style Architecture section (7 CSS files with purposes)
+- [ADDED] Auth Provider Pattern (Protocol + FormAuthProvider)
+- [ADDED] Test file listing (8 test files)
+- [REMOVED] Speculative pages (sales_analysis.py, inventory_report.py)
+- [REMOVED] Phase 2 LLM Chat Panel (speculative, not implemented)
+- [REMOVED] Speculative performance patterns (dash_defer, aggregation pushdown)
 
-#### codemaps/data.md (NEW)
-- **Purpose**: Data layer architecture documentation
-- **Coverage**:
-  - Module dependency map
-  - Key functions & signatures
-  - Data type support
-  - Caching integration
-  - S3 path conventions
-  - Performance considerations
-  - Error handling
-  - Phase 2 context building
-- **Size**: ~280 lines
-- **Audience**: Data engineers, backend developers
+### codemaps/data.md
 
-## Documentation Statistics
+Corrections from previous version:
+- [CORRECTED] parquet_reader.py: function-based -> class-based ParquetReader
+              with read_dataset(dataset_id, date_range) signature
+- [CORRECTED] csv_parser.py: parse_csv() -> parse_preview()/parse_full()
+              with CsvImportOptions dataclass
+- [CORRECTED] type_inferrer.py: infer_types() -> infer_column_type()/infer_schema()/apply_types()
+              with ColumnSchema model
+- [CORRECTED] filter_engine.py: FilterSpec with operators ->
+              CategoryFilter/DateRangeFilter/FilterSet frozen dataclasses
+- [CORRECTED] models.py: Pydantic BaseModel -> dataclass ColumnSchema only
+              (DatasetRef, FilterRequest, DatasetMetadata do not exist)
+- [CORRECTED] dataset_summarizer.py: functions -> DatasetSummarizer class
+              with summarize() and generate_summary() methods
+- [CORRECTED] cache.py: decorator-based -> get_cached_dataset() function
+              with "dataset:{id}" key format
+- [CORRECTED] Settings: added secret_key, auth_provider_type, domo_client_id/secret
+- [ADDED] exceptions.py: DatasetFileNotFoundError(RuntimeError)
+- [ADDED] core/logging.py: setup_logging() with structlog
+- [ADDED] Data Flow (Read Path) diagram
+- [ADDED] Data Flow (Write Path) diagram
+- [ADDED] Date format recognition list (6 formats)
+- [ADDED] Test file listing (11 test files)
+- [REMOVED] Speculative S3 path structure (raw/processed/archive)
+- [REMOVED] Speculative partition scheme (yearly=YYYY/monthly=MM)
+- [REMOVED] Speculative performance examples (column selection, filter pushdown)
+- [REMOVED] Phase 2 LLM context building (not implemented)
+- [REMOVED] Speculative error handling (retry with backoff not in data layer)
 
-| Document | Type | Lines | Purpose |
-|----------|------|-------|---------|
-| docs/RUNBOOK.md | Operations | ~350 | Deployment & operations guide |
-| docs/architecture.md | Architecture | ~250 | System design overview |
-| codemaps/backend.md | Technical | ~120 | Backend module reference |
-| codemaps/frontend.md | Technical | ~200 | Frontend component reference |
-| codemaps/data.md | Technical | ~280 | Data layer reference |
-| docs/CONTRIB.md | Updated | ~293 | Development guide (formatting fix) |
+## Root Cause of Drift
 
-**Total new documentation**: ~1,480 lines
-**Documentation coverage**: All major layers (frontend, backend, data, ops, architecture)
+The previous codemap version was generated speculatively before full implementation.
+Many API signatures, class names, and module structures were projected rather than
+derived from actual source code. This update corrects all discrepancies by performing
+static analysis of every .py file in the repository.
 
-## Coverage Analysis
+Key categories of drift:
+1. API signature mismatches (function names, parameters, return types)
+2. Non-existent files documented (data_sources/*.py)
+3. Non-existent classes/methods documented (FilterSpec, DatasetRef, validate())
+4. Missing implemented features (DOMO ETL, Flask-Login auth, scripts)
+5. Speculative future features documented as current (LLM chat, scatter_plot)
 
-### Gaps Addressed
+## Quality Checklist
 
-1. **Operations Gap**: No runbook existed → Added comprehensive RUNBOOK.md
-2. **Architecture Gap**: No system design doc → Added architecture.md
-3. **Backend Clarity**: ETL structure unclear → Added codemaps/backend.md
-4. **Frontend Navigation**: Component relationships unclear → Added codemaps/frontend.md
-5. **Data Layer**: No reference guide → Added codemaps/data.md
+- [x] All documented file paths verified to exist
+- [x] All class names match actual source code
+- [x] All function signatures match actual source code
+- [x] All import relationships verified against actual imports
+- [x] Non-existent modules removed
+- [x] Stub/skeleton status clearly marked
+- [x] Freshness timestamps added (2026-02-06)
+- [x] Cross-references between codemaps verified
+- [x] Test file listings verified to exist
+- [x] User approval obtained (change rate 67% > 30% threshold)
 
-### Remaining Gaps (Out of Scope)
-
-- API endpoint documentation (Phase 2)
-- LLM integration guide (Phase 2)
-- SAML setup guide (Phase 3)
-- Client-side TypeScript/JavaScript (if added)
-
-## Codemap Quality Metrics
-
-| Codemap | Completeness | Clarity | Maintainability |
-|---------|-------------|---------|-----------------|
-| backend.md | 95% | High | High |
-| frontend.md | 90% | High | High |
-| data.md | 95% | High | High |
-
-- **Module exports**: All key exports documented
-- **Data flows**: Visual representations provided
-- **Examples**: Real-world usage patterns included
-- **Error handling**: Exception strategies documented
-
-## Integration Points
-
-### How Documentation Fits Together
+## File Inventory
 
 ```
-CONTRIB.md (Developer Guide)
-├── Links to: tech-spec.md, RUNBOOK.md, architecture.md
-├── Quick start & environment setup
-└── Development commands
-
-architecture.md (System Design)
-├── High-level overview of all components
-├── References codemaps/ for detailed info
-└── Technology stack summary
-
-RUNBOOK.md (Operations Guide)
-├── Deployment procedures
-├── Monitoring setup
-└── Troubleshooting with architecture context
-
 codemaps/
-├── backend.md  - Backend ETL layer
-├── frontend.md - Frontend UI/pages layer
-└── data.md     - Data access & transformation layer
-```
-
-## Freshness Strategy
-
-- **Update cadence**: When major features added (new pages, new ETL sources)
-- **Sync points**:
-  - After Phase 1 completion
-  - After Phase 2 (LLM) implementation
-  - After Phase 3 (SAML) deployment
-- **Maintenance**: Quarterly review for accuracy
-
-## Usage Recommendations
-
-### For Onboarding New Developers
-
-1. Read CONTRIB.md (get environment running)
-2. Read architecture.md (understand system)
-3. Read relevant codemaps (deep dive on layer)
-
-### For Operations/DevOps
-
-1. Read RUNBOOK.md (deployment & troubleshooting)
-2. Reference architecture.md (system design context)
-
-### For Architecture Reviews
-
-1. Reference architecture.md (component relationships)
-2. Consult codemaps/ (implementation details)
-3. Review tech-spec.md (technology decisions)
-
-## Quality Assurance Checklist
-
-- [x] All major components documented
-- [x] Code examples provided
-- [x] Data flows diagrammed
-- [x] Error handling documented
-- [x] Technology choices explained
-- [x] Links between documents verified
-- [x] Markdown formatting validated
-- [x] Timestamps added
-- [x] Audience clarity defined
-
-## Next Steps
-
-1. **Integration testing**: Verify links between documents
-2. **Review cycle**: Get feedback from dev/ops teams
-3. **Version tracking**: Add to .gitignore monitoring
-4. **Automated checks**: Consider linting documentation
-5. **Team training**: Walkthrough new runbook with ops team
-
----
-
-## Files Changed Summary
-
-```
-docs/
-├── CONTRIB.md (MODIFIED) - formatting fix, added references
-├── RUNBOOK.md (NEW)      - comprehensive operations guide
-├── architecture.md (NEW) - system design documentation
-└── tech-spec.md (unchanged)
-
-codemaps/
-├── backend.md (NEW)      - backend ETL reference
-├── frontend.md (NEW)     - frontend components reference
-└── data.md (NEW)         - data layer reference
+  architecture.md  (NEW)     139 lines  System architecture overview
+  backend.md       (UPDATED) 194 lines  ETL pipelines and scripts
+  frontend.md      (UPDATED) 244 lines  UI components, pages, auth
+  data.md          (UPDATED) 312 lines  Data layer, models, S3 I/O
 
 .reports/
-└── codemap-diff.txt (THIS FILE)
+  codemap-diff.txt (THIS FILE)
 ```
 
-Diff Summary:
-- **Files created**: 5
-- **Files modified**: 1
-- **Files deleted**: 0
-- **Total lines added**: ~1,480
-- **Total lines modified**: ~5
+Total codemap lines: 889
+Previous total: 696
+Net change: +193 lines (+28%)
