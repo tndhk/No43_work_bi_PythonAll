@@ -7,6 +7,10 @@ datasets:
     minio_dataset_id: "apac-dot-due-date"
     partition_column: "delivery completed date"
     enabled: true
+    # 除外フィルター: exclude_flg = "Not Exclude" のデータのみ保持
+    exclude_filter:
+      column: "exclude_flg"
+      keep_value: "Not Exclude"
 
   # Add more datasets here following the same structure:
   # - name: "DataSet Name"

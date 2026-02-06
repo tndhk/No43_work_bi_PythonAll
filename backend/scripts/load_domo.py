@@ -102,6 +102,7 @@ def load_dataset(config: Dict, dry_run: bool = False) -> bool:
     domo_dataset_id = config["domo_dataset_id"]
     minio_dataset_id = config["minio_dataset_id"]
     partition_column = config.get("partition_column")
+    exclude_filter = config.get("exclude_filter")
 
     print(f"\n{'='*60}")
     print(f"DataSet: {name}")
@@ -109,6 +110,11 @@ def load_dataset(config: Dict, dry_run: bool = False) -> bool:
     print(f"DOMO Dataset ID: {domo_dataset_id}")
     print(f"MinIO Dataset ID: {minio_dataset_id}")
     print(f"Partition Column: {partition_column or 'None'}")
+    
+    # 除外フィルター情報を表示
+    if exclude_filter:
+        print(f"Exclude Filter: {exclude_filter['column']} == '{exclude_filter['keep_value']}'")
+    
     print()
 
     if dry_run:
@@ -120,6 +126,7 @@ def load_dataset(config: Dict, dry_run: bool = False) -> bool:
         etl = DomoApiETL(
             dataset_id=domo_dataset_id,
             partition_column=partition_column,
+            exclude_filter=exclude_filter,
         )
 
         # Run ETL pipeline

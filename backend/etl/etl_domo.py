@@ -25,6 +25,7 @@ class DomoApiETL(BaseETL):
         client_id: Optional[str] = None,
         client_secret: Optional[str] = None,
         partition_column: Optional[str] = None,
+        exclude_filter: Optional[dict] = None,
     ):
         self.dataset_id = dataset_id
         # Strip quotes if present (for .env files with quoted values)
@@ -33,6 +34,7 @@ class DomoApiETL(BaseETL):
             client_secret or os.getenv("DOMO_CLIENT_SECRET") or ""
         ).strip('"')
         self.partition_column = partition_column
+        self.exclude_filter = exclude_filter
         self.access_token: Optional[str] = None
 
         if not self.client_id or not self.client_secret:
@@ -126,7 +128,7 @@ class DomoApiETL(BaseETL):
         return df
 
     def transform(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Transform data with type inference.
+        """Transform data with type inference and optional filtering.
         
         Args:
             df: Raw DataFrame from DOMO
@@ -138,10 +140,28 @@ class DomoApiETL(BaseETL):
         schema = infer_schema(df)
         df = apply_types(df, schema)
 
+        # 除外フィルター処理
+        if self.exclude_filter:
+            column = self.exclude_filter.get("column")
+            keep_value = self.exclude_filter.get("keep_value")
+            
+            if column and keep_value and column in df.columns:
+                original_count = len(df)
+                df = df[df[column] == keep_value].copy()
+                filtered_count = len(df)
+                excluded_count = original_count - filtered_count
+                
+                print(f"✓ Applied exclude filter:")
+                print(f"  Column: {column}")
+                print(f"  Keep value: {keep_value}")
+                print(f"  Original rows: {original_count:,}")
+                print(f"  Filtered rows: {filtered_count:,}")
+                print(f"  Excluded rows: {excluded_count:,}")
+            else:
+                print(f"⚠ Exclude filter skipped (column '{column}' not found or invalid config)")
+
         print("✓ Data transformation complete")
-        print(f"  Shape: {df.shape}")
-        print(f"  Columns: {df.columns.tolist()}")
-        print(f"  Dtypes:\n{df.dtypes}")
+        print(f"  Final shape: {df.shape}")
 
         return df
 
