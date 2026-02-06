@@ -29,18 +29,7 @@ def create_sidebar() -> html.Div:
 
     return html.Div([
         html.Div([
-            html.H4("BI Dashboard", className="mb-4"),
-            dbc.Nav(nav_links, vertical=True, pills=True),
-        ], style={
-            "padding": "20px",
-        }),
-    ], style={
-        "position": "fixed",
-        "top": 0,
-        "left": 0,
-        "width": "250px",
-        "height": "100vh",
-        "backgroundColor": "#f8f9fa",
-        "borderRight": "1px solid #dee2e6",
-        "overflowY": "auto",
-    })
+            html.Div("BI Dashboard", className="sidebar-brand"),
+            dbc.Nav(nav_links, vertical=True, pills=True, className="sidebar-nav"),
+        ], className="sidebar-content"),
+    ], className="sidebar")

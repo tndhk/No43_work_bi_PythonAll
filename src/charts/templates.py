@@ -4,6 +4,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from dash import html
+from src.charts.plotly_theme import apply_theme
 
 
 def render_summary_number(
@@ -55,29 +56,14 @@ def render_summary_number(
         [
             html.Div(
                 display,
-                style={
-                    "fontSize": "48px",
-                    "fontWeight": "700",
-                    "color": "#1a1a2e",
-                },
+                className="summary-number-value",
             ),
             html.Div(
                 value_column,
-                style={
-                    "fontSize": "14px",
-                    "color": "#6b7280",
-                    "marginTop": "8px",
-                },
+                className="summary-number-label",
             ),
         ],
-        style={
-            "display": "flex",
-            "flexDirection": "column",
-            "alignItems": "center",
-            "justifyContent": "center",
-            "height": "100%",
-            "fontFamily": "sans-serif",
-        },
+        className="summary-number-container",
     )
 
 
@@ -114,7 +100,7 @@ def render_bar_chart(
         height=400,
         showlegend=False,
     )
-    return fig
+    return apply_theme(fig)
 
 
 def render_line_chart(
@@ -150,7 +136,7 @@ def render_line_chart(
         height=400,
         showlegend=False,
     )
-    return fig
+    return apply_theme(fig)
 
 
 def render_pie_chart(
@@ -185,7 +171,7 @@ def render_pie_chart(
     fig.update_layout(
         height=400,
     )
-    return fig
+    return apply_theme(fig)
 
 
 def render_table(
@@ -213,18 +199,13 @@ def render_table(
         html.Div(
             html.Div(
                 [
-                    html.Style("""
-                        table { border-collapse: collapse; width: 100%; }
-                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                        th { background-color: #f2f2f2; font-weight: bold; }
-                    """),
                     html.Div(
                         html_table,
                         dangerously_allow_html=True,
                     ),
                 ],
             ),
-            style={"overflowX": "auto", "width": "100%", "height": "100%"},
+            className="data-table-container",
         ),
     )
 
@@ -284,18 +265,13 @@ def render_pivot_table(
         html.Div(
             html.Div(
                 [
-                    html.Style("""
-                        table { border-collapse: collapse; width: 100%; }
-                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                        th { background-color: #f2f2f2; font-weight: bold; }
-                    """),
                     html.Div(
                         html_table,
                         dangerously_allow_html=True,
                     ),
                 ],
             ),
-            style={"overflowX": "auto", "width": "100%", "height": "100%"},
+            className="data-table-container",
         ),
     )
 

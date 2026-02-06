@@ -22,7 +22,7 @@ def create_category_filter(
         Card-wrapped filter component
     """
     return dbc.Card([
-        dbc.CardHeader(column_name),
+        dbc.CardHeader(column_name, className="filter-header"),
         dbc.CardBody([
             dcc.Dropdown(
                 id=filter_id,
@@ -31,7 +31,7 @@ def create_category_filter(
                 placeholder=f"Select {column_name}...",
             ),
         ]),
-    ], className="mb-3")
+    ], className="filter-card mb-3")
 
 
 def create_date_range_filter(
@@ -53,7 +53,7 @@ def create_date_range_filter(
         Card-wrapped filter component
     """
     return dbc.Card([
-        dbc.CardHeader(column_name),
+        dbc.CardHeader(column_name, className="filter-header"),
         dbc.CardBody([
             dcc.DatePickerRange(
                 id=filter_id,
@@ -64,4 +64,4 @@ def create_date_range_filter(
                 display_format="YYYY-MM-DD",
             ),
         ]),
-    ], className="mb-3")
+    ], className="filter-card mb-3")

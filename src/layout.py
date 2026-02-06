@@ -8,8 +8,5 @@ def create_layout() -> html.Div:
         create_sidebar(),
         html.Div([
             page_container,
-        ], style={
-            "marginLeft": "250px",
-            "padding": "20px",
-        }),
+        ], className="main-content"),
     ])

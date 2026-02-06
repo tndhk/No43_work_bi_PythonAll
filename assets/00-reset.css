@@ -1,0 +1,64 @@
+/* CSS Reset & Custom Properties */
+/* Minimal Luxury Dark Theme */
+
+:root {
+  /* Backgrounds */
+  --bg-base: #0d0d12;
+  --bg-surface: #16161e;
+  --bg-card: #1c1c27;
+  --bg-elevated: #242433;
+
+  /* Accent */
+  --accent-primary: #c9a55c;      /* Warm gold */
+  --accent-primary-dim: #9a7d3f;
+  --accent-hover: #dbb76e;
+
+  /* Text */
+  --text-primary: #e8e6e1;
+  --text-secondary: #8b8d9a;
+  --text-muted: #5a5c6b;
+
+  /* Borders */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-accent: rgba(201, 165, 92, 0.3);
+
+  /* Status */
+  --status-success: #3ecfb4;
+  --status-warning: #f0b429;
+  --status-danger: #ef6461;
+
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 20px rgba(201, 165, 92, 0.2);
+}
+
+/* Reset */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Override Bootstrap defaults */
+body {
+  background-color: var(--bg-base) !important;
+  color: var(--text-primary) !important;
+}

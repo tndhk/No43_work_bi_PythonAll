@@ -21,13 +21,12 @@ def create_kpi_card(
     """
     return dbc.Card([
         dbc.CardBody([
-            html.H6(title, className="card-subtitle mb-2 text-muted"),
-            html.H2(
+            html.H6(title, className="kpi-label mb-2"),
+            html.Div(
                 str(value),
-                className="card-title mb-1",
-                style={"fontSize": "2.5rem", "fontWeight": "700"},
+                className="kpi-value mb-1",
             ),
-            html.P(subtitle, className="card-text text-muted") if subtitle else None,
+            html.P(subtitle, className="kpi-subtitle") if subtitle else None,
         ]),
-    ], className="mb-3", style={"height": "100%"})
+    ], className="kpi-card mb-3 animate-fade-in-up")
 

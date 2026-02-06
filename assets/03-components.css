@@ -1,0 +1,260 @@
+/* Components - Cards, Filters, Tables, Dropdowns */
+
+/* Cards */
+.card,
+.dash-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: var(--spacing-lg);
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.card:hover,
+.dash-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-accent);
+}
+
+.card-header {
+  font-family: "Syne", sans-serif;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.card-body {
+  color: var(--text-secondary);
+}
+
+/* KPI Cards */
+.kpi-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: var(--spacing-xl);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md), var(--shadow-glow);
+  border-color: var(--border-accent);
+}
+
+.kpi-value {
+  font-family: "Syne", sans-serif;
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--accent-primary);
+  line-height: 1;
+  margin-bottom: var(--spacing-sm);
+}
+
+.kpi-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.kpi-subtitle {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin-top: var(--spacing-xs);
+}
+
+/* Summary Number Component */
+.summary-number-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-family: "Plus Jakarta Sans", sans-serif;
+}
+
+.summary-number-value {
+  font-family: "Syne", sans-serif;
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--accent-primary);
+  line-height: 1;
+}
+
+.summary-number-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-top: var(--spacing-sm);
+}
+
+/* Filters */
+.filter-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+}
+
+.filter-header {
+  font-family: "Syne", sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-md);
+}
+
+/* Dropdowns */
+.Select-control,
+.Select-menu-outer {
+  background-color: var(--bg-elevated) !important;
+  border-color: var(--border-subtle) !important;
+  color: var(--text-primary) !important;
+}
+
+.Select-placeholder,
+.Select-input > input {
+  color: var(--text-secondary) !important;
+}
+
+.Select-option {
+  background-color: var(--bg-elevated) !important;
+  color: var(--text-primary) !important;
+}
+
+.Select-option:hover,
+.Select-option.is-focused {
+  background-color: var(--bg-card) !important;
+  color: var(--accent-primary) !important;
+}
+
+.Select-option.is-selected {
+  background-color: var(--bg-card) !important;
+  color: var(--accent-primary) !important;
+}
+
+/* Date Picker */
+.DateInput,
+.DateInput_input {
+  background-color: var(--bg-elevated) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+.DateInput_input__focused {
+  border-color: var(--accent-primary) !important;
+}
+
+/* Tables */
+.data-table-container {
+  overflow-x: auto;
+  width: 100%;
+  height: 100%;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.875rem;
+}
+
+th {
+  background-color: var(--bg-elevated);
+  color: var(--text-primary);
+  font-weight: 600;
+  padding: var(--spacing-md);
+  text-align: left;
+  border-bottom: 2px solid var(--border-subtle);
+  font-family: "Plus Jakarta Sans", sans-serif;
+}
+
+td {
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+tbody tr {
+  background-color: var(--bg-card);
+  transition: background-color 0.2s ease;
+}
+
+tbody tr:nth-child(even) {
+  background-color: var(--bg-surface);
+}
+
+tbody tr:hover {
+  background-color: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+/* Dash DataTable Overrides */
+.dash-table-container .dash-spreadsheet-container {
+  background-color: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+}
+
+.dash-table-container .dash-spreadsheet-container th {
+  background-color: var(--bg-elevated) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+.dash-table-container .dash-spreadsheet-container td {
+  background-color: var(--bg-card) !important;
+  color: var(--text-secondary) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+.dash-table-container .dash-spreadsheet-container tr:hover td {
+  background-color: var(--bg-elevated) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Bootstrap Card Overrides */
+.card {
+  background-color: var(--bg-card) !important;
+  border-color: var(--border-subtle) !important;
+  color: var(--text-primary) !important;
+}
+
+.card-header {
+  background-color: var(--bg-elevated) !important;
+  border-bottom-color: var(--border-subtle) !important;
+  color: var(--text-primary) !important;
+}
+
+.card-body {
+  background-color: var(--bg-card) !important;
+  color: var(--text-secondary) !important;
+}
+
+/* Bootstrap Nav Overrides */
+.nav-pills .nav-link {
+  color: var(--text-secondary) !important;
+  background-color: transparent !important;
+  border-radius: 6px !important;
+  transition: all 0.2s ease !important;
+}
+
+.nav-pills .nav-link:hover {
+  background-color: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+}
+
+.nav-pills .nav-link.active {
+  background-color: var(--bg-card) !important;
+  color: var(--accent-primary) !important;
+}

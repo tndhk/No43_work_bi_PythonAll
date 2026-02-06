@@ -12,7 +12,10 @@ app = Dash(
     __name__,
     use_pages=True,
     pages_folder="src/pages",
-    external_stylesheets=[dbc.themes.BOOTSTRAP],
+    external_stylesheets=[
+        # Minimal Bootstrap - only for grid system and utilities
+        "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css",
+    ],
     title="BI Dashboard",
     suppress_callback_exceptions=True,
 )

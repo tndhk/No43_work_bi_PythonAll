@@ -1,0 +1,39 @@
+/* Charts - Plotly Chart Container Styles */
+
+/* Plotly Chart Container */
+.plotly-container,
+.js-plotly-plot {
+  background-color: transparent !important;
+}
+
+.plotly .modebar {
+  background-color: var(--bg-elevated) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: 4px !important;
+}
+
+.plotly .modebar-btn {
+  color: var(--text-secondary) !important;
+}
+
+.plotly .modebar-btn:hover {
+  background-color: var(--bg-card) !important;
+  color: var(--accent-primary) !important;
+}
+
+/* Chart Wrapper */
+.chart-wrapper {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+}
+
+.chart-title {
+  font-family: "Syne", sans-serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-md);
+}
