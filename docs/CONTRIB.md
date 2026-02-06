@@ -289,4 +289,6 @@ No42_work_bi_PythonAll/
 | ドキュメント | 内容 |
 |-------------|------|
 | `docs/tech-spec.md` | 技術仕様書 |
+| `docs/RUNBOOK.md` | 本番運用・トラブルシューティングガイド |
+| `docs/architecture.md` | システムアーキテクチャ図 |
 | `CLAUDE.md` | プロジェクト開発メモ |
