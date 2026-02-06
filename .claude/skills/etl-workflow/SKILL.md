@@ -18,8 +18,8 @@ description: データ取得とETL処理のワークフロー。CSV、API、RDS�
 ### CSV
 - [ ] CSVファイルを `backend/data_sources/` に配置
 - [ ] `.gitignore` と `.cursorignore` に `backend/data_sources/` を追加
-- [ ] `backend/scripts/` にETLスクリプトを作成
-- [ ] ETLスクリプトを実行してMinIOにアップロード
+- [ ] `backend/config/csv_datasets.yaml` にデータセットを追加
+- [ ] `python3 backend/scripts/load_csv.py --dataset "DataSet Name"` で実行
 
 ### DOMO API
 - [ ] DOMO API認証情報を `.env` に設定（`DOMO_CLIENT_ID`, `DOMO_CLIENT_SECRET`）
@@ -143,6 +143,75 @@ etl.run("dataset-id")
 - パーティション分割対応
 
 詳細は [DATA_SOURCES.md](DATA_SOURCES.md#csv) を参照してください。
+
+#### 汎用ローダースクリプト（推奨）
+
+CSV ETLはDOMO APIと同じパターンで設定ファイルベースの管理ができます。
+
+##### CSV設定ファイル
+
+[`backend/config/csv_datasets.yaml`](backend/config/csv_datasets.yaml) で全CSVデータセットを管理します。
+
+**設定例:**
+
+```yaml
+datasets:
+  - name: "Cursor Usage Events"
+    minio_dataset_id: "cursor-usage"
+    source_dir: "backend/data_sources"
+    file_pattern: "team-usage-events-*.csv"  # glob パターン
+    partition_column: "Date"
+    description: "Cursor team usage events data"
+    enabled: true
+```
+
+**設定項目:**
+- `name`: データセット識別名（人間向け）
+- `minio_dataset_id`: MinIOのdataset ID
+- `source_dir`: CSVファイルのディレクトリ（project rootからの相対パス）
+- `file_pattern`: globパターン（例: `"*.csv"` または `"data-*.csv"`）
+- `partition_column`: パーティション分割するカラム名（なしなら`null`）
+- `description`: データセットの説明
+- `enabled`: 有効/無効フラグ
+
+##### 最新ファイルの自動検出
+
+`file_pattern` でglobパターンを指定すると、一致する複数ファイルから辞書順で最新のファイルを自動検出します。
+
+例:
+- `team-usage-events-2026-01-01.csv`
+- `team-usage-events-2026-02-01.csv`
+- `team-usage-events-2026-02-06.csv` ← 最新（自動選択）
+
+ISO日付形式（YYYY-MM-DD）のファイル名は辞書順 = 時系列順のため、最新ファイルが自動的に使用されます。
+
+##### 実行方法
+
+[`backend/scripts/load_csv.py`](backend/scripts/load_csv.py) で設定ファイルベースの実行が可能です。
+
+**使用例:**
+
+```bash
+# データセット一覧を表示
+python3 backend/scripts/load_csv.py --list
+
+# 特定データセットを取得
+python3 backend/scripts/load_csv.py --dataset "Cursor Usage Events"
+
+# 全データセットを一括取得
+python3 backend/scripts/load_csv.py --all
+
+# ドライラン（実行内容確認のみ）
+python3 backend/scripts/load_csv.py --all --dry-run
+```
+
+##### データセット追加手順
+
+1. CSVファイルを `backend/data_sources/` に配置
+2. `backend/config/csv_datasets.yaml` に設定追加
+3. ETL実行: `python3 backend/scripts/load_csv.py --dataset "New DataSet"`
+
+CSV更新時は新しいファイルを配置するだけで、次回実行時に自動的に最新ファイルが使用されます。
 
 ---
 
@@ -512,6 +581,8 @@ datasets/{dataset_id}/
 ---
 
 ## ETLスクリプト作成ガイド
+
+> 注意: CSV ETLとDOMO API ETLは設定ファイルベースの管理が推奨されます。個別スクリプトの作成はカスタム要件がある場合のみ必要です。詳細は各パターンの「汎用ローダースクリプト」セクションを参照してください。
 
 ### 配置場所
 

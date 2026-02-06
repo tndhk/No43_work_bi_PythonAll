@@ -1,0 +1,26 @@
+# CSV DataSet Configuration
+# This file defines all CSV DataSets to be loaded from local files to MinIO
+
+datasets:
+  - name: "Cursor Usage Events"
+    minio_dataset_id: "cursor-usage"
+    source_dir: "backend/data_sources"   # project rootからの相対パス
+    file_pattern: "team-usage-events-*.csv"  # glob パターン
+    partition_column: "Date"
+    enabled: true
+    description: "Cursor team usage events data"
+    # csv_options:            # 省略可（デフォルト: UTF-8, カンマ区切り）
+    #   delimiter: ","
+    #   encoding: null
+
+  # Add more CSV datasets here following the same structure:
+  # - name: "DataSet Name"
+  #   minio_dataset_id: "slug-for-minio-path"
+  #   source_dir: "path/to/csv/files"
+  #   file_pattern: "*.csv"  # glob pattern
+  #   partition_column: "date_column_name"  # or null for no partitioning
+  #   description: "DataSet description"
+  #   enabled: true
+  #   csv_options:
+  #     delimiter: ","
+  #     encoding: "utf-8"

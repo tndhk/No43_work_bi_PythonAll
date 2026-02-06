@@ -1,6 +1,6 @@
 # 運用ガイド (RUNBOOK)
 
-Last Updated: 2026-02-06
+Last Updated: 2026-02-07
 
 ## このドキュメントについて
 
@@ -301,6 +301,21 @@ python backend/scripts/load_domo.py --all --dry-run
 - Docker利用時は `./assets:/app/assets` のボリュームマウントを確認
 - ブラウザのハードリロード（Ctrl+Shift+R）で確認
 
+### Issue 8: APAC DOT Due Date フィルタ値が表示されない
+
+症状: フィルタドロップダウンの選択肢が空、またはフィルタが機能しない
+
+原因の調査:
+
+- S3にデータセット `apac-dot-due-date` が存在するか確認
+- `_data_loader.load_filter_options()` がエラーなく完了しているか確認（エラー時は空リストを返す）
+
+解決策:
+
+- DOMO ETLでデータをロード: `python backend/scripts/load_domo.py --dataset "APAC DOT join Due Date change(first time)"`
+- Parquetファイルのカラム名が `_constants.py` の `COLUMN_MAP` と一致しているか確認
+- キャッシュが古い場合はアプリ再起動でキャッシュクリア
+
 ---
 
 ## 6. ロールバック手順
@@ -413,7 +428,7 @@ DOMO からのデータ取得はスケジューリングが必要。
 1. `backend/config/domo_datasets.yaml` に新しいデータセットを追加
 2. `enabled: true` に設定
 3. `python backend/scripts/load_domo.py --dataset "Name"` で取得テスト
-4. `src/pages/` に新しいダッシュボードページを作成
+4. `src/pages/` に新しいダッシュボードページを作成（モジュール化パターンは `src/pages/apac_dot_due_date/` を参照）
 
 ### データセットの削除/再取り込み
 

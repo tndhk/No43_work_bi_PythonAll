@@ -6,7 +6,118 @@
 
 ## CSV ETLの完全な例
 
-### 基本的なCSV ETLスクリプト
+### 汎用ローダースクリプトを使用する例（推奨）
+
+設定ファイルベースの管理が最も効率的です。個別スクリプトの作成は不要になります。
+
+#### ステップ1: CSV設定ファイルを作成
+
+[`backend/config/csv_datasets.yaml`](backend/config/csv_datasets.yaml):
+
+```yaml
+datasets:
+  - name: "Cursor Usage Events"
+    minio_dataset_id: "cursor-usage"
+    source_dir: "backend/data_sources"
+    file_pattern: "team-usage-events-*.csv"
+    partition_column: "Date"
+    description: "Cursor team usage events data"
+    enabled: true
+```
+
+#### ステップ2: CSVファイルを配置
+
+```bash
+backend/data_sources/
+└── team-usage-events-2026-02-06.csv
+```
+
+#### ステップ3: データセット一覧を確認
+
+```bash
+python3 backend/scripts/load_csv.py --list
+```
+
+出力:
+```
+=== Configured CSV DataSets ===
+
+Total: 1 datasets
+Enabled: 1
+Disabled: 0
+
+1. [✓] Cursor Usage Events
+   Source: backend/data_sources/team-usage-events-*.csv
+   MinIO ID: cursor-usage
+   Partition: Date
+```
+
+#### ステップ4: ETL実行
+
+```bash
+# ドライラン（確認のみ）
+python3 backend/scripts/load_csv.py --dataset "Cursor Usage Events" --dry-run
+
+# 本番実行
+python3 backend/scripts/load_csv.py --dataset "Cursor Usage Events"
+```
+
+#### ステップ5: データ検証
+
+```bash
+python3 -c "
+import sys; sys.path.insert(0, '.')
+from src.data.parquet_reader import ParquetReader
+reader = ParquetReader()
+df = reader.read_dataset('cursor-usage')
+print(f'Shape: {df.shape}')
+print(df.head())
+"
+```
+
+#### CSV更新時の運用
+
+新しいCSVファイルを配置するだけで、次回実行時に自動的に最新ファイルが使用されます:
+
+```bash
+# 新しいファイルを追加
+backend/data_sources/
+├── team-usage-events-2026-02-06.csv
+└── team-usage-events-2026-02-07.csv  ← 新規追加
+
+# 同じコマンドを実行（自動的に2026-02-07.csvが使用される）
+python3 backend/scripts/load_csv.py --dataset "Cursor Usage Events"
+```
+
+#### 複数データセットの管理
+
+```yaml
+datasets:
+  - name: "Cursor Usage Events"
+    minio_dataset_id: "cursor-usage"
+    source_dir: "backend/data_sources"
+    file_pattern: "team-usage-events-*.csv"
+    partition_column: "Date"
+    enabled: true
+
+  - name: "Sales Data"
+    minio_dataset_id: "sales-data"
+    source_dir: "backend/data_sources"
+    file_pattern: "sales-*.csv"
+    partition_column: "sale_date"
+    enabled: true
+```
+
+```bash
+# 全データセットを一括実行
+python3 backend/scripts/load_csv.py --all
+```
+
+---
+
+### 基本的なCSV ETLスクリプト（カスタム要件がある場合）
+
+> 注意: 汎用ローダースクリプト（上記）を使用すれば、通常は個別スクリプトの作成は不要です。以下はカスタム処理が必要な特殊なケースのみの例です。
 
 [`backend/scripts/load_cursor_usage.py`](backend/scripts/load_cursor_usage.py) の実装例：
 
@@ -25,24 +136,24 @@ from backend.etl.etl_csv import CsvETL
 def main():
     """Load Cursor usage CSV to S3."""
     csv_path = project_root / "backend" / "data_sources" / "team-usage-events-15944373-2026-01-28.csv"
-    
+
     if not csv_path.exists():
         print(f"Error: CSV file not found at {csv_path}")
         sys.exit(1)
-    
+
     print(f"Loading CSV from: {csv_path}")
-    
+
     # Create ETL instance
     etl = CsvETL(
         csv_path=str(csv_path),
         partition_column="Date",  # Partition by date
     )
-    
+
     # Run ETL
     dataset_id = "cursor-usage"
     print(f"Running ETL for dataset: {dataset_id}")
     etl.run(dataset_id)
-    
+
     print(f"Successfully loaded dataset '{dataset_id}' to S3")
 
 

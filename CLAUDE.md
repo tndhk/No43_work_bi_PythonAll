@@ -41,3 +41,37 @@
 - 1-10万行: 日付カラムあれば推奨
 - 10万行以上: 必須
 - 注意: NULL値レコードはパーティションから除外される（元データより行数が減る）
+
+### CSV ETL（設定駆動化）
+- `backend/config/csv_datasets.yaml` でCSVデータセットを管理（DOMO APIと同じパターン）
+- `backend/scripts/load_csv.py` で汎用ローダーを使用（個別スクリプト作成不要）
+- スタンドアロンETLスクリプトのモジュールインポートエラー対処:
+  - `python3 backend/scripts/load_csv.py` で直接実行するとモジュールが見つからない
+  - スクリプト冒頭に以下を追加: `project_root = Path(__file__).parent.parent.parent; sys.path.insert(0, str(project_root))`
+  - これにより `backend.etl.etl_csv` などのモジュールを正しくインポート可能
+
+## 実行環境の注意点（macOS）
+
+### コマンドライン
+- Docker: `docker compose` を使用（`docker-compose` は非推奨/インストールされていない）
+- Python: `python3` を使用（`python` コマンドは存在しない）
+
+### ETLスクリプト実行
+```bash
+# 正しい実行方法
+python3 backend/scripts/load_*.py
+
+# 誤り（エラーになる）
+python backend/scripts/load_*.py
+```
+
+### Docker操作
+```bash
+# 正しい実行方法
+docker compose ps
+docker compose up -d
+docker compose logs -f
+
+# 誤り（エラーになる）
+docker-compose ps
+```

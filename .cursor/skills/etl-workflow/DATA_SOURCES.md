@@ -63,6 +63,126 @@ etl = CsvETL(
 etl.run("dataset-id")
 ```
 
+### 汎用ローダースクリプト（推奨）
+
+複数のCSVデータセットを効率的に管理するには、設定ファイルベースの管理が推奨されます。
+
+#### CSV設定ファイル
+
+[`backend/config/csv_datasets.yaml`](../../backend/config/csv_datasets.yaml) で全CSVデータセットを一元管理:
+
+```yaml
+datasets:
+  - name: "Cursor Usage Events"
+    minio_dataset_id: "cursor-usage"
+    source_dir: "backend/data_sources"
+    file_pattern: "team-usage-events-*.csv"
+    partition_column: "Date"
+    description: "Cursor team usage events data"
+    enabled: true
+
+  - name: "Sales Data"
+    minio_dataset_id: "sales-data"
+    source_dir: "backend/data_sources"
+    file_pattern: "sales-*.csv"
+    partition_column: "sale_date"
+    description: "Daily sales transactions"
+    enabled: true
+```
+
+**設定項目:**
+
+| 項目 | 必須 | 説明 | 例 |
+|------|------|------|-----|
+| `name` | ○ | データセット識別名（人間向け） | "Cursor Usage Events" |
+| `minio_dataset_id` | ○ | MinIOのdataset ID | "cursor-usage" |
+| `source_dir` | ○ | CSVディレクトリ（project rootからの相対パス） | "backend/data_sources" |
+| `file_pattern` | ○ | globパターン | "team-usage-events-*.csv" |
+| `partition_column` | | パーティション分割カラム | "Date" |
+| `description` | | データセットの説明 | "Cursor team..." |
+| `enabled` | ○ | 有効/無効フラグ | true / false |
+| `csv_options` | | CSVオプション（省略可） | delimiter, encoding |
+
+#### 最新ファイルの自動検出
+
+`file_pattern` でglobパターン（`*`, `?`など）を指定すると、一致する複数ファイルから辞書順で最新のファイルを自動検出します。
+
+例:
+```
+backend/data_sources/
+├── team-usage-events-2026-01-01.csv
+├── team-usage-events-2026-02-01.csv
+└── team-usage-events-2026-02-06.csv  ← 最新（自動選択）
+```
+
+ISO日付形式（YYYY-MM-DD）のファイル名は辞書順 = 時系列順のため、常に最新ファイルが使用されます。
+
+ファイル更新時は新しいCSVを配置するだけで、次回実行時に自動的に最新ファイルが使用されます。
+
+#### 実行方法
+
+[`backend/scripts/load_csv.py`](../../backend/scripts/load_csv.py) で設定ファイルベースの実行:
+
+```bash
+# データセット一覧を表示
+python3 backend/scripts/load_csv.py --list
+
+# 特定データセットを取得
+python3 backend/scripts/load_csv.py --dataset "Cursor Usage Events"
+
+# 全データセットを一括取得
+python3 backend/scripts/load_csv.py --all
+
+# ドライラン（実行内容確認のみ）
+python3 backend/scripts/load_csv.py --dataset "Cursor Usage Events" --dry-run
+```
+
+出力例:
+```
+=== Configured CSV DataSets ===
+
+Total: 2 datasets
+Enabled: 2
+Disabled: 0
+
+1. [✓] Cursor Usage Events
+   Source: backend/data_sources/team-usage-events-*.csv
+   MinIO ID: cursor-usage
+   Partition: Date
+```
+
+#### データセット追加手順
+
+1. CSVファイルを `backend/data_sources/` に配置
+2. `backend/config/csv_datasets.yaml` に設定追加
+3. ETL実行:
+   ```bash
+   python3 backend/scripts/load_csv.py --dataset "New DataSet"
+   ```
+4. MinIOコンソール（http://localhost:9001）で確認
+
+#### カスタムCSVオプション
+
+特殊なCSV形式の場合、`csv_options` で指定できます:
+
+```yaml
+datasets:
+  - name: "Custom CSV"
+    minio_dataset_id: "custom-csv"
+    source_dir: "backend/data_sources"
+    file_pattern: "custom-*.csv"
+    partition_column: null
+    enabled: true
+    csv_options:
+      delimiter: ";"
+      encoding: "shift_jis"
+```
+
+#### 直接CsvETLを使う場合
+
+プログラムからカスタム処理が必要な場合は、CsvETLクラスを直接使用できます。
+詳細は上記の「CsvETLの使用」セクションを参照してください。
+
 ### 大容量CSVの処理
 
 **問題:** ファイルサイズが大きく、メモリ不足になる

@@ -1,6 +1,6 @@
 # 開発者ガイド (CONTRIB)
 
-最終更新: 2026-02-06
+最終更新: 2026-02-07
 
 ## このドキュメントについて
 
@@ -162,38 +162,48 @@ ETL は cron / systemd timer で定期実行する想定。
 
 ```
 tests/
-  conftest.py              # 共通フィクスチャ（mock_s3, sample_parquet_file等）
+  conftest.py                     # 共通フィクスチャ（mock_s3, sample_parquet_file等）
   unit/
     auth/
-      test_session_auth.py     # Flask-Login認証テスト
+      test_session_auth.py          # Flask-Login認証テスト
     charts/
-      test_templates.py        # チャートテンプレートテスト
-      test_plotly_theme.py     # Plotlyテーマテスト
+      test_templates.py             # チャートテンプレートテスト
+      test_plotly_theme.py          # Plotlyテーマテスト
     components/
-      test_filters.py          # フィルタコンポーネントテスト
-      test_cards.py            # KPIカードテスト
-      test_sidebar.py          # サイドバーテスト
+      test_filters.py               # フィルタコンポーネントテスト
+      test_cards.py                 # KPIカードテスト
+      test_sidebar.py               # サイドバーテスト
     core/
-      test_cache.py            # キャッシュテスト
-      test_logging.py          # ログテスト
+      test_cache.py                 # キャッシュテスト
+      test_logging.py               # ログテスト
     data/
-      test_config.py           # 設定テスト
-      test_csv_parser.py       # CSVパーサーテスト
-      test_dataset_summarizer.py # データセット統計テスト
-      test_filter_engine.py    # フィルタエンジンテスト
-      test_parquet_reader.py   # Parquetリーダーテスト
+      test_config.py                # 設定テスト
+      test_csv_parser.py            # CSVパーサーテスト
+      test_dataset_summarizer.py    # データセット統計テスト
+      test_filter_engine.py         # フィルタエンジンテスト
+      test_parquet_reader.py        # Parquetリーダーテスト
       test_parquet_reader_partition.py # パーティション読み込みテスト
-      test_type_inferrer.py    # 型推論テスト
+      test_type_inferrer.py         # 型推論テスト
     pages/
-      test_dashboard_home.py   # ホームページテスト
-    test_exceptions.py         # 例外テスト
-    test_layout.py             # レイアウトテスト
+      test_dashboard_home.py        # ホームページテスト
+      test_apac_dot_due_date.py     # APAC DOT Due Dateページ統合テスト
+      apac_dot_due_date/            # APAC DOT Due Dateモジュール別テスト
+        test_constants.py             # 定数テスト
+        test_data_loader.py           # データロード・フィルタテスト
+        test_filters.py               # フィルタUI構成テスト
+        test_layout.py                # レイアウト構成テスト
+        test_callbacks.py             # コールバックテスト
+        charts/
+          test_ch00_reference_table.py # Reference Tableチャートテスト
+    test_exceptions.py              # 例外テスト
+    test_layout.py                  # レイアウトテスト
   etl/
-    test_base_etl.py           # BaseETLテスト
-    test_etl_csv.py            # CSV ETLテスト
-    test_etl_skeletons.py      # ETLスケルトンテスト
+    test_base_etl.py                # BaseETLテスト
+    test_etl_csv.py                 # CSV ETLテスト
+    test_etl_skeletons.py           # ETLスケルトンテスト
+    test_resolve_csv_path.py        # CSV パス解決テスト
   scripts/
-    test_upload_csv.py         # CSVアップロードCLIテスト
+    test_upload_csv.py              # CSVアップロードCLIテスト
 ```
 
 ### テスト実行
@@ -303,7 +313,7 @@ work_BI_PythonAll/
     charts/                      # 可視化レイヤー
       __init__.py
       templates.py               # チャートテンプレート（Line, Bar, Pie, Table, Pivot等）
-      plotly_theme.py            # Plotlyテーマ設定
+      plotly_theme.py            # Plotlyテーマ設定（Warm Professional Light）
     core/                        # インフラ層
       __init__.py
       cache.py                   # TTLキャッシュ初期化（flask-caching, SimpleCache, 300秒）
@@ -312,7 +322,16 @@ work_BI_PythonAll/
       __init__.py
       dashboard_home.py          # ホームページ（登録ページ一覧カード表示）
       cursor_usage.py            # Cursor利用状況ダッシュボード
-      apac_dot_due_date.py       # APAC DOT Due Date ダッシュボード
+      apac_dot_due_date/         # APAC DOT Due Date ダッシュボード（モジュール化）
+        __init__.py              # Dash register_page & layout() 定義
+        _constants.py            # データセットID、カラムマッピング、ID接頭辞
+        _data_loader.py          # データ読み込み & フィルタ適用ロジック
+        _filters.py              # フィルタUI構成ビルダー
+        _layout.py               # ページレイアウト構成ビルダー
+        _callbacks.py            # Dashコールバック登録（@callback）
+        charts/                  # チャートビルダーサブパッケージ
+          __init__.py            # サブパッケージ定義
+          _ch00_reference_table.py # Chart 0: Reference Tableピボットテーブル
     components/                  # 再利用可能UIコンポーネント
       __init__.py
       sidebar.py                 # 左ナビゲーションサイドバー
@@ -334,6 +353,7 @@ work_BI_PythonAll/
       etl_rds.py                 # RDS -> Parquet
       etl_csv.py                 # CSV -> Parquet
       etl_domo.py                # DOMO API -> Parquet（OAuth2認証）
+      resolve_csv_path.py        # CSVファイルパス解決ユーティリティ
     scripts/                     # ETL管理スクリプト
       __init__.py
       load_domo.py               # DOMOデータセットローダー（YAML設定ベース）
@@ -342,9 +362,9 @@ work_BI_PythonAll/
   scripts/                       # CLIツール
     __init__.py
     upload_csv.py                # CSVアップロードCLI
-  assets/                        # 静的アセット
-    00-reset.css                 # CSSリセット
-    01-typography.css            # タイポグラフィ
+  assets/                        # 静的アセット（Warm Professional Light テーマ）
+    00-reset.css                 # CSSリセット、CSS Custom Properties（カラーパレット）
+    01-typography.css            # タイポグラフィ（Noto Sans JP, Inter）
     02-layout.css                # レイアウト（サイドバー、ページ構造）
     03-components.css            # コンポーネントスタイル（カード、フィルタ、ドロップダウンz-index修正含む）
     04-animations.css            # アニメーション
@@ -353,6 +373,9 @@ work_BI_PythonAll/
   tests/                         # テスト
     conftest.py                  # 共通フィクスチャ
     unit/                        # ユニットテスト
+      pages/
+        apac_dot_due_date/       # APAC DOT モジュール別テスト
+          charts/                # チャートビルダーテスト
     etl/                         # ETLテスト
     scripts/                     # CLIテスト
   docs/                          # ドキュメント
@@ -361,6 +384,7 @@ work_BI_PythonAll/
     tech-spec.md                 # 技術仕様書
     architecture.md              # アーキテクチャ図
   codemaps/                      # コードマップ
+    architecture.md
     frontend.md
     backend.md
     data.md
@@ -369,16 +393,17 @@ work_BI_PythonAll/
 ### ディレクトリ説明
 
 - `src/pages/`: 各ダッシュボードページの Python 定義ファイル（Dash Pages API で自動登録）
+- `src/pages/apac_dot_due_date/`: モジュール化されたページパッケージ（詳細は「APAC DOT Due Date モジュール化設計」セクションを参照）
 - `src/components/`: 再利用可能な UI コンポーネント（サイドバー、フィルタ、カード等）
 - `src/auth/`: Flask-Login ベースの認証レイヤー（FormAuthProvider + 将来SAML対応のProviderプロトコル）
 - `src/data/`: データアクセス層（S3/Parquet読み込み、フィルタ適用、型推論、設定管理）
-- `src/charts/`: チャートテンプレートとテーマ設定
+- `src/charts/`: チャートテンプレートとテーマ設定（Warm Professional Light テーマ）
 - `src/core/`: キャッシュとログの共通インフラ
 - `backend/etl/`: ETL スクリプト（データソースごとに独立、BaseETLを継承）
 - `backend/scripts/`: ETL 管理スクリプト（DOMO ローダー、データセット削除等）
 - `backend/config/`: ETL 設定ファイル（DOMO データセット YAML）
 - `scripts/`: CLI ツール（CSV アップロード）
-- `assets/`: CSS スタイルシート（番号順に読み込まれる）
+- `assets/`: CSS スタイルシート（番号順に読み込まれる、Warm Professional Light テーマ）
 
 ---
 
@@ -429,7 +454,92 @@ work_BI_PythonAll/
 
 ---
 
-## 11. 開発フロー
+## 11. APAC DOT Due Date モジュール化設計
+
+### 設計背景
+
+APAC DOT Due Date ダッシュボードは、当初 `src/pages/apac_dot_due_date.py` の単一ファイルに実装されていた。機能拡張に伴い以下の問題が顕在化したため、モジュール化を実施した:
+
+- 単一ファイルが肥大化し、責務が混在
+- フィルタUI、データロード、コールバック、チャート構築が密結合
+- 個別テストが困難
+
+### モジュール構造と責務
+
+```
+src/pages/apac_dot_due_date/
+  __init__.py              # Dash register_page + layout() エントリーポイント
+  _constants.py            # 定数定義（DATASET_ID, ID_PREFIX, COLUMN_MAP, BREAKDOWN_MAP）
+  _data_loader.py          # データ読み込み（load_filter_options, load_and_filter_data）
+  _filters.py              # フィルタUIビルダー（build_filter_layout -> 5つのdbc.Row）
+  _layout.py               # ページレイアウトビルダー（build_layout -> html.Div）
+  _callbacks.py            # Dashコールバック登録（update_all_charts）
+  charts/
+    __init__.py            # チャートサブパッケージ
+    _ch00_reference_table.py  # Chart 0: ピボットテーブル（build関数）
+```
+
+| モジュール | 責務 | 依存先 |
+|-----------|------|--------|
+| `__init__.py` | ページ登録、layout()定義 | `_layout`, `_callbacks` |
+| `_constants.py` | ハードコード文字列の一元管理 | なし（純粋な定数） |
+| `_data_loader.py` | S3データ読み込み、フィルタ適用 | `ParquetReader`, `cache`, `filter_engine`, `_constants` |
+| `_filters.py` | フィルタUIコンポーネント構築 | `dcc`, `dbc`, `components.filters` |
+| `_layout.py` | ページ全体のレイアウト構築 | `_constants`, `_data_loader`, `_filters` |
+| `_callbacks.py` | Dashコールバック（ユーザー操作 -> チャート更新） | `_constants`, `_data_loader`, `charts` |
+| `charts/_ch00_reference_table.py` | ピボットテーブル構築（純粋関数、I/Oなし） | `_constants`, `dash_table` |
+
+### データフロー
+
+```
+[ユーザー操作: フィルタ変更]
+    |
+    v
+[_callbacks.py: update_all_charts()]
+    |
+    +-> _data_loader.load_and_filter_data()
+    |     +-> get_cached_dataset() -> S3/Parquet読み込み
+    |     +-> PRC custom filter
+    |     +-> apply_filters(df, FilterSet)
+    |
+    +-> charts._ch00_reference_table.build(filtered_df, breakdown, mode)
+          +-> pivot: breakdown_column x month
+          +-> GRAND TOTAL行 + AVG列追加
+          +-> パーセントモード変換（任意）
+          +-> DataTable構築
+    |
+    v
+[画面: タイトル + DataTable を表示]
+```
+
+### 命名規則
+
+- プライベートモジュール: `_` プレフィックス（`_constants.py`, `_layout.py` 等）
+- チャートモジュール: `_ch{番号:02d}_{snake_case名}.py` 形式
+- コンポーネントID: `apac-dot-` プレフィックス（他ページとの衝突回避）
+
+### 今後のチャート追加手順
+
+新しいチャートを APAC DOT Due Date ページに追加する手順:
+
+1. `charts/` に `_ch{NN}_{name}.py` を作成
+   - `build(filtered_df, ...) -> tuple[str, Any]` 関数を定義
+   - 純粋関数として実装（I/Oなし、DataFrame操作 + Dashコンポーネント構築のみ）
+
+2. `_layout.py` にチャート表示エリアを追加
+   - `html.H3(id="apac-dot-chart-{NN}-title")` + `html.Div(id="apac-dot-chart-{NN}")`
+
+3. `_callbacks.py` の `update_all_charts` を更新
+   - Output に新チャートのタイトルとコンテンツを追加
+   - 新チャートの `build()` を呼び出し、返り値を return タプルに追加
+
+4. テストを追加
+   - `tests/unit/pages/apac_dot_due_date/charts/test_ch{NN}_{name}.py`
+   - `build()` の正常系、空データ、エッジケースをテスト
+
+---
+
+## 12. 開発フロー
 
 ### Phase 1: ダッシュボード基盤（実装済）
 
@@ -445,6 +555,8 @@ work_BI_PythonAll/
 10. Flask-Login認証実装（FormAuthProvider）
 11. DOMO API ETL実装
 12. 実ダッシュボード実装（Cursor Usage, APAC DOT Due Date）
+13. APAC DOT Due Date ページモジュール化（パッケージ構造 + charts サブパッケージ）
+14. デザインテーマ移行（Minimal Luxury Dark -> Warm Professional Light）
 
 ### Phase 2: LLM 質問機能
 
@@ -460,7 +572,7 @@ work_BI_PythonAll/
 2. ロール管理機能
 3. ページ単位アクセス制御
 
-## 12. 関連ドキュメント
+## 13. 関連ドキュメント
 
 | ドキュメント | 内容 |
 |-------------|------|
@@ -469,3 +581,7 @@ work_BI_PythonAll/
 | `docs/architecture.md` | システムアーキテクチャ図 |
 | `backend/config/README.md` | DOMO DataSet設定の使い方 |
 | `CLAUDE.md` | プロジェクト開発メモ |
+| `codemaps/architecture.md` | アーキテクチャコードマップ |
+| `codemaps/frontend.md` | フロントエンドコードマップ |
+| `codemaps/backend.md` | バックエンドコードマップ |
+| `codemaps/data.md` | データ層コードマップ |

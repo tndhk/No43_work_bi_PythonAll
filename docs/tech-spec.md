@@ -1,6 +1,6 @@
 # Plotly Dash BI Dashboard 技術仕様書 v0.2
 
-Last Updated: 2026-02-06
+Last Updated: 2026-02-07
 
 ## このドキュメントについて
 
@@ -29,7 +29,7 @@ Dash アプリは S3 のクリーンデータを読んで可視化するだけ�
 |------|------|-----------|------|
 | フレームワーク | Plotly Dash | >=2.14.0 | インタラクティブダッシュボード |
 | UIコンポーネント | Dash Bootstrap Components | >=1.5.0 | Bootstrap統合 |
-| 認証（ローカル） | Dash Auth | >=2.0.0 | Basic認証 |
+| 認証（ローカル） | Flask-Login | >=0.6.3 | フォームログイン（FormAuthProvider） |
 | 認証（本番） | SAML | - | 会社の IdP と連携（Phase 3） |
 | 言語 | Python | 3.9+ | 安定性、パフォーマンス |
 | DataFrame | Pandas | >=2.0.0 | 標準的 |
@@ -37,7 +37,7 @@ Dash アプリは S3 のクリーンデータを読んで可視化するだけ�
 | S3 | boto3 | >=1.34.0 | AWS SDK |
 | 可視化 | Plotly | >=5.0.0 | インタラクティブグラフ |
 | ログ | structlog | >=23.0.0 | 構造化ログ |
-| キャッシュ | flask-caching / functools.lru_cache | - | TTL キャッシュ（実装時に決定） |
+| キャッシュ | flask-caching | >=2.0.0 | TTL キャッシュ（SimpleCache, 300秒） |
 | LLM（Phase 2） | Vertex AI SDK | - | Gemini Flash |
 
 ### 1.3 アーキテクチャ
@@ -391,15 +391,21 @@ setup_logging()
 
 ### 8.1 認証方式
 
-#### ローカル開発: Basic認証
+#### ローカル開発: Flask-Login フォーム認証
 
-Dash Authを使用したBasic認証:
+Flask-Login + FormAuthProvider を使用:
 
 ```python
-from src.auth.basic_auth import setup_auth
+from src.auth.flask_login_setup import init_login_manager
+from src.auth.login_callbacks import register_login_callbacks
+from src.auth.layout_callbacks import register_layout_callbacks
 
-app = Dash(__name__)
-setup_auth(app)  # .env の BASIC_AUTH_USERNAME / BASIC_AUTH_PASSWORD を使用
+app = Dash(__name__, use_pages=True)
+app.server.config["SECRET_KEY"] = settings.secret_key
+init_login_manager(app.server)
+register_login_callbacks(app)
+register_layout_callbacks(app)
+# .env の BASIC_AUTH_USERNAME / BASIC_AUTH_PASSWORD で認証
 ```
 
 #### 本番環境: SAML認証（Phase 3）

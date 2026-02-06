@@ -1,6 +1,6 @@
 # Backend Codemap
 
-Last Updated: 2026-02-06
+Last Updated: 2026-02-07
 Entry Points: `backend/scripts/load_domo.py`, `backend/scripts/load_cursor_usage.py`, `scripts/upload_csv.py`
 
 ## Module Dependency Graph
@@ -29,8 +29,12 @@ backend/
 |   |   Exports: RdsETL
 |   |
 |   +-- etl_s3.py     [stub - NotImplementedError]
-|       Imports: base_etl.BaseETL
-|       Exports: S3RawETL
+|   |   Imports: base_etl.BaseETL
+|   |   Exports: S3RawETL
+|   |
+|   +-- resolve_csv_path.py
+|       Imports: pathlib.Path
+|       Exports: resolve_csv_path(source_dir, file_pattern) -> Path
 |
 +-- scripts/
 |   +-- load_domo.py
@@ -101,6 +105,16 @@ class DomoApiETL(BaseETL):
 Data flow:
 ```
 DOMO API (OAuth2) -> CSV download -> type inference -> exclude filter -> Parquet (S3)
+```
+
+### resolve_csv_path
+
+```python
+def resolve_csv_path(source_dir: str, file_pattern: str) -> Path
+    # Resolves the latest CSV file matching a glob pattern in a directory
+    # Files sorted lexicographically; last entry returned
+    # ISO-date suffixes (YYYY-MM-DD) map to chronological order
+    # Raises FileNotFoundError if no matches
 ```
 
 ### Stub ETL Classes (Phase 1 skeleton)
@@ -174,6 +188,7 @@ s3://{bucket}/datasets/{dataset_id}/
 - BaseETL.load: Fails fast on S3 write errors
 - DomoApiETL: OAuth2 errors, HTTP timeouts (30s auth, 300s data)
 - CsvETL: File not found, encoding detection failures
+- resolve_csv_path: FileNotFoundError if dir missing or no matches
 - Scripts: Structured try/except with traceback and exit codes
 
 ## Testing
@@ -183,6 +198,7 @@ tests/etl/
   test_base_etl.py         # BaseETL.load S3 writes
   test_etl_csv.py          # CsvETL extract/transform/load
   test_etl_skeletons.py    # Stub classes raise NotImplementedError
+  test_resolve_csv_path.py # resolve_csv_path glob matching
 tests/scripts/
   test_upload_csv.py       # CLI argument parsing and execution
 ```

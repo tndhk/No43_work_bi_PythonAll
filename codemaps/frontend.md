@@ -1,6 +1,6 @@
 # Frontend Codemap
 
-Last Updated: 2026-02-06
+Last Updated: 2026-02-07
 Entry Point: `app.py`
 Framework: Plotly Dash 2.14+ / Dash Bootstrap Components 1.5+
 
@@ -29,9 +29,9 @@ Authenticated Layout:
   |     Logout button
   |
   +-- page_container (Dash Pages API)
-        +-- dashboard_home.py   path=/         order=0
-        +-- cursor_usage.py     path=/cursor-usage   order=1
-        +-- apac_dot_due_date.py path=/apac-dot-due-date order=2
+        +-- dashboard_home.py              path=/                  order=0
+        +-- cursor_usage.py                path=/cursor-usage      order=1
+        +-- apac_dot_due_date/__init__.py   path=/apac-dot-due-date order=2
 ```
 
 ## Module Dependency Graph
@@ -125,12 +125,20 @@ date-filter / model-filter
   -> DataTable: Top 100 rows
 ```
 
-### apac_dot_due_date.py (path=/apac-dot-due-date, order=2)
+### apac_dot_due_date/ (path=/apac-dot-due-date, order=2) -- Modularized Package
 
 ```
-Imports: ParquetReader, get_cached_dataset, FilterSet,
-         CategoryFilter, apply_filters,
-         create_category_filter, dash_table
+Structure:
+  __init__.py          -> Dash register_page + layout() entry
+  _constants.py        -> DATASET_ID, ID_PREFIX, COLUMN_MAP, BREAKDOWN_MAP
+  _data_loader.py      -> load_filter_options(), load_and_filter_data()
+  _filters.py          -> build_filter_layout() -> 5 dbc.Row
+  _layout.py           -> build_layout() -> html.Div
+  _callbacks.py        -> update_all_charts() @callback
+  charts/
+    __init__.py        -> Sub-package docstring
+    _ch00_reference_table.py -> build(df, breakdown, mode) -> (title, component)
+
 Dataset: "apac-dot-due-date"
 Filters: Num/% toggle, Breakdown tabs (Area/Category/Vendor),
          Month, PRC, Area, Category, Vendor, AMP VS AV, Order Type
@@ -141,13 +149,22 @@ Callback flow:
 ```
 num-percent-toggle / breakdown-tabs / filter-month / prc-filter /
 area-filter / category-filter / vendor-filter / amp-av-filter / order-type-filter
-  -> get_cached_dataset("apac-dot-due-date")
-  -> PRC custom filter (job name contains "PRC")
-  -> apply_filters(df, FilterSet)
-  -> Pivot: breakdown_column x Delivery Completed Month
-  -> Optional: convert to percentage mode
-  -> DataTable with GRAND TOTAL row + AVG column
+  -> _callbacks.update_all_charts()
+  -> _data_loader.load_and_filter_data()
+     -> get_cached_dataset("apac-dot-due-date")
+     -> PRC custom filter (job name contains "PRC")
+     -> apply_filters(df, FilterSet with COLUMN_MAP)
+  -> charts._ch00_reference_table.build(filtered_df, breakdown_tab, num_percent_mode)
+     -> Pivot: breakdown_column x Delivery Completed Month
+     -> GRAND TOTAL row + AVG column
+     -> Optional: convert to percentage mode
+     -> DataTable with conditional styling
 ```
+
+Module naming conventions:
+- Private modules: `_` prefix (not part of public API)
+- Chart modules: `_ch{NN}_{name}.py` (numbered for ordering)
+- Component IDs: `apac-dot-` prefix (namespace isolation)
 
 ## Authentication Flow
 
@@ -206,22 +223,26 @@ class FormAuthProvider:       # Current implementation
 | pivot | render_pivot_table() | html.Div |
 
 All chart functions accept: `(dataset, filters=None, params=None)`
-All go.Figure outputs pass through `apply_theme()` (dark theme).
+All go.Figure outputs pass through `apply_theme()` (Warm Professional Light theme).
 
 ## Style Architecture
 
 ```
 assets/
-  00-reset.css        CSS reset, custom properties (color palette)
-  01-typography.css    Font families (Syne, Plus Jakarta Sans)
+  00-reset.css        CSS reset, custom properties (Warm Professional Light palette)
+  01-typography.css    Font families (Noto Sans JP, Inter)
   02-layout.css       Sidebar + main content grid, responsive
-  03-components.css   KPI cards, filter cards, dashboard cards, tables
+  03-components.css   KPI cards, filter cards, dashboard cards, tables, z-index fixes
   04-animations.css   Fade-in, slide-up transitions
   05-charts.css       Chart container styles
   06-login.css        Login page styles
 ```
 
-Theme: Minimal Luxury dark (bg: #0f0f17, accent: #c9a55c gold)
+Theme: Warm Professional Light
+- Background: #f8f9fa (base), #ffffff (surface/card)
+- Accent: #2563eb (blue primary)
+- Text: #1a1a2e (primary), #64748b (secondary)
+- Fonts: Noto Sans JP, Inter
 
 ## Testing
 
@@ -233,6 +254,15 @@ tests/unit/components/test_cards.py
 tests/unit/components/test_filters.py
 tests/unit/components/test_sidebar.py
 tests/unit/pages/test_dashboard_home.py
+tests/unit/pages/test_apac_dot_due_date.py     # Integration test
+tests/unit/pages/apac_dot_due_date/
+  test_constants.py
+  test_data_loader.py
+  test_filters.py
+  test_layout.py
+  test_callbacks.py
+  charts/
+    test_ch00_reference_table.py
 tests/unit/test_layout.py
 ```
 
