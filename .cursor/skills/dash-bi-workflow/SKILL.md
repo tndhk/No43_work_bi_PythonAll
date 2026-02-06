@@ -1,123 +1,55 @@
 ---
 name: dash-bi-workflow
-description: Plotly DashベースのBIダッシュボード開発ワークフロー。データセット配置、ETL処理（CSV→Parquet→MinIO）、ダッシュボードページ作成、デバッグまでの一連の流れをガイド。Dashダッシュボード、データ可視化、ETL、Parquetに関連する作業で使用。
+description: Plotly DashベースのBIダッシュボード開発ワークフロー。Parquetデータからダッシュボードページ作成、フィルタ・コールバック実装、デバッグまでの流れをガイド。Dashダッシュボード、データ可視化、Plotlyに関連する作業で使用。データ取得・ETLは別スキル（etl-workflow）を参照。
 ---
 
 # Plotly Dash BIダッシュボード開発ワークフロー
+
+## 前提条件
+
+このスキルは、**既にParquet形式でMinIOにアップロード済みのデータ**を前提とします。
+
+データ取得・ETL処理が必要な場合は、別スキル `etl-workflow` を参照してください。
 
 ## クイックスタートチェックリスト
 
 新しいダッシュボードを作成する際は、このチェックリストに従って進めます：
 
-- [ ] Phase 1: データセットを `backend/data_sources/` に配置
-- [ ] Phase 1: `.gitignore` と `.cursorignore` に `backend/data_sources/` を追加
-- [ ] Phase 2: `backend/scripts/` にETLスクリプトを作成
-- [ ] Phase 2: ETLスクリプトを実行してMinIOにParquetファイルをアップロード
-- [ ] Phase 3: `src/pages/` にダッシュボードページを作成
-- [ ] Phase 4: フィルタとコールバックを実装
-- [ ] Phase 5: デバッグと検証（よくあるバグパターンを確認）
+- [ ] Phase 1: データがMinIOにParquet形式でアップロードされていることを確認
+- [ ] Phase 2: `src/pages/` にダッシュボードページを作成
+- [ ] Phase 3: フィルタとコールバックを実装
+- [ ] Phase 4: デバッグと検証（よくあるバグパターンを確認）
 
 ---
 
-## Phase 1: データセット準備
+## Phase 1: データ確認
 
-### 配置場所
+### MinIOでのデータ確認
 
-CSVデータファイルは `backend/data_sources/` ディレクトリに配置します。
+ダッシュボード作成前に、データが正しくアップロードされていることを確認します：
 
-```
-backend/data_sources/
-├── team-usage-events-15944373-2026-01-28.csv
-└── ...
-```
+1. MinIOコンソール（http://localhost:9001）にアクセス
+2. `bi-datasets` バケットを確認
+3. `datasets/{dataset_id}/` 配下にParquetファイルが存在することを確認
 
-### Git/Cursor除外設定
+### データ構造の確認
 
-データファイルはリポジトリに含めないため、必ず除外設定を追加します：
-
-**`.gitignore`** に追加：
-```
-backend/data_sources/
-```
-
-**`.cursorignore`** に追加：
-```
-backend/data_sources/
-```
-
-### ファイル命名規則
-
-推奨フォーマット: `{dataset-name}-{identifier}-{date}.csv`
-
-例: `team-usage-events-15944373-2026-01-28.csv`
-
----
-
-## Phase 2: ETL実装
-
-### ETLスクリプト作成
-
-`backend/scripts/` ディレクトリにETLスクリプトを作成します。
-
-**テンプレート:**
+必要に応じて、ParquetReaderでデータ構造を確認：
 
 ```python
-"""ETL script to load CSV data to MinIO S3 as Parquet."""
-import sys
-from pathlib import Path
+from src.data.parquet_reader import ParquetReader
+from src.core.cache import get_cached_dataset
 
-# Add project root to path
-project_root = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(project_root))
-
-from backend.etl.etl_csv import CsvETL
-
-
-def main():
-    """Load CSV to S3."""
-    csv_path = project_root / "backend" / "data_sources" / "your-file.csv"
-    
-    if not csv_path.exists():
-        print(f"Error: CSV file not found at {csv_path}")
-        sys.exit(1)
-    
-    print(f"Loading CSV from: {csv_path}")
-    
-    # Create ETL instance
-    etl = CsvETL(
-        csv_path=str(csv_path),
-        partition_column="Date",  # パーティション分割するカラム名
-    )
-    
-    # Run ETL
-    dataset_id = "your-dataset-id"
-    print(f"Running ETL for dataset: {dataset_id}")
-    etl.run(dataset_id)
-    
-    print(f"Successfully loaded dataset '{dataset_id}' to S3")
-
-
-if __name__ == "__main__":
-    main()
+reader = ParquetReader()
+df = get_cached_dataset(reader, "your-dataset-id")
+print(f"Shape: {df.shape}")
+print(f"Columns: {df.columns.tolist()}")
+print(df.head())
 ```
-
-### partition_column の選び方
-
-- 日付カラムがある場合: `"Date"` を指定（推奨）
-- パーティション分割しない場合: `None` を指定
-- パーティション分割により、クエリパフォーマンスが向上します
-
-### ETL実行と確認
-
-```bash
-python backend/scripts/load_your_dataset.py
-```
-
-MinIOコンソール（http://localhost:9001）でアップロードを確認します。
 
 ---
 
-## Phase 3: ダッシュボードページ作成
+## Phase 2: ダッシュボードページ作成
 
 ### ページファイル作成
 
@@ -221,7 +153,7 @@ def layout():
 
 ---
 
-## Phase 4: コールバック実装
+## Phase 3: コールバック実装
 
 ### 基本パターン
 
@@ -359,7 +291,7 @@ def update_dashboard(start_date, end_date, category_values):
 
 ---
 
-## Phase 5: デバッグ・検証
+## Phase 4: デバッグ・検証
 
 ### よくあるバグパターン
 
@@ -469,16 +401,19 @@ CSS変更後はブラウザでハードリロード（Cmd+Shift+R / Ctrl+Shift+F
 
 開発完了前に以下を確認：
 
-- [ ] CSVファイルが `.gitignore` と `.cursorignore` に追加されている
-- [ ] ETLスクリプトが正常に実行され、MinIOにParquetファイルがアップロードされている
+- [ ] データがMinIOにParquet形式でアップロードされている
 - [ ] ダッシュボードがエラーなく表示される
 - [ ] datetimeカラムのtimezoneが適切に処理されている（`.dt.tz_convert(None)` を使用）
 - [ ] Dash 4.x互換のコンポーネントを使用している（`dash_table.DataTable` を使用）
 - [ ] ドロップダウン/DatePickerが正しく前面に表示される
-- [ ] Docker環境でassetsとbackendがマウントされている
+- [ ] Docker環境でassetsがマウントされている
 - [ ] ハードリロード（Cmd+Shift+R / Ctrl+Shift+F5）でCSSが反映される
 
 ---
+
+## 関連スキル
+
+- **etl-workflow**: データ取得とETL処理（CSV、API、RDS、S3などからParquetへの変換）
 
 ## 追加リソース
 
