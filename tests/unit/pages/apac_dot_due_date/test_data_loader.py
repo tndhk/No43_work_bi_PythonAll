@@ -368,6 +368,26 @@ class TestLoadAndFilterDataPrcFilter:
         )
         assert len(result) == 5
 
+    @patch("src.pages.apac_dot_due_date._data_loader.get_cached_dataset")
+    def test_prc_filter_missing_job_name_column_noop(self, mock_cache):
+        from src.pages.apac_dot_due_date._data_loader import load_and_filter_data
+
+        df = _make_sample_df().drop(columns=["job name"])
+        mock_cache.return_value = df
+        reader = MagicMock()
+
+        result = load_and_filter_data(
+            reader, "apac-dot-due-date",
+            selected_months=None,
+            prc_filter_value="prc_only",
+            area_values=None,
+            category_values=None,
+            vendor_values=None,
+            amp_av_values=None,
+            order_type_values=None,
+        )
+        assert len(result) == len(df)
+
 
 class TestLoadAndFilterDataCategoryFilters:
     """load_and_filter_data category filter logic (months, area, etc.)."""

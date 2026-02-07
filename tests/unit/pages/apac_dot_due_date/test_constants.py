@@ -66,7 +66,16 @@ class TestColumnMap:
     def test_column_map_has_all_expected_keys(self):
         from src.pages.apac_dot_due_date._constants import COLUMN_MAP
 
-        expected_keys = {"month", "area", "category", "vendor", "amp_av", "order_type"}
+        expected_keys = {
+            "month",
+            "area",
+            "category",
+            "vendor",
+            "amp_av",
+            "order_type",
+            "job_name",
+            "work_order_id",
+        }
         assert set(COLUMN_MAP.keys()) == expected_keys
 
     def test_column_map_month(self):
@@ -98,6 +107,16 @@ class TestColumnMap:
         from src.pages.apac_dot_due_date._constants import COLUMN_MAP
 
         assert COLUMN_MAP["order_type"] == "order tags"
+
+    def test_column_map_job_name(self):
+        from src.pages.apac_dot_due_date._constants import COLUMN_MAP
+
+        assert COLUMN_MAP["job_name"] == "job name"
+
+    def test_column_map_work_order_id(self):
+        from src.pages.apac_dot_due_date._constants import COLUMN_MAP
+
+        assert COLUMN_MAP["work_order_id"] == "work order id"
 
     def test_column_map_values_are_all_strings(self):
         from src.pages.apac_dot_due_date._constants import COLUMN_MAP

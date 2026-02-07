@@ -26,7 +26,7 @@ def _make_sample_df(n_areas=2, n_months=3, n_rows_per_group=5):
     """Create a realistic sample DataFrame matching the expected schema.
 
     Generates data with:
-    - 'work order id': unique identifiers
+    - COLUMN_MAP['work_order_id']: unique identifiers
     - COLUMN_MAP['month']: date values
     - 'business area': area dimension
     - 'Metric Workstream': category dimension
@@ -43,7 +43,7 @@ def _make_sample_df(n_areas=2, n_months=3, n_rows_per_group=5):
         for month in months:
             for _ in range(n_rows_per_group):
                 rows.append({
-                    "work order id": f"WO-{wo_id:04d}",
+                    COLUMN_MAP["work_order_id"]: f"WO-{wo_id:04d}",
                     COLUMN_MAP["month"]: month,
                     "business area": area,
                     "Metric Workstream": categories[wo_id % 2],
@@ -52,7 +52,7 @@ def _make_sample_df(n_areas=2, n_months=3, n_rows_per_group=5):
                 wo_id += 1
         # Add one duplicate work order id to test nunique
         rows.append({
-            "work order id": f"WO-{wo_id - 1:04d}",  # duplicate last id
+            COLUMN_MAP["work_order_id"]: f"WO-{wo_id - 1:04d}",  # duplicate last id
             COLUMN_MAP["month"]: months[0],
             "business area": area,
             "Metric Workstream": categories[0],
@@ -65,7 +65,7 @@ def _make_sample_df(n_areas=2, n_months=3, n_rows_per_group=5):
 def _make_empty_df():
     """Create an empty DataFrame with the expected columns."""
     return pd.DataFrame(columns=[
-        "work order id",
+        COLUMN_MAP["work_order_id"],
         COLUMN_MAP["month"],
         "business area",
         "Metric Workstream",
@@ -76,7 +76,7 @@ def _make_empty_df():
 def _make_single_row_df():
     """Create a DataFrame with exactly one row."""
     return pd.DataFrame([{
-        "work order id": "WO-0001",
+        COLUMN_MAP["work_order_id"]: "WO-0001",
         COLUMN_MAP["month"]: pd.Timestamp("2024-01-01"),
         "business area": "Area_0",
         "Metric Workstream": "Cat_A",

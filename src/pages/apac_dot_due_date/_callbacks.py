@@ -10,7 +10,6 @@ from src.data.parquet_reader import ParquetReader
 from src.data.data_source_registry import resolve_dataset_id
 from ._constants import (
     DASHBOARD_ID,
-    DATASET_ID,
     CHART_ID_REFERENCE_TABLE,
     CHART_ID_REFERENCE_TABLE_TITLE,
     CTRL_ID_NUM_PERCENT,
@@ -63,7 +62,7 @@ def update_all_charts(
     reader = ParquetReader()
 
     try:
-        dataset_id = resolve_dataset_id(DASHBOARD_ID, CHART_ID_REFERENCE_TABLE, fallback=DATASET_ID)
+        dataset_id = resolve_dataset_id(DASHBOARD_ID, CHART_ID_REFERENCE_TABLE)
         filtered_df = load_and_filter_data(
             reader,
             dataset_id,

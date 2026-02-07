@@ -3,22 +3,31 @@ from dash import html, callback, Input, Output, dash_table
 import plotly.graph_objects as go
 
 from src.data.parquet_reader import ParquetReader
-from src.data.data_source_registry import resolve_dataset_id
 from src.components.cards import create_kpi_card
 from src.charts.templates import render_line_chart, render_bar_chart, render_pie_chart
-from ._constants import DASHBOARD_ID, CHART_ID_COST_TREND, ID_PREFIX
-from ._data_loader import load_and_filter_data
+from ._constants import (
+    CHART_ID_KPI_TOTAL_COST,
+    CHART_ID_KPI_TOTAL_TOKENS,
+    CHART_ID_KPI_REQUEST_COUNT,
+    CHART_ID_COST_TREND,
+    CHART_ID_TOKEN_EFFICIENCY,
+    CHART_ID_MODEL_DISTRIBUTION,
+    CHART_ID_DATA_TABLE,
+    COLUMN_MAP,
+    ID_PREFIX,
+)
+from ._data_loader import load_and_filter_data, resolve_dataset_id_for_dashboard
 
 
 @callback(
     [
-        Output(f"{ID_PREFIX}kpi-total-cost", "children"),
-        Output(f"{ID_PREFIX}kpi-total-tokens", "children"),
-        Output(f"{ID_PREFIX}kpi-request-count", "children"),
-        Output(f"{ID_PREFIX}chart-cost-trend", "figure"),
-        Output(f"{ID_PREFIX}chart-token-efficiency", "figure"),
-        Output(f"{ID_PREFIX}chart-model-distribution", "figure"),
-        Output(f"{ID_PREFIX}data-table", "children"),
+        Output(CHART_ID_KPI_TOTAL_COST, "children"),
+        Output(CHART_ID_KPI_TOTAL_TOKENS, "children"),
+        Output(CHART_ID_KPI_REQUEST_COUNT, "children"),
+        Output(CHART_ID_COST_TREND, "figure"),
+        Output(CHART_ID_TOKEN_EFFICIENCY, "figure"),
+        Output(CHART_ID_MODEL_DISTRIBUTION, "figure"),
+        Output(CHART_ID_DATA_TABLE, "children"),
     ],
     [
         Input(f"{ID_PREFIX}filter-date", "start_date"),
@@ -42,7 +51,7 @@ def update_dashboard(start_date, end_date, model_values):
 
     try:
         # Load and filter data
-        dataset_id = resolve_dataset_id(DASHBOARD_ID, CHART_ID_COST_TREND)
+        dataset_id = resolve_dataset_id_for_dashboard()
 
         filtered_df = load_and_filter_data(
             reader, dataset_id, start_date, end_date, model_values
@@ -69,9 +78,16 @@ def update_dashboard(start_date, end_date, model_values):
                 html.P("No data available", className="text-muted"),
             )
 
+        date_col = COLUMN_MAP["date"]
+        cost_col = COLUMN_MAP["cost"]
+        total_tokens_col = COLUMN_MAP["total_tokens"]
+        model_col = COLUMN_MAP["model"]
+        user_col = COLUMN_MAP["user"]
+        kind_col = COLUMN_MAP["kind"]
+
         # Calculate KPIs
-        total_cost = filtered_df["Cost"].sum()
-        total_tokens = filtered_df["Total Tokens"].sum()
+        total_cost = filtered_df[cost_col].sum()
+        total_tokens = filtered_df[total_tokens_col].sum()
         request_count = len(filtered_df)
 
         # KPI Cards
@@ -80,16 +96,16 @@ def update_dashboard(start_date, end_date, model_values):
         kpi_requests = create_kpi_card("Request Count", f"{request_count:,}")
 
         # Chart 1: Daily Cost Trend
-        daily_cost = filtered_df.groupby(filtered_df["Date"].dt.date)["Cost"].sum().reset_index()
-        daily_cost.columns = ["Date", "Cost"]
-        daily_cost = daily_cost.sort_values("Date")
+        daily_cost = filtered_df.groupby(filtered_df[date_col].dt.date)[cost_col].sum().reset_index()
+        daily_cost.columns = [date_col, cost_col]
+        daily_cost = daily_cost.sort_values(date_col)
 
         cost_trend_fig = render_line_chart(
             dataset=daily_cost,
             filters=None,
             params={
-                "x_column": "Date",
-                "y_column": "Cost",
+                "x_column": date_col,
+                "y_column": cost_col,
             },
         )
         cost_trend_fig.update_layout(
@@ -99,18 +115,18 @@ def update_dashboard(start_date, end_date, model_values):
         )
 
         # Chart 2: Token Efficiency by Model
-        model_stats = filtered_df.groupby("Model").agg({
-            "Total Tokens": "sum",
-            "Cost": "sum",
+        model_stats = filtered_df.groupby(model_col).agg({
+            total_tokens_col: "sum",
+            cost_col: "sum",
         }).reset_index()
-        model_stats["TokensPerCost"] = model_stats["Total Tokens"] / model_stats["Cost"]
+        model_stats["TokensPerCost"] = model_stats[total_tokens_col] / model_stats[cost_col]
         model_stats = model_stats.sort_values("TokensPerCost", ascending=False)
 
         efficiency_fig = render_bar_chart(
             dataset=model_stats,
             filters=None,
             params={
-                "x_column": "Model",
+                "x_column": model_col,
                 "y_column": "TokensPerCost",
             },
         )
@@ -121,15 +137,15 @@ def update_dashboard(start_date, end_date, model_values):
         )
 
         # Chart 3: Model Distribution
-        model_dist = filtered_df.groupby("Model")["Cost"].sum().reset_index()
-        model_dist.columns = ["Model", "Cost"]
+        model_dist = filtered_df.groupby(model_col)[cost_col].sum().reset_index()
+        model_dist.columns = [model_col, cost_col]
 
         distribution_fig = render_pie_chart(
             dataset=model_dist,
             filters=None,
             params={
-                "names_column": "Model",
-                "values_column": "Cost",
+                "names_column": model_col,
+                "values_column": cost_col,
             },
         )
         distribution_fig.update_layout(
@@ -138,10 +154,10 @@ def update_dashboard(start_date, end_date, model_values):
 
         # Data Table
         display_df = filtered_df[[
-            "Date", "User", "Model", "Kind",
-            "Total Tokens", "Cost"
+            date_col, user_col, model_col, kind_col,
+            total_tokens_col, cost_col
         ]].copy()
-        display_df["Date"] = display_df["Date"].dt.strftime("%Y-%m-%d %H:%M")
+        display_df[date_col] = display_df[date_col].dt.strftime("%Y-%m-%d %H:%M")
         display_df = display_df.head(100)
 
         table_component = dash_table.DataTable(

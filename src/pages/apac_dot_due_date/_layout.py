@@ -10,7 +10,6 @@ from src.data.parquet_reader import ParquetReader
 from src.data.data_source_registry import resolve_dataset_id
 from ._constants import (
     DASHBOARD_ID,
-    DATASET_ID,
     CHART_ID_REFERENCE_TABLE,
     CHART_ID_REFERENCE_TABLE_TITLE,
 )
@@ -29,7 +28,7 @@ def build_layout() -> html.Div:
     """
     # Load data to get available options for filters
     reader = ParquetReader()
-    dataset_id = resolve_dataset_id(DASHBOARD_ID, CHART_ID_REFERENCE_TABLE, fallback=DATASET_ID)
+    dataset_id = resolve_dataset_id(DASHBOARD_ID, CHART_ID_REFERENCE_TABLE)
     opts = load_filter_options(reader, dataset_id)
 
     # Build filter rows via _filters module

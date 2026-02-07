@@ -161,18 +161,20 @@ class TestLoadAndFilterDataDelegation:
         assert kwargs["amp_av_values"] == amp_av
         assert kwargs["order_type_values"] == order_types
 
+    @patch("src.pages.apac_dot_due_date._callbacks.resolve_dataset_id")
     @patch("src.pages.apac_dot_due_date._callbacks._ch00_reference_table")
     @patch("src.pages.apac_dot_due_date._callbacks.load_and_filter_data")
     @patch("src.pages.apac_dot_due_date._callbacks.ParquetReader")
     def test_passes_reader_and_dataset_id(
-        self, mock_reader_cls, mock_load, mock_chart
+        self, mock_reader_cls, mock_load, mock_chart, mock_resolve
     ):
-        """A ParquetReader instance and DATASET_ID must be passed to load_and_filter_data."""
+        """A ParquetReader instance and resolved dataset ID must be passed to load_and_filter_data."""
         from src.pages.apac_dot_due_date._callbacks import update_all_charts
-        from src.pages.apac_dot_due_date._constants import DATASET_ID
+        from src.pages.apac_dot_due_date._constants import DASHBOARD_ID, CHART_ID_REFERENCE_TABLE
 
         mock_reader_instance = MagicMock()
         mock_reader_cls.return_value = mock_reader_instance
+        mock_resolve.return_value = "apac-dot-due-date"
         mock_load.return_value = _make_sample_df()
         mock_chart.build.return_value = ("Title", html.Div())
 
@@ -181,11 +183,12 @@ class TestLoadAndFilterDataDelegation:
             ["APAC"], ["WS-A"], ["Vendor1"], ["AMP"], ["TypeA"],
         )
 
+        mock_resolve.assert_called_once_with(DASHBOARD_ID, CHART_ID_REFERENCE_TABLE)
         args, kwargs = mock_load.call_args
         # First positional arg or keyword should be the reader instance
         assert args[0] == mock_reader_instance or kwargs.get("reader") == mock_reader_instance
-        # Second positional arg or keyword should be DATASET_ID
-        assert args[1] == DATASET_ID or kwargs.get("dataset_id") == DATASET_ID
+        # Second positional arg or keyword should be resolved dataset ID
+        assert args[1] == "apac-dot-due-date" or kwargs.get("dataset_id") == "apac-dot-due-date"
 
 
 # ===========================================================================
@@ -359,5 +362,4 @@ class TestInitImportsCallbacks:
         assert hasattr(page_module, '_callbacks') or True
         # A more reliable check: _callbacks module should be importable
         from src.pages.apac_dot_due_date import _callbacks  # noqa: F401
-
 

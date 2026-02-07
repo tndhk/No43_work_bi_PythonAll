@@ -61,9 +61,10 @@ def build(
     # ------------------------------------------------------------------
     # Group by breakdown column + month, count unique work order IDs
     # ------------------------------------------------------------------
+    work_order_col = COLUMN_MAP["work_order_id"]
     pivot_data = (
         filtered_df
-        .groupby([breakdown_column, COLUMN_MAP["month"]])["work order id"]
+        .groupby([breakdown_column, COLUMN_MAP["month"]])[work_order_col]
         .nunique()
         .reset_index()
     )
@@ -74,7 +75,7 @@ def build(
     pivot_table = pivot_data.pivot(
         index=breakdown_column,
         columns=COLUMN_MAP["month"],
-        values="work order id",
+        values=work_order_col,
     ).fillna(0)
 
     # Sort month columns chronologically

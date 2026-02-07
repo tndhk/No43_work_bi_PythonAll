@@ -32,9 +32,10 @@ def load_filter_options(reader: ParquetReader, dataset_id: str) -> dict:
         order_types = extract_unique_values(df, COLUMN_MAP["order_type"])
 
         total_count = len(df)
+        job_name_col = COLUMN_MAP["job_name"]
         prc_count = (
-            len(df[df["job name"].str.contains("PRC", case=False, na=False)])
-            if "job name" in df.columns
+            len(df[df[job_name_col].str.contains("PRC", case=False, na=False)])
+            if job_name_col in df.columns
             else 0
         )
         non_prc_count = total_count - prc_count
@@ -95,10 +96,12 @@ def load_and_filter_data(
     df = get_cached_dataset(reader, dataset_id)
 
     # --- PRC filter (custom logic, applied before FilterSet) ---
-    if prc_filter_value == "prc_only":
-        df = df[df["job name"].str.contains("PRC", case=False, na=False)]
-    elif prc_filter_value == "prc_not_included":
-        df = df[~df["job name"].str.contains("PRC", case=False, na=False)]
+    job_name_col = COLUMN_MAP["job_name"]
+    if job_name_col in df.columns:
+        if prc_filter_value == "prc_only":
+            df = df[df[job_name_col].str.contains("PRC", case=False, na=False)]
+        elif prc_filter_value == "prc_not_included":
+            df = df[~df[job_name_col].str.contains("PRC", case=False, na=False)]
 
     # --- Build FilterSet for remaining category filters ---
     filters = FilterSet()

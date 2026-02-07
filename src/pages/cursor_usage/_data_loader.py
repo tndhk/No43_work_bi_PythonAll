@@ -7,8 +7,42 @@ import pandas as pd
 
 from src.data.parquet_reader import ParquetReader
 from src.core.cache import get_cached_dataset
+from src.data.data_source_registry import resolve_dataset_id
 from src.data.filter_engine import FilterSet, CategoryFilter, DateRangeFilter, apply_filters, extract_unique_values
-from ._constants import COLUMN_MAP
+from ._constants import (
+    COLUMN_MAP,
+    DASHBOARD_ID,
+    CHART_ID_KPI_TOTAL_COST,
+    CHART_ID_KPI_TOTAL_TOKENS,
+    CHART_ID_KPI_REQUEST_COUNT,
+    CHART_ID_COST_TREND,
+    CHART_ID_TOKEN_EFFICIENCY,
+    CHART_ID_MODEL_DISTRIBUTION,
+    CHART_ID_DATA_TABLE,
+)
+
+
+def resolve_dataset_id_for_dashboard() -> str:
+    """Resolve the dataset ID for all Cursor Usage charts.
+
+    Ensures every chart ID maps to exactly one dataset ID.
+    """
+    chart_ids = [
+        CHART_ID_KPI_TOTAL_COST,
+        CHART_ID_KPI_TOTAL_TOKENS,
+        CHART_ID_KPI_REQUEST_COUNT,
+        CHART_ID_COST_TREND,
+        CHART_ID_TOKEN_EFFICIENCY,
+        CHART_ID_MODEL_DISTRIBUTION,
+        CHART_ID_DATA_TABLE,
+    ]
+    dataset_ids = {resolve_dataset_id(DASHBOARD_ID, chart_id) for chart_id in chart_ids}
+    if len(dataset_ids) != 1:
+        raise ValueError(
+            "Multiple dataset IDs found for Cursor Usage dashboard: "
+            f"{sorted(dataset_ids)}"
+        )
+    return next(iter(dataset_ids))
 
 
 def load_filter_options(reader: ParquetReader, dataset_id: str) -> dict:
@@ -23,12 +57,15 @@ def load_filter_options(reader: ParquetReader, dataset_id: str) -> dict:
     try:
         df = get_cached_dataset(reader, dataset_id)
 
+        date_col = COLUMN_MAP["date"]
+        model_col = COLUMN_MAP["model"]
+
         # Strip timezone for filter compatibility
-        df["Date"] = pd.to_datetime(df["Date"], utc=True).dt.tz_convert(None)
-        df["DateOnly"] = df["Date"].dt.date
+        df[date_col] = pd.to_datetime(df[date_col], utc=True).dt.tz_convert(None)
+        df["DateOnly"] = df[date_col].dt.date
 
         # Extract unique model values (exclude NaN)
-        models = extract_unique_values(df, COLUMN_MAP["model"])
+        models = extract_unique_values(df, model_col)
 
         # Extract date range
         if len(df) > 0:
@@ -73,9 +110,12 @@ def load_and_filter_data(
     """
     df = get_cached_dataset(reader, dataset_id)
 
+    date_col = COLUMN_MAP["date"]
+    model_col = COLUMN_MAP["model"]
+
     # Strip timezone for filter compatibility (Parquet returns UTC-aware)
-    df["Date"] = pd.to_datetime(df["Date"], utc=True).dt.tz_convert(None)
-    df["DateOnly"] = df["Date"].dt.date
+    df[date_col] = pd.to_datetime(df[date_col], utc=True).dt.tz_convert(None)
+    df["DateOnly"] = df[date_col].dt.date
 
     # Build FilterSet
     filters = FilterSet()
@@ -83,7 +123,7 @@ def load_and_filter_data(
     if start_date and end_date:
         filters.date_filters.append(
             DateRangeFilter(
-                column=COLUMN_MAP["date"],
+                column=date_col,
                 start_date=start_date,
                 end_date=end_date,
             )
@@ -92,7 +132,7 @@ def load_and_filter_data(
     if model_values:
         filters.category_filters.append(
             CategoryFilter(
-                column=COLUMN_MAP["model"],
+                column=model_col,
                 values=model_values,
             )
         )

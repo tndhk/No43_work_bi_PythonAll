@@ -40,6 +40,8 @@ COLUMN_MAP: dict[str, str] = {
     "vendor": "Vendor: Account Name",
     "amp_av": "AMP VS AV Scope",
     "order_type": "order tags",
+    "job_name": "job name",
+    "work_order_id": "work order id",
 }
 
 # Mapping from breakdown tab ID to the DataFrame column used for pivot grouping.
