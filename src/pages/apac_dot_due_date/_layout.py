@@ -10,6 +10,7 @@ from src.data.parquet_reader import ParquetReader
 from src.data.data_source_registry import resolve_dataset_id
 from ._constants import (
     DASHBOARD_ID,
+    KPI_ID_TOTAL_WORK_ORDERS,
     CHART_ID_REFERENCE_TABLE,
     CHART_ID_REFERENCE_TABLE_TITLE,
     CHART_ID_CHANGE_ISSUE_TABLE,
@@ -43,6 +44,18 @@ def build_layout() -> html.Div:
 
         # Filter rows (control, month, prc, category, additional)
         *filter_rows,
+
+        # KPI Cards Section
+        dbc.Row([
+            dbc.Col([
+                dbc.Card([
+                    dbc.CardBody([
+                        html.H5("Total Work Orders", className="card-title"),
+                        html.H2(id=KPI_ID_TOTAL_WORK_ORDERS, className="card-text text-primary"),
+                    ])
+                ], className="mb-4"),
+            ], md=3),
+        ], className="mt-3"),
 
         # Reference / Table Section (Chart 00)
         dbc.Row([

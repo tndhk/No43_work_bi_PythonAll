@@ -31,7 +31,7 @@ def build_layout():
     return html.Div([
         html.H1("Cursor Usage Dashboard", className="mb-4"),
 
-        # Filters
+        # Filters Row 1
         dbc.Row([
             dbc.Col([
                 create_date_range_filter(
@@ -40,7 +40,7 @@ def build_layout():
                     min_date=options["min_date"],
                     max_date=options["max_date"],
                 ),
-            ], md=6),
+            ], md=4),
             dbc.Col([
                 create_category_filter(
                     filter_id=f"{ID_PREFIX}filter-model",
@@ -48,7 +48,27 @@ def build_layout():
                     options=options["models"],
                     multi=True,
                 ),
-            ], md=6),
+            ], md=4),
+            dbc.Col([
+                create_category_filter(
+                    filter_id=f"{ID_PREFIX}filter-user",
+                    column_name="User",
+                    options=options["users"],
+                    multi=True,
+                ),
+            ], md=4),
+        ], className="mb-3"),
+
+        # Filters Row 2
+        dbc.Row([
+            dbc.Col([
+                create_category_filter(
+                    filter_id=f"{ID_PREFIX}filter-kind",
+                    column_name="Kind",
+                    options=options["kinds"],
+                    multi=True,
+                ),
+            ], md=4),
         ], className="mb-4"),
 
         # KPI Cards

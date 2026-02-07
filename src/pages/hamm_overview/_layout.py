@@ -10,6 +10,8 @@ from ._constants import (
     CHART_ID_VOLUME_TABLE,
     CHART_ID_VOLUME_CHART,
     CHART_ID_TASK_TABLE,
+    CHART_ID_KPI_TOTAL_TASKS,
+    CHART_ID_KPI_AVG_VIDEO_DURATION,
     FILTER_ID_REGION,
     FILTER_ID_YEAR,
     FILTER_ID_MONTH,
@@ -156,6 +158,15 @@ def build_layout() -> html.Div:
                     multi=True,
                 ),
             ], md=4),
+        ], className="mb-3"),
+
+        dbc.Row([
+            dbc.Col([
+                html.Div(id=CHART_ID_KPI_TOTAL_TASKS),
+            ], md=3),
+            dbc.Col([
+                html.Div(id=CHART_ID_KPI_AVG_VIDEO_DURATION),
+            ], md=3),
         ], className="mb-3"),
 
         dbc.Row([

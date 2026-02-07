@@ -5,11 +5,14 @@ from dash import callback, Input, Output, html, dash_table
 import plotly.graph_objects as go
 
 from src.data.parquet_reader import ParquetReader
+from src.components.cards import create_kpi_card
 from ._constants import (
     COLUMN_MAP,
     CHART_ID_VOLUME_TABLE,
     CHART_ID_VOLUME_CHART,
     CHART_ID_TASK_TABLE,
+    CHART_ID_KPI_TOTAL_TASKS,
+    CHART_ID_KPI_AVG_VIDEO_DURATION,
     FILTER_ID_REGION,
     FILTER_ID_YEAR,
     FILTER_ID_MONTH,
@@ -250,6 +253,8 @@ def _build_volume_summary(df: pd.DataFrame, cadence: str) -> pd.DataFrame:
 
 
 @callback(
+    Output(CHART_ID_KPI_TOTAL_TASKS, "children"),
+    Output(CHART_ID_KPI_AVG_VIDEO_DURATION, "children"),
     Output(CHART_ID_VOLUME_TABLE, "children"),
     Output(CHART_ID_VOLUME_CHART, "figure"),
     Output(CHART_ID_TASK_TABLE, "children"),
@@ -325,6 +330,16 @@ def update_dashboard(
             error_type_values,
         )
 
+        total_tasks = df[COLUMN_MAP["id"]].nunique()
+        kpi_total_tasks = create_kpi_card("Total Tasks", f"{total_tasks:,}")
+
+        avg_duration = df[COLUMN_MAP["video_duration"]].mean()
+        if pd.isna(avg_duration):
+            avg_duration_str = "N/A"
+        else:
+            avg_duration_str = f"{avg_duration:.2f}s"
+        kpi_avg_duration = create_kpi_card("Average Video Duration", avg_duration_str)
+
         volume_summary = _build_volume_summary(df, cadence)
         volume_chart_df = _strip_sort_column(volume_summary)
         volume_table_df = _strip_sort_column(
@@ -339,7 +354,7 @@ def update_dashboard(
         volume_chart = _build_volume_chart(volume_chart_df)
         task_table = _build_task_table(df)
 
-        return volume_table, volume_chart, task_table
+        return kpi_total_tasks, kpi_avg_duration, volume_table, volume_chart, task_table
 
     except Exception as exc:
         error_msg = html.P(f"Error loading data: {exc}", className="text-danger")
@@ -351,4 +366,6 @@ def update_dashboard(
             showarrow=False,
         )
         empty_fig.update_layout(height=400)
-        return error_msg, empty_fig, error_msg
+        kpi_error = create_kpi_card("Total Tasks", "0")
+        kpi_error_duration = create_kpi_card("Average Video Duration", "N/A")
+        return kpi_error, kpi_error_duration, error_msg, empty_fig, error_msg

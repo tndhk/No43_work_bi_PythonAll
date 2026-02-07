@@ -24,9 +24,18 @@ src/pages/<page_name>/
 ├── _data_loader.py      # 必須: load_filter_options(), load_and_filter_data()
 ├── _layout.py           # 必須: build_layout()
 ├── _callbacks.py        # 必須: コールバック関数群
+├── SPEC.md              # 必須: ユーザー向け設計書（日本語）
 ├── _utils.py            # オプション: ヘルパー関数
 └── _chart_builders.py   # オプション: チャート生成関数
 ```
+
+### SPEC.md 必須ルール（MANDATORY）
+- 全ダッシュボードページには `SPEC.md` を配置すること
+- 目的: ユーザーがダッシュボードの目的・使い方を理解するため
+- 更新タイミング: フィルタ、チャート、KPI、テーブルを追加・修正した際は必ずSPEC.mdも更新
+- 形式: 日本語、技術詳細なし（コールバック、カラムマッピング、コンポーネントID等は含めない）
+- 構成: 概要、データソース、フィルタの使い方、チャート・テーブルの見方、KPIカード（該当時）
+- 詳細: `dash-spec-updater` スキルを参照
 
 ### ID_PREFIX 必須ルール
 - 全コンポーネントID（フィルタ、KPIカード、チャート、テーブル等）には `ID_PREFIX` を付与すること

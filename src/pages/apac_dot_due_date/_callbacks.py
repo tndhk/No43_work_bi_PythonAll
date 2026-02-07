@@ -10,6 +10,7 @@ from src.data.parquet_reader import ParquetReader
 from src.data.data_source_registry import resolve_dataset_id
 from ._constants import (
     DASHBOARD_ID,
+    KPI_ID_TOTAL_WORK_ORDERS,
     CHART_ID_REFERENCE_TABLE,
     CHART_ID_REFERENCE_TABLE_TITLE,
     CHART_ID_CHANGE_ISSUE_TABLE,
@@ -30,6 +31,7 @@ from .charts import _ch00_reference_table, _ch01_change_issue_table
 
 @callback(
     [
+        Output(KPI_ID_TOTAL_WORK_ORDERS, "children"),
         Output(CHART_ID_REFERENCE_TABLE_TITLE, "children"),
         Output(CHART_ID_REFERENCE_TABLE, "children"),
         Output(CHART_ID_CHANGE_ISSUE_TABLE_TITLE, "children"),
@@ -94,15 +96,24 @@ def update_all_charts(
             order_type_values=order_type_values,  # dataset 2 uses order_type
         )
 
+        # Calculate total work orders (using work_order_id column from dataset 1)
+        from ._constants import COLUMN_MAP
+        work_order_col = COLUMN_MAP.get("work_order_id")
+        if work_order_col and work_order_col in filtered_df_1.columns:
+            total_work_orders = filtered_df_1[work_order_col].nunique()
+        else:
+            total_work_orders = len(filtered_df_1)
+
         title_0, comp_0 = _ch00_reference_table.build(filtered_df_1, breakdown_tab, num_percent_mode)
         title_1, comp_1 = _ch01_change_issue_table.build(filtered_df_2, breakdown_tab, num_percent_mode)
 
-        return (title_0, comp_0, title_1, comp_1)
+        return (f"{total_work_orders:,}", title_0, comp_0, title_1, comp_1)
 
     except Exception as e:
         msg = f"Error loading data: {str(e)}"
 
         return (
+            "0",
             "0) Reference : Number of Work Order",
             html.Div([html.P(msg, className="text-danger")]),
             "1) DDD Change + Issue : Number of Work Order",

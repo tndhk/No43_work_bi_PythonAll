@@ -29,6 +29,9 @@ FILTER_ID_VENDOR: str = f"{ID_PREFIX}filter-vendor"
 FILTER_ID_AMP_AV: str = f"{ID_PREFIX}filter-amp-av"
 FILTER_ID_ORDER_TYPE: str = f"{ID_PREFIX}filter-order-type"
 
+# ----- KPI IDs -----
+KPI_ID_TOTAL_WORK_ORDERS: str = f"{ID_PREFIX}kpi-total-work-orders"
+
 # ----- Chart IDs -----
 CHART_ID_REFERENCE_TABLE: str = f"{ID_PREFIX}chart-00"
 CHART_ID_REFERENCE_TABLE_TITLE: str = f"{CHART_ID_REFERENCE_TABLE}-title"

@@ -9,6 +9,10 @@ CHART_ID_VOLUME_TABLE: str = f"{ID_PREFIX}volume-table"
 CHART_ID_VOLUME_CHART: str = f"{ID_PREFIX}volume-chart"
 CHART_ID_TASK_TABLE: str = f"{ID_PREFIX}task-table"
 
+# KPI Card IDs
+CHART_ID_KPI_TOTAL_TASKS: str = f"{ID_PREFIX}kpi-total-tasks"
+CHART_ID_KPI_AVG_VIDEO_DURATION: str = f"{ID_PREFIX}kpi-avg-video-duration"
+
 # Filter IDs
 FILTER_ID_REGION: str = f"{ID_PREFIX}filter-region"
 FILTER_ID_YEAR: str = f"{ID_PREFIX}filter-year"

@@ -33,15 +33,19 @@ from ._data_loader import load_and_filter_data, resolve_dataset_id_for_dashboard
         Input(f"{ID_PREFIX}filter-date", "start_date"),
         Input(f"{ID_PREFIX}filter-date", "end_date"),
         Input(f"{ID_PREFIX}filter-model", "value"),
+        Input(f"{ID_PREFIX}filter-user", "value"),
+        Input(f"{ID_PREFIX}filter-kind", "value"),
     ],
 )
-def update_dashboard(start_date, end_date, model_values):
+def update_dashboard(start_date, end_date, model_values, user_values, kind_values):
     """Update dashboard components based on filters.
 
     Args:
         start_date: Start date from date range filter (ISO string or None)
         end_date: End date from date range filter (ISO string or None)
         model_values: Selected models from dropdown (list or None)
+        user_values: Selected users from dropdown (list or None)
+        kind_values: Selected kinds from dropdown (list or None)
 
     Returns:
         Tuple of (kpi_cost, kpi_tokens, kpi_requests, cost_trend_fig,
@@ -54,7 +58,7 @@ def update_dashboard(start_date, end_date, model_values):
         dataset_id = resolve_dataset_id_for_dashboard()
 
         filtered_df = load_and_filter_data(
-            reader, dataset_id, start_date, end_date, model_values
+            reader, dataset_id, start_date, end_date, model_values, user_values, kind_values
         )
 
         if len(filtered_df) == 0:
