@@ -11,13 +11,13 @@ from typing import Any
 import pandas as pd
 from dash import dash_table, html
 
+from ._chart_defs import get_chart_def
+from ._table_style import build_table_style
 from .._constants import BREAKDOWN_MAP, COLUMN_MAP
 
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
-
-_TITLE = "0) Reference : Number of Work Order"
 
 
 def build(
@@ -44,12 +44,14 @@ def build(
         ``dash_table.DataTable`` or an ``html.P`` placeholder when the data is
         empty.
     """
+    chart_def = get_chart_def("ch00_reference_table")
+    title = chart_def["title"]
     # ------------------------------------------------------------------
     # Empty guard
     # ------------------------------------------------------------------
     if len(filtered_df) == 0:
         return (
-            _TITLE,
+            title,
             html.P("No data available for selected filters", className="text-muted"),
         )
 
@@ -122,30 +124,27 @@ def build(
     pivot_table = pivot_table.reset_index()
     pivot_table.columns.name = None
 
-    columns = [{"name": col, "id": col} for col in pivot_table.columns]
+    column_order = chart_def.get("column_order", [])
+    if column_order:
+        ordered = [col for col in column_order if col in pivot_table.columns]
+        remaining = [col for col in pivot_table.columns if col not in ordered]
+        pivot_table = pivot_table[ordered + remaining]
+
+    column_display = chart_def.get("column_display", {})
+    columns = [
+        {"name": column_display.get(col, col), "id": col}
+        for col in pivot_table.columns
+    ]
     data = pivot_table.to_dict("records")
+    table_style = build_table_style(chart_def, breakdown_column)
 
     table_component = dash_table.DataTable(
         data=data,
         columns=columns,
-        style_table={"overflowX": "auto"},
-        style_cell={
-            "textAlign": "left",
-            "padding": "8px",
-            "fontSize": "14px",
-        },
-        style_header={
-            "fontWeight": "bold",
-            "backgroundColor": "#2563eb",
-            "color": "white",
-        },
-        style_data_conditional=[
-            {
-                "if": {"filter_query": f'{{{breakdown_column}}} = "GRAND TOTAL"'},
-                "fontWeight": "bold",
-                "backgroundColor": "#eff6ff",
-            }
-        ],
+        style_table=table_style["style_table"],
+        style_cell=table_style["style_cell"],
+        style_header=table_style["style_header"],
+        style_data_conditional=table_style["style_data_conditional"],
     )
 
-    return (_TITLE, table_component)
+    return (title, table_component)

@@ -1,0 +1,41 @@
+charts:
+  ch00_reference_table:
+    title: "0) Reference : Number of Work Order"
+    column_display: {}
+    column_order: []
+    table_style:
+      style_table:
+        overflowX: auto
+      style_cell:
+        textAlign: left
+        padding: 8px
+        fontSize: 14px
+      style_header:
+        fontWeight: bold
+        backgroundColor: "#2563eb"
+        color: white
+      style_data_conditional:
+        - if:
+            filter_query: "{breakdown_col} = \"GRAND TOTAL\""
+          fontWeight: bold
+          backgroundColor: "#eff6ff"
+  ch01_change_issue_table:
+    title: "1) DDD Change + Issue : Number of Work Order"
+    column_display: {}
+    column_order: []
+    table_style:
+      style_table:
+        overflowX: auto
+      style_cell:
+        textAlign: left
+        padding: 8px
+        fontSize: 14px
+      style_header:
+        fontWeight: bold
+        backgroundColor: "#2563eb"
+        color: white
+      style_data_conditional:
+        - if:
+            filter_query: "{breakdown_col} = \"GRAND TOTAL\""
+          fontWeight: bold
+          backgroundColor: "#eff6ff"
