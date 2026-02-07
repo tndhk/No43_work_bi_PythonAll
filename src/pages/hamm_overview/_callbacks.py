@@ -333,11 +333,13 @@ def update_dashboard(
         total_tasks = df[COLUMN_MAP["id"]].nunique()
         kpi_total_tasks = create_kpi_card("Total Tasks", f"{total_tasks:,}")
 
-        avg_duration = df[COLUMN_MAP["video_duration"]].mean()
-        if pd.isna(avg_duration):
+        avg_seconds = df["_video_duration_seconds"].mean()
+        if pd.isna(avg_seconds):
             avg_duration_str = "N/A"
         else:
-            avg_duration_str = f"{avg_duration:.2f}s"
+            mins, secs = divmod(int(avg_seconds), 60)
+            hrs, mins = divmod(mins, 60)
+            avg_duration_str = f"{hrs:02d}:{mins:02d}:{secs:02d}"
         kpi_avg_duration = create_kpi_card("Average Video Duration", avg_duration_str)
 
         volume_summary = _build_volume_summary(df, cadence)

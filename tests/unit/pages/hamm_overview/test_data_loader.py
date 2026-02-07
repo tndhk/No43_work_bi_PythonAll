@@ -82,3 +82,53 @@ def test_add_cadence_columns_weekly_has_start_end(mock_cache):
 
     assert "_start_date" in result.columns
     assert "_end_date" in result.columns
+
+
+def test_prepare_base_df_converts_video_duration_to_seconds():
+    from src.pages.hamm_overview._data_loader import _prepare_base_df
+
+    df = pd.DataFrame({
+        "id": ["1", "2", "3"],
+        "created_at": pd.to_datetime(["2026-01-05", "2026-01-06", "2026-01-07"], utc=True),
+        "completed_at": pd.to_datetime(["2026-01-06", "2026-01-07", "2026-01-08"], utc=True),
+        "video_duration": ["00:10:30", "01:05:15", "00:00:45"],
+    })
+
+    result = _prepare_base_df(df)
+
+    assert "_video_duration_seconds" in result.columns
+    assert result["_video_duration_seconds"].iloc[0] == 630.0  # 10*60 + 30
+    assert result["_video_duration_seconds"].iloc[1] == 3915.0  # 1*3600 + 5*60 + 15
+    assert result["_video_duration_seconds"].iloc[2] == 45.0
+
+
+def test_prepare_base_df_handles_invalid_video_duration():
+    from src.pages.hamm_overview._data_loader import _prepare_base_df
+
+    df = pd.DataFrame({
+        "id": ["1", "2"],
+        "created_at": pd.to_datetime(["2026-01-05", "2026-01-06"], utc=True),
+        "completed_at": pd.to_datetime(["2026-01-06", "2026-01-07"], utc=True),
+        "video_duration": ["invalid", "00:10:00"],
+    })
+
+    result = _prepare_base_df(df)
+
+    assert pd.isna(result["_video_duration_seconds"].iloc[0])
+    assert result["_video_duration_seconds"].iloc[1] == 600.0
+
+
+def test_prepare_base_df_preserves_original_video_duration():
+    from src.pages.hamm_overview._data_loader import _prepare_base_df
+
+    df = pd.DataFrame({
+        "id": ["1"],
+        "created_at": pd.to_datetime(["2026-01-05"], utc=True),
+        "completed_at": pd.to_datetime(["2026-01-06"], utc=True),
+        "video_duration": ["00:10:00"],
+    })
+
+    result = _prepare_base_df(df)
+
+    assert "video_duration" in result.columns
+    assert result["video_duration"].iloc[0] == "00:10:00"

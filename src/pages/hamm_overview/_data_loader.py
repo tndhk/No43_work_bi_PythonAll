@@ -55,6 +55,10 @@ def _prepare_base_df(df: pd.DataFrame) -> pd.DataFrame:
     df[created_col] = pd.to_datetime(df[created_col], utc=True).dt.tz_convert(None)
     df[completed_col] = pd.to_datetime(df[completed_col], utc=True).dt.tz_convert(None)
 
+    # Convert video_duration from "HH:MM:SS" string to seconds (float)
+    dur_col = COLUMN_MAP["video_duration"]
+    df["_video_duration_seconds"] = pd.to_timedelta(df[dur_col], errors="coerce").dt.total_seconds()
+
     df[DERIVED_YEAR] = df[created_col].dt.strftime("%Y")
     df[DERIVED_MONTH] = df[created_col].dt.strftime("%b")
 
