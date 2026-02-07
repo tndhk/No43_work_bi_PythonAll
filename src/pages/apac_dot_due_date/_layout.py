@@ -7,8 +7,13 @@ from dash import html
 import dash_bootstrap_components as dbc
 
 from src.data.parquet_reader import ParquetReader
-from src.data.data_source_registry import get_dataset_id
-from ._constants import DASHBOARD_ID, CHART_ID_REFERENCE_TABLE, DATASET_ID
+from src.data.data_source_registry import resolve_dataset_id
+from ._constants import (
+    DASHBOARD_ID,
+    DATASET_ID,
+    CHART_ID_REFERENCE_TABLE,
+    CHART_ID_REFERENCE_TABLE_TITLE,
+)
 from ._data_loader import load_filter_options
 from ._filters import build_filter_layout
 
@@ -24,7 +29,7 @@ def build_layout() -> html.Div:
     """
     # Load data to get available options for filters
     reader = ParquetReader()
-    dataset_id = get_dataset_id(DASHBOARD_ID, CHART_ID_REFERENCE_TABLE) or DATASET_ID
+    dataset_id = resolve_dataset_id(DASHBOARD_ID, CHART_ID_REFERENCE_TABLE, fallback=DATASET_ID)
     opts = load_filter_options(reader, dataset_id)
 
     # Build filter rows via _filters module
@@ -39,8 +44,8 @@ def build_layout() -> html.Div:
         # Reference / Table Section
         dbc.Row([
             dbc.Col([
-                html.H3(id="apac-dot-chart-00-title", className="mt-4 mb-3"),
-                html.Div(id="apac-dot-chart-00"),
+                html.H3(id=CHART_ID_REFERENCE_TABLE_TITLE, className="mt-4 mb-3"),
+                html.Div(id=CHART_ID_REFERENCE_TABLE),
             ], md=12),
         ]),
     ], className="page-container")

@@ -70,6 +70,7 @@ services:
       dockerfile: Dockerfile.dev
     volumes:
       - ./src:/app/src
+      - ./backend:/app/backend
       - ./tests:/app/tests
       - ./app.py:/app/app.py
       - ./pyproject.toml:/app/pyproject.toml

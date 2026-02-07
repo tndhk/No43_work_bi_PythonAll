@@ -1,6 +1,6 @@
 # 運用ガイド (RUNBOOK)
 
-Last Updated: 2026-02-07 (rev.3)
+Last Updated: 2026-02-07 (rev.4)
 
 ## このドキュメントについて
 
@@ -87,15 +87,11 @@ aws logs tail /ecs/bi-dashboard --follow
 
 ### ベース環境変数（.env.example 由来）
 
-| 変数 | 説明 | 備考 |
-|------|------|------|
-| `S3_ENDPOINT` | S3 エンドポイント | 本番: `https://s3.ap-northeast-1.amazonaws.com`（空文字列でも可） |
-| `S3_REGION` | AWS リージョン | `ap-northeast-1` |
-| `S3_BUCKET` | データセットバケット | 本番用 S3 バケット名 |
-| `S3_ACCESS_KEY` | IAM アクセスキー | AWS Secrets Manager より取得（IAMロール使用時は不要） |
-| `S3_SECRET_KEY` | IAM シークレットキー | AWS Secrets Manager より取得（IAMロール使用時は不要） |
-| `BASIC_AUTH_USERNAME` | 認証ユーザー名 | 本番は SAML に置き換え（Phase 3） |
-| `BASIC_AUTH_PASSWORD` | 認証パスワード | AWS Secrets Manager より取得 |
+ローカル開発向けの変数一覧は [CONTRIB.md](CONTRIB.md) sec.3 を参照。本番運用での主な違い:
+
+- `S3_ENDPOINT`: 本番では `https://s3.ap-northeast-1.amazonaws.com` または空文字列
+- `S3_ACCESS_KEY` / `S3_SECRET_KEY`: AWS Secrets Manager より取得（IAMロール使用時は不要）
+- `BASIC_AUTH_PASSWORD`: AWS Secrets Manager より取得。Phase 3で SAML に置き換え
 
 ### 追加設定（.env.example 以外）
 

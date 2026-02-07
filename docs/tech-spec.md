@@ -283,7 +283,7 @@ flowchart TB
 - キャッシュキー: `dataset_id` + フィルタパラメータ
 - キャッシュ切れ時に S3 から再読み込み
 
-### 5.2 データセット一覧取得
+### 5.4 データセット一覧取得
 
 ```python
 from src.data.parquet_reader import ParquetReader
@@ -292,7 +292,7 @@ reader = ParquetReader()
 datasets = reader.list_datasets()  # S3のdatasets/配下をスキャン
 ```
 
-### 5.3 データセット読み込み
+### 5.5 データセット読み込み
 
 ```python
 from src.data.parquet_reader import ParquetReader
@@ -301,7 +301,7 @@ reader = ParquetReader()
 df = reader.read_dataset(dataset_id)  # datasets/{id}/data/part-0000.parquet を読み込み
 ```
 
-### 5.4 データセット統計生成
+### 5.6 データセット統計生成
 
 ```python
 from src.data.dataset_summarizer import DatasetSummarizer
@@ -440,11 +440,7 @@ register_layout_callbacks(app)
 
 ### 9.3 テスト実行
 
-```bash
-# バックエンド
-cd /path/to/project
-pytest --cov=src --cov-report=html
-```
+テスト実行方法の詳細は [CONTRIB.md](CONTRIB.md) sec.5 を参照。
 
 ---
 

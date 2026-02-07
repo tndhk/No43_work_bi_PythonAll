@@ -8,6 +8,8 @@ from unittest.mock import patch, MagicMock
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 
+from tests.helpers.dash_test_utils import find_component_by_id, find_components_by_type
+
 
 # ---------------------------------------------------------------------------
 # Test data helpers
@@ -26,50 +28,6 @@ def _make_filter_options() -> dict:
         "prc_count": 2,
         "non_prc_count": 3,
     }
-
-
-def _find_component_by_id(component, component_id: str):
-    """Recursively search a Dash component tree for a component with given id.
-
-    Returns the component if found, or None.
-    """
-    # Check current component
-    if hasattr(component, "id") and component.id == component_id:
-        return component
-
-    # Search children
-    children = getattr(component, "children", None)
-    if children is None:
-        return None
-
-    if isinstance(children, (list, tuple)):
-        for child in children:
-            result = _find_component_by_id(child, component_id)
-            if result is not None:
-                return result
-    else:
-        return _find_component_by_id(children, component_id)
-
-    return None
-
-
-def _find_components_by_type(component, target_type) -> list:
-    """Recursively find all components of a given type in a Dash component tree."""
-    results = []
-    if isinstance(component, target_type):
-        results.append(component)
-
-    children = getattr(component, "children", None)
-    if children is None:
-        return results
-
-    if isinstance(children, (list, tuple)):
-        for child in children:
-            results.extend(_find_components_by_type(child, target_type))
-    else:
-        results.extend(_find_components_by_type(children, target_type))
-
-    return results
 
 
 # ===========================================================================
@@ -115,7 +73,7 @@ class TestPageTitle:
         from src.pages.apac_dot_due_date._layout import build_layout
 
         result = build_layout()
-        h1_components = _find_components_by_type(result, html.H1)
+        h1_components = find_components_by_type(result, html.H1)
         assert len(h1_components) >= 1, "No H1 component found in layout"
 
     @patch("src.pages.apac_dot_due_date._layout.ParquetReader")
@@ -126,7 +84,7 @@ class TestPageTitle:
         from src.pages.apac_dot_due_date._layout import build_layout
 
         result = build_layout()
-        h1_components = _find_components_by_type(result, html.H1)
+        h1_components = find_components_by_type(result, html.H1)
         assert any(
             "APAC DOT Due Date Dashboard" in str(getattr(h1, "children", ""))
             for h1 in h1_components
@@ -149,7 +107,7 @@ class TestFilterSection:
         from src.pages.apac_dot_due_date._layout import build_layout
 
         result = build_layout()
-        found = _find_component_by_id(result, "apac-dot-ctrl-num-percent")
+        found = find_component_by_id(result, "apac-dot-ctrl-num-percent")
         assert found is not None, "apac-dot-ctrl-num-percent not found in layout"
 
     @patch("src.pages.apac_dot_due_date._layout.ParquetReader")
@@ -161,7 +119,7 @@ class TestFilterSection:
         from src.pages.apac_dot_due_date._layout import build_layout
 
         result = build_layout()
-        found = _find_component_by_id(result, "apac-dot-ctrl-breakdown")
+        found = find_component_by_id(result, "apac-dot-ctrl-breakdown")
         assert found is not None, "apac-dot-ctrl-breakdown not found in layout"
 
     @patch("src.pages.apac_dot_due_date._layout.ParquetReader")
@@ -173,7 +131,7 @@ class TestFilterSection:
         from src.pages.apac_dot_due_date._layout import build_layout
 
         result = build_layout()
-        found = _find_component_by_id(result, "apac-dot-filter-month")
+        found = find_component_by_id(result, "apac-dot-filter-month")
         assert found is not None, "apac-dot-filter-month not found in layout"
 
     @patch("src.pages.apac_dot_due_date._layout.ParquetReader")
@@ -185,7 +143,7 @@ class TestFilterSection:
         from src.pages.apac_dot_due_date._layout import build_layout
 
         result = build_layout()
-        found = _find_component_by_id(result, "apac-dot-filter-prc")
+        found = find_component_by_id(result, "apac-dot-filter-prc")
         assert found is not None, "apac-dot-filter-prc not found in layout"
 
 
@@ -205,7 +163,7 @@ class TestChartSection:
         from src.pages.apac_dot_due_date._layout import build_layout
 
         result = build_layout()
-        found = _find_component_by_id(result, "apac-dot-chart-00-title")
+        found = find_component_by_id(result, "apac-dot-chart-00-title")
         assert found is not None, "apac-dot-chart-00-title element not found in layout"
 
     @patch("src.pages.apac_dot_due_date._layout.ParquetReader")
@@ -217,7 +175,7 @@ class TestChartSection:
         from src.pages.apac_dot_due_date._layout import build_layout
 
         result = build_layout()
-        found = _find_component_by_id(result, "apac-dot-chart-00-title")
+        found = find_component_by_id(result, "apac-dot-chart-00-title")
         assert isinstance(found, html.H3), (
             f"Expected html.H3, got {type(found).__name__}"
         )
@@ -231,7 +189,7 @@ class TestChartSection:
         from src.pages.apac_dot_due_date._layout import build_layout
 
         result = build_layout()
-        found = _find_component_by_id(result, "apac-dot-chart-00")
+        found = find_component_by_id(result, "apac-dot-chart-00")
         assert found is not None, "apac-dot-chart-00 element not found in layout"
 
     @patch("src.pages.apac_dot_due_date._layout.ParquetReader")
@@ -243,7 +201,7 @@ class TestChartSection:
         from src.pages.apac_dot_due_date._layout import build_layout
 
         result = build_layout()
-        found = _find_component_by_id(result, "apac-dot-chart-00")
+        found = find_component_by_id(result, "apac-dot-chart-00")
         assert isinstance(found, html.Div), (
             f"Expected html.Div, got {type(found).__name__}"
         )
@@ -296,7 +254,7 @@ class TestLayoutStructureOrder:
             f"Expected last child to be dbc.Row, got {type(last_child).__name__}"
         )
         # The table-title should be inside the last child
-        table_title = _find_component_by_id(last_child, "apac-dot-chart-00-title")
+        table_title = find_component_by_id(last_child, "apac-dot-chart-00-title")
         assert table_title is not None, "apac-dot-chart-00-title not in last row"
 
 

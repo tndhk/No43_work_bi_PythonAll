@@ -7,7 +7,7 @@ import pandas as pd
 
 from src.data.parquet_reader import ParquetReader
 from src.core.cache import get_cached_dataset
-from src.data.filter_engine import FilterSet, CategoryFilter, apply_filters
+from src.data.filter_engine import FilterSet, CategoryFilter, apply_filters, extract_unique_values
 from ._constants import COLUMN_MAP
 
 
@@ -24,36 +24,12 @@ def load_filter_options(reader: ParquetReader, dataset_id: str) -> dict:
     try:
         df = get_cached_dataset(reader, dataset_id)
 
-        months = (
-            sorted(df[COLUMN_MAP["month"]].dropna().unique().tolist())
-            if COLUMN_MAP["month"] in df.columns
-            else []
-        )
-        areas = (
-            sorted(df[COLUMN_MAP["area"]].dropna().unique().tolist())
-            if COLUMN_MAP["area"] in df.columns
-            else []
-        )
-        workstreams = (
-            sorted(df[COLUMN_MAP["category"]].dropna().unique().tolist())
-            if COLUMN_MAP["category"] in df.columns
-            else []
-        )
-        vendors = (
-            sorted(df[COLUMN_MAP["vendor"]].dropna().unique().tolist())
-            if COLUMN_MAP["vendor"] in df.columns
-            else []
-        )
-        amp_vs_av = (
-            sorted(df[COLUMN_MAP["amp_av"]].dropna().unique().tolist())
-            if COLUMN_MAP["amp_av"] in df.columns
-            else []
-        )
-        order_types = (
-            sorted(df[COLUMN_MAP["order_type"]].dropna().unique().tolist())
-            if COLUMN_MAP["order_type"] in df.columns
-            else []
-        )
+        months = extract_unique_values(df, COLUMN_MAP["month"])
+        areas = extract_unique_values(df, COLUMN_MAP["area"])
+        workstreams = extract_unique_values(df, COLUMN_MAP["category"])
+        vendors = extract_unique_values(df, COLUMN_MAP["vendor"])
+        amp_vs_av = extract_unique_values(df, COLUMN_MAP["amp_av"])
+        order_types = extract_unique_values(df, COLUMN_MAP["order_type"])
 
         total_count = len(df)
         prc_count = (

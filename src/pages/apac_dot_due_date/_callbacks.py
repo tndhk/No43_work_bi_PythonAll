@@ -7,27 +7,41 @@ the ``@callback`` decorator as a side effect.
 from dash import callback, html, Input, Output
 
 from src.data.parquet_reader import ParquetReader
-from src.data.data_source_registry import get_dataset_id
-from ._constants import DASHBOARD_ID, CHART_ID_REFERENCE_TABLE, DATASET_ID
+from src.data.data_source_registry import resolve_dataset_id
+from ._constants import (
+    DASHBOARD_ID,
+    DATASET_ID,
+    CHART_ID_REFERENCE_TABLE,
+    CHART_ID_REFERENCE_TABLE_TITLE,
+    CTRL_ID_NUM_PERCENT,
+    CTRL_ID_BREAKDOWN,
+    FILTER_ID_MONTH,
+    FILTER_ID_PRC,
+    FILTER_ID_AREA,
+    FILTER_ID_CATEGORY,
+    FILTER_ID_VENDOR,
+    FILTER_ID_AMP_AV,
+    FILTER_ID_ORDER_TYPE,
+)
 from ._data_loader import load_and_filter_data
 from .charts import _ch00_reference_table
 
 
 @callback(
     [
-        Output("apac-dot-chart-00-title", "children"),
-        Output("apac-dot-chart-00", "children"),
+        Output(CHART_ID_REFERENCE_TABLE_TITLE, "children"),
+        Output(CHART_ID_REFERENCE_TABLE, "children"),
     ],
     [
-        Input("apac-dot-ctrl-num-percent", "value"),
-        Input("apac-dot-ctrl-breakdown", "active_tab"),
-        Input("apac-dot-filter-month", "value"),
-        Input("apac-dot-filter-prc", "value"),
-        Input("apac-dot-filter-area", "value"),
-        Input("apac-dot-filter-category", "value"),
-        Input("apac-dot-filter-vendor", "value"),
-        Input("apac-dot-filter-amp-av", "value"),
-        Input("apac-dot-filter-order-type", "value"),
+        Input(CTRL_ID_NUM_PERCENT, "value"),
+        Input(CTRL_ID_BREAKDOWN, "active_tab"),
+        Input(FILTER_ID_MONTH, "value"),
+        Input(FILTER_ID_PRC, "value"),
+        Input(FILTER_ID_AREA, "value"),
+        Input(FILTER_ID_CATEGORY, "value"),
+        Input(FILTER_ID_VENDOR, "value"),
+        Input(FILTER_ID_AMP_AV, "value"),
+        Input(FILTER_ID_ORDER_TYPE, "value"),
     ],
 )
 def update_all_charts(
@@ -49,7 +63,7 @@ def update_all_charts(
     reader = ParquetReader()
 
     try:
-        dataset_id = get_dataset_id(DASHBOARD_ID, CHART_ID_REFERENCE_TABLE) or DATASET_ID
+        dataset_id = resolve_dataset_id(DASHBOARD_ID, CHART_ID_REFERENCE_TABLE, fallback=DATASET_ID)
         filtered_df = load_and_filter_data(
             reader,
             dataset_id,

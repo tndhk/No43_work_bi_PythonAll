@@ -7,8 +7,8 @@ from src.charts.plotly_theme import apply_theme, PLOTLY_COLOR_PALETTE, PLOTLY_TE
 def test_plotly_color_palette():
     """Test: Color palette is defined correctly."""
     assert len(PLOTLY_COLOR_PALETTE) == 6
-    assert "#c9a55c" in PLOTLY_COLOR_PALETTE  # Warm gold
-    assert "#3ecfb4" in PLOTLY_COLOR_PALETTE  # Teal
+    assert "#2563eb" in PLOTLY_COLOR_PALETTE  # Blue (primary)
+    assert "#059669" in PLOTLY_COLOR_PALETTE  # Emerald
 
 
 def test_plotly_template_exists():
@@ -19,7 +19,7 @@ def test_plotly_template_exists():
 
 def test_plotly_template_colors():
     """Test: Template uses correct color palette."""
-    assert PLOTLY_TEMPLATE.layout.colorway == PLOTLY_COLOR_PALETTE
+    assert list(PLOTLY_TEMPLATE.layout.colorway) == PLOTLY_COLOR_PALETTE
 
 
 def test_plotly_template_backgrounds():
@@ -30,8 +30,8 @@ def test_plotly_template_backgrounds():
 
 def test_plotly_template_fonts():
     """Test: Template uses correct fonts."""
-    assert "Plus Jakarta Sans" in PLOTLY_TEMPLATE.layout.font.family
-    assert "Syne" in PLOTLY_TEMPLATE.layout.title.font.family
+    assert "Noto Sans JP" in PLOTLY_TEMPLATE.layout.font.family
+    assert "Noto Sans JP" in PLOTLY_TEMPLATE.layout.title.font.family
 
 
 def test_apply_theme():

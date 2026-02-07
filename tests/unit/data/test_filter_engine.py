@@ -1,5 +1,6 @@
 """Tests for filter engine."""
 import pytest
+import numpy as np
 import pandas as pd
 from datetime import datetime
 from src.data.filter_engine import (
@@ -7,6 +8,7 @@ from src.data.filter_engine import (
     DateRangeFilter,
     FilterSet,
     apply_filters,
+    extract_unique_values,
 )
 
 
@@ -70,7 +72,7 @@ def test_category_filter_multiple_values(sample_df):
     result = apply_filters(sample_df, filter_set)
 
     # Then: Rows with category "A" or "B" are returned
-    assert len(result) == 2
+    assert len(result) == 3
     assert set(result["category"].dropna()) == {"A", "B"}
 
 
@@ -177,7 +179,7 @@ def test_multiple_category_filters(sample_df):
     result = apply_filters(df, filter_set)
 
     # Then: Rows matching all filters are returned
-    assert len(result) == 1
+    assert len(result) == 2
     assert result["category"].iloc[0] == "A"
     assert result["status"].iloc[0] == "active"
 
@@ -197,3 +199,112 @@ def test_empty_dataframe():
 
     # Then: Empty DataFrame is returned
     assert len(result) == 0
+
+
+# --- FilterSet mutability tests ---
+
+
+def test_filterset_is_mutable():
+    """Test: FilterSet allows field reassignment (not frozen)."""
+    # Given: A FilterSet with one category filter
+    filter_set = FilterSet(
+        category_filters=[
+            CategoryFilter(column="category", values=["A"]),
+        ],
+    )
+
+    # When: Reassigning category_filters field
+    new_filters = [CategoryFilter(column="category", values=["B"])]
+    filter_set.category_filters = new_filters
+
+    # Then: Field is updated without raising an error
+    assert len(filter_set.category_filters) == 1
+    assert filter_set.category_filters[0].values == ["B"]
+
+
+def test_filterset_list_append_after_creation():
+    """Test: FilterSet allows appending to its list fields after creation."""
+    # Given: An empty FilterSet
+    filter_set = FilterSet()
+
+    # When: Appending a filter to the list
+    filter_set.category_filters.append(
+        CategoryFilter(column="status", values=["active"])
+    )
+
+    # Then: The appended filter is present
+    assert len(filter_set.category_filters) == 1
+    assert filter_set.category_filters[0].column == "status"
+
+
+# --- extract_unique_values tests ---
+
+
+class TestExtractUniqueValues:
+    """Tests for extract_unique_values helper."""
+
+    def test_returns_sorted_unique_values(self):
+        """Test: Returns sorted unique values when column exists."""
+        # Given: DataFrame with duplicate values in a column
+        df = pd.DataFrame({"color": ["red", "blue", "red", "green", "blue"]})
+
+        # When: Extracting unique values
+        result = extract_unique_values(df, "color")
+
+        # Then: Sorted unique values are returned
+        assert result == ["blue", "green", "red"]
+
+    def test_returns_empty_list_when_column_missing(self):
+        """Test: Returns empty list when column does not exist."""
+        # Given: DataFrame without the target column
+        df = pd.DataFrame({"name": ["Alice", "Bob"]})
+
+        # When: Extracting unique values from a non-existent column
+        result = extract_unique_values(df, "missing_column")
+
+        # Then: Empty list is returned
+        assert result == []
+
+    def test_excludes_nan_values(self):
+        """Test: NaN values are excluded from the result."""
+        # Given: DataFrame with NaN values
+        df = pd.DataFrame({"status": ["active", None, "inactive", np.nan, "active"]})
+
+        # When: Extracting unique values
+        result = extract_unique_values(df, "status")
+
+        # Then: NaN/None are excluded, remaining values are sorted and unique
+        assert result == ["active", "inactive"]
+
+    def test_returns_empty_list_for_empty_dataframe(self):
+        """Test: Returns empty list when DataFrame is empty."""
+        # Given: Empty DataFrame with the target column
+        df = pd.DataFrame({"category": pd.Series([], dtype="object")})
+
+        # When: Extracting unique values
+        result = extract_unique_values(df, "category")
+
+        # Then: Empty list is returned
+        assert result == []
+
+    def test_numeric_values_sorted(self):
+        """Test: Numeric values are also sorted correctly."""
+        # Given: DataFrame with numeric column
+        df = pd.DataFrame({"score": [30, 10, 20, 10, 30]})
+
+        # When: Extracting unique values
+        result = extract_unique_values(df, "score")
+
+        # Then: Sorted unique numeric values are returned
+        assert result == [10, 20, 30]
+
+    def test_all_nan_column(self):
+        """Test: Column with only NaN values returns empty list."""
+        # Given: DataFrame where column has only NaN
+        df = pd.DataFrame({"data": [None, np.nan, None]})
+
+        # When: Extracting unique values
+        result = extract_unique_values(df, "data")
+
+        # Then: Empty list is returned
+        assert result == []

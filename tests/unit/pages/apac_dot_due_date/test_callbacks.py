@@ -8,6 +8,8 @@ import pandas as pd
 from unittest.mock import MagicMock, patch, call
 from dash import html
 
+from tests.helpers.dash_test_utils import extract_text_recursive
+
 
 # ---------------------------------------------------------------------------
 # Test data helpers
@@ -303,7 +305,7 @@ class TestErrorHandling:
         error_component = result[1]
         assert isinstance(error_component, html.Div)
         # The error text should be somewhere in the component tree
-        error_text = _extract_text_recursive(error_component)
+        error_text = extract_text_recursive(error_component)
         assert "S3 connection failed" in error_text
 
     @patch("src.pages.apac_dot_due_date._callbacks._ch00_reference_table")
@@ -359,24 +361,3 @@ class TestInitImportsCallbacks:
         from src.pages.apac_dot_due_date import _callbacks  # noqa: F401
 
 
-# ===========================================================================
-# Helper utilities
-# ===========================================================================
-
-def _extract_text_recursive(component) -> str:
-    """Extract all text content from a Dash component tree."""
-    texts = []
-    children = getattr(component, "children", None)
-
-    if isinstance(children, str):
-        texts.append(children)
-    elif isinstance(children, (list, tuple)):
-        for child in children:
-            if isinstance(child, str):
-                texts.append(child)
-            elif hasattr(child, "children"):
-                texts.append(_extract_text_recursive(child))
-    elif hasattr(children, "children"):
-        texts.append(_extract_text_recursive(children))
-
-    return " ".join(texts)

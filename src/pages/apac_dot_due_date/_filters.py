@@ -7,6 +7,17 @@ from dash import dcc
 import dash_bootstrap_components as dbc
 
 from src.components.filters import create_category_filter
+from ._constants import (
+    CTRL_ID_NUM_PERCENT,
+    CTRL_ID_BREAKDOWN,
+    FILTER_ID_MONTH,
+    FILTER_ID_PRC,
+    FILTER_ID_AREA,
+    FILTER_ID_CATEGORY,
+    FILTER_ID_VENDOR,
+    FILTER_ID_AMP_AV,
+    FILTER_ID_ORDER_TYPE,
+)
 
 
 def build_filter_layout(filter_options: dict) -> list[dbc.Row]:
@@ -40,7 +51,7 @@ def build_filter_layout(filter_options: dict) -> list[dbc.Row]:
                 dbc.CardHeader("Num or %", className="filter-header"),
                 dbc.CardBody([
                     dcc.RadioItems(
-                        id="apac-dot-ctrl-num-percent",
+                        id=CTRL_ID_NUM_PERCENT,
                         options=[
                             {"label": " Num", "value": "num"},
                             {"label": " %", "value": "percent"},
@@ -56,7 +67,7 @@ def build_filter_layout(filter_options: dict) -> list[dbc.Row]:
                 dbc.CardHeader("Break Down", className="filter-header"),
                 dbc.CardBody([
                     dbc.Tabs(
-                        id="apac-dot-ctrl-breakdown",
+                        id=CTRL_ID_BREAKDOWN,
                         active_tab="area",
                         children=[
                             dbc.Tab(label="Area", tab_id="area"),
@@ -76,7 +87,7 @@ def build_filter_layout(filter_options: dict) -> list[dbc.Row]:
                 dbc.CardHeader("Filter Month", className="filter-header"),
                 dbc.CardBody([
                     dcc.Dropdown(
-                        id="apac-dot-filter-month",
+                        id=FILTER_ID_MONTH,
                         options=[{"label": m, "value": m} for m in months],
                         value=months,
                         multi=True,
@@ -98,7 +109,7 @@ def build_filter_layout(filter_options: dict) -> list[dbc.Row]:
                 dbc.CardHeader("PRC", className="filter-header"),
                 dbc.CardBody([
                     dcc.RadioItems(
-                        id="apac-dot-filter-prc",
+                        id=FILTER_ID_PRC,
                         options=[
                             {"label": f" Select all ({total_count})", "value": "all"},
                             {"label": " PRC Only", "value": "prc_only"},
@@ -116,7 +127,7 @@ def build_filter_layout(filter_options: dict) -> list[dbc.Row]:
     category_row = dbc.Row([
         dbc.Col([
             create_category_filter(
-                filter_id="apac-dot-filter-area",
+                filter_id=FILTER_ID_AREA,
                 column_name="Area",
                 options=areas,
                 multi=True,
@@ -124,7 +135,7 @@ def build_filter_layout(filter_options: dict) -> list[dbc.Row]:
         ], md=3),
         dbc.Col([
             create_category_filter(
-                filter_id="apac-dot-filter-category",
+                filter_id=FILTER_ID_CATEGORY,
                 column_name="Category",
                 options=workstreams,
                 multi=True,
@@ -132,7 +143,7 @@ def build_filter_layout(filter_options: dict) -> list[dbc.Row]:
         ], md=3),
         dbc.Col([
             create_category_filter(
-                filter_id="apac-dot-filter-vendor",
+                filter_id=FILTER_ID_VENDOR,
                 column_name="Vendor",
                 options=vendors,
                 multi=True,
@@ -144,7 +155,7 @@ def build_filter_layout(filter_options: dict) -> list[dbc.Row]:
     additional_row = dbc.Row([
         dbc.Col([
             create_category_filter(
-                filter_id="apac-dot-filter-amp-av",
+                filter_id=FILTER_ID_AMP_AV,
                 column_name="AMP VS AV",
                 options=amp_vs_av,
                 multi=True,
@@ -152,7 +163,7 @@ def build_filter_layout(filter_options: dict) -> list[dbc.Row]:
         ], md=3),
         dbc.Col([
             create_category_filter(
-                filter_id="apac-dot-filter-order-type",
+                filter_id=FILTER_ID_ORDER_TYPE,
                 column_name="Order Type",
                 options=order_types,
                 multi=True,

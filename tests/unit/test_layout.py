@@ -1,33 +1,29 @@
 """Tests for main layout."""
 import pytest
-from unittest.mock import patch, MagicMock
-from dash import html
+from dash import html, dcc
 from src.layout import create_layout
 
 
 def test_create_layout_returns_div():
     """Test: create_layout() returns html.Div."""
-    # Given: Mock sidebar component
-    mock_sidebar = html.Div("Mock Sidebar")
-    
-    # When: Creating layout with mocked sidebar
-    with patch("src.layout.create_sidebar", return_value=mock_sidebar):
-        layout = create_layout()
-    
+    # When: Creating layout
+    layout = create_layout()
+
     # Then: Layout is a Div component
     assert isinstance(layout, html.Div)
     assert layout is not None
 
 
-def test_create_layout_includes_sidebar_and_main_content():
-    """Test: Layout includes sidebar and main content."""
-    # Given: Mock sidebar component
-    mock_sidebar = html.Div("Mock Sidebar")
-    
+def test_create_layout_includes_location_and_main_content():
+    """Test: Layout includes location and main content."""
     # When: Creating layout
-    with patch("src.layout.create_sidebar", return_value=mock_sidebar):
-        layout = create_layout()
-    
-    # Then: Layout has children (sidebar and main content)
+    layout = create_layout()
+
+    # Then: Layout has children (location and main content)
     assert hasattr(layout, "children")
     assert layout.children is not None
+    assert len(layout.children) == 2
+    assert isinstance(layout.children[0], dcc.Location)
+    assert layout.children[0].id == "main-location"
+    assert isinstance(layout.children[1], html.Div)
+    assert layout.children[1].id == "main-content"

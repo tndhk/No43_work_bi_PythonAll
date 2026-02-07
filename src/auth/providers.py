@@ -1,4 +1,5 @@
 """Authentication provider protocol and implementations."""
+import os
 from typing import Protocol, Optional, List
 from src.auth.flask_login_setup import User
 from src.data.config import settings
@@ -64,11 +65,11 @@ class FormAuthProvider:
         if not username or not password:
             return None
 
-        # Check credentials against settings
-        if (
-            username == settings.basic_auth_username
-            and password == settings.basic_auth_password
-        ):
+        # Check credentials against environment (if set) or settings defaults
+        expected_username = os.getenv("BASIC_AUTH_USERNAME") or settings.basic_auth_username
+        expected_password = os.getenv("BASIC_AUTH_PASSWORD") or settings.basic_auth_password
+
+        if username == expected_username and password == expected_password:
             # Get user groups (stub for now, will be implemented in next phase)
             groups = self.get_user_groups(username)
             return User(username, groups)

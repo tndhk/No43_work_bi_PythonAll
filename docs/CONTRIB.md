@@ -1,15 +1,14 @@
 # 開発者ガイド (CONTRIB)
 
-最終更新: 2026-02-07 (rev.3)
+最終更新: 2026-02-07 (rev.4)
 
 ## このドキュメントについて
 
 - 役割: 開発者向けクイックスタート、開発コマンド、プロジェクト構造の説明
 - 関連: 技術仕様は `docs/tech-spec.md` を参照
 - 情報源:
-- package.json の scripts
-- `.env.example`
-- 既存の runbook (`docs/RUNBOOK.md`)
+  - `.env.example`
+  - 既存の runbook (`docs/RUNBOOK.md`)
 
 ---
 
@@ -45,29 +44,19 @@ docker compose up --build
 
 ```bash
 # 仮想環境作成
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 
 # 依存関係のインストール
 pip install -r requirements.txt
 
 # アプリ起動
-python app.py
+python3 app.py
 ```
 
 ---
 
-## 3. スクリプト一覧 (package.json)
-
-このリポジトリには `package.json` が存在しないため、npm scripts はありません。
-
-| スクリプト名 | コマンド | 目的 |
-|------------|----------|------|
-| N/A | N/A | package.json がないため該当なし |
-
----
-
-## 4. 環境変数 (.env.example)
+## 3. 環境変数 (.env.example)
 
 `.env.example` を `.env` にコピーして設定します。
 
@@ -83,13 +72,13 @@ python app.py
 
 ---
 
-## 5. 開発コマンド
+## 4. 開発コマンド
 
 ### Python開発
 
 | コマンド | 説明 |
 |---------|------|
-| `python app.py` | Dashアプリ起動（開発モード、ポート8050） |
+| `python3 app.py` | Dashアプリ起動（開発モード、ポート8050） |
 | `pytest` | テスト実行 |
 | `pytest --cov=src` | カバレッジ付きテスト |
 | `pytest --cov=src --cov-report=html` | HTMLカバレッジレポート生成 |
@@ -116,12 +105,12 @@ python app.py
 
 | コマンド | 説明 |
 |---------|------|
-| `python backend/etl/etl_api.py` | API ETL実行 |
-| `python backend/etl/etl_s3.py` | S3 ETL実行 |
-| `python backend/etl/etl_rds.py` | RDS ETL実行 |
-| `python backend/etl/etl_csv.py` | CSV ETL実行 |
-| `python backend/etl/etl_domo.py` | DOMO API ETL（DomoApiETLクラスをインポートして使用） |
-| `python scripts/upload_csv.py <csv_file> --dataset-id <id> [--partition-col <col>]` | CSVアップロードCLI |
+| `python3 backend/scripts/load_domo.py --all` | DOMO ETL全データセット実行 |
+| `python3 backend/scripts/load_csv.py --all` | CSV ETL全データセット実行 |
+| `python3 backend/scripts/load_domo.py --dataset "Name"` | DOMO ETL個別実行 |
+| `python3 backend/scripts/load_csv.py --dataset "Name"` | CSV ETL個別実行 |
+| `python3 backend/scripts/clear_dataset.py <dataset_id>` | データセット削除 |
+| `python3 scripts/upload_csv.py <csv_file> --dataset-id <id> [--partition-col <col>]` | CSVアップロードCLI |
 
 DOMO ETL の設定は `backend/config/domo_datasets.yaml` で管理する。詳細は `backend/config/README.md` を参照。
 
@@ -129,17 +118,17 @@ DOMO ETL の設定は `backend/config/domo_datasets.yaml` で管理する。詳�
 
 ```bash
 # パーティションなし（単一ファイル）
-python scripts/upload_csv.py data.csv --dataset-id my-dataset
+python3 scripts/upload_csv.py data.csv --dataset-id my-dataset
 
 # 日付カラムでパーティション分割
-python scripts/upload_csv.py data.csv --dataset-id my-dataset --partition-col date
+python3 scripts/upload_csv.py data.csv --dataset-id my-dataset --partition-col date
 ```
 
 ETL は cron / systemd timer で定期実行する想定。
 
 ---
 
-## 6. テスト
+## 5. テスト
 
 ### テスト基準
 
@@ -181,7 +170,7 @@ docker compose run --rm test pytest --cov=src --cov-report=term-missing
 
 ---
 
-## 7. プロジェクト構造
+## 6. プロジェクト構造
 
 ```
 work_BI_PythonAll/
@@ -213,7 +202,7 @@ work_BI_PythonAll/
 
 ---
 
-## 8. Git ワークフロー
+## 7. Git ワークフロー
 
 ### ブランチ命名
 

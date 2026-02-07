@@ -3,7 +3,7 @@ from dash import html, callback, Input, Output, dash_table
 import plotly.graph_objects as go
 
 from src.data.parquet_reader import ParquetReader
-from src.data.data_source_registry import get_dataset_id
+from src.data.data_source_registry import resolve_dataset_id
 from src.components.cards import create_kpi_card
 from src.charts.templates import render_line_chart, render_bar_chart, render_pie_chart
 from ._constants import DASHBOARD_ID, CHART_ID_COST_TREND, ID_PREFIX
@@ -42,11 +42,7 @@ def update_dashboard(start_date, end_date, model_values):
 
     try:
         # Load and filter data
-        dataset_id = get_dataset_id(DASHBOARD_ID, CHART_ID_COST_TREND)
-        if dataset_id is None:
-            raise ValueError(
-                f"Dataset ID not found for dashboard '{DASHBOARD_ID}' and chart '{CHART_ID_COST_TREND}'"
-            )
+        dataset_id = resolve_dataset_id(DASHBOARD_ID, CHART_ID_COST_TREND)
 
         filtered_df = load_and_filter_data(
             reader, dataset_id, start_date, end_date, model_values

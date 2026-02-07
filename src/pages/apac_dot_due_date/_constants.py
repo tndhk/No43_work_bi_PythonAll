@@ -13,8 +13,22 @@ DATASET_ID: str = "apac-dot-due-date"
 # Component ID namespace prefix (for avoiding collisions with other pages)
 ID_PREFIX: str = "apac-dot-"
 
-# Chart IDs used in this dashboard
-CHART_ID_REFERENCE_TABLE: str = "apac-dot-chart-00"
+# ----- Control IDs -----
+CTRL_ID_NUM_PERCENT: str = f"{ID_PREFIX}ctrl-num-percent"
+CTRL_ID_BREAKDOWN: str = f"{ID_PREFIX}ctrl-breakdown"
+
+# ----- Filter IDs -----
+FILTER_ID_MONTH: str = f"{ID_PREFIX}filter-month"
+FILTER_ID_PRC: str = f"{ID_PREFIX}filter-prc"
+FILTER_ID_AREA: str = f"{ID_PREFIX}filter-area"
+FILTER_ID_CATEGORY: str = f"{ID_PREFIX}filter-category"
+FILTER_ID_VENDOR: str = f"{ID_PREFIX}filter-vendor"
+FILTER_ID_AMP_AV: str = f"{ID_PREFIX}filter-amp-av"
+FILTER_ID_ORDER_TYPE: str = f"{ID_PREFIX}filter-order-type"
+
+# ----- Chart IDs -----
+CHART_ID_REFERENCE_TABLE: str = f"{ID_PREFIX}chart-00"
+CHART_ID_REFERENCE_TABLE_TITLE: str = f"{CHART_ID_REFERENCE_TABLE}-title"
 
 # Mapping from logical filter ID to the actual DataFrame column name.
 # Keys are short identifiers used in code; values are the raw column names

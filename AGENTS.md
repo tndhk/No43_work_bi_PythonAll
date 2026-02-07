@@ -1,0 +1,1 @@
+/Users/takahiko_tsunoda/work/dev/work_BI_PythonAll/CLAUDE.md

@@ -7,7 +7,7 @@ import pandas as pd
 
 from src.data.parquet_reader import ParquetReader
 from src.core.cache import get_cached_dataset
-from src.data.filter_engine import FilterSet, CategoryFilter, DateRangeFilter, apply_filters
+from src.data.filter_engine import FilterSet, CategoryFilter, DateRangeFilter, apply_filters, extract_unique_values
 from ._constants import COLUMN_MAP
 
 
@@ -28,11 +28,7 @@ def load_filter_options(reader: ParquetReader, dataset_id: str) -> dict:
         df["DateOnly"] = df["Date"].dt.date
 
         # Extract unique model values (exclude NaN)
-        models = (
-            sorted(df[COLUMN_MAP["model"]].dropna().unique().tolist())
-            if COLUMN_MAP["model"] in df.columns
-            else []
-        )
+        models = extract_unique_values(df, COLUMN_MAP["model"])
 
         # Extract date range
         if len(df) > 0:

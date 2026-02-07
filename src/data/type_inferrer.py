@@ -23,6 +23,8 @@ DATETIME_FORMATS = [
 def _is_integer(series: "pd.Series[Any]") -> bool:
     """Check if series contains only integer values."""
     try:
+        if pd.api.types.is_float_dtype(series):
+            return False
         pd.to_numeric(series, errors="raise")
         return all(float(x).is_integer() for x in series if pd.notna(x))
     except (ValueError, TypeError):

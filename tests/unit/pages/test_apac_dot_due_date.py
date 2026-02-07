@@ -6,6 +6,8 @@ import numpy as np
 from unittest.mock import patch, MagicMock
 from dash import html
 
+from tests.helpers.dash_test_utils import extract_dropdown_options, extract_dropdown_value
+
 
 def _make_nan_df():
     """Create a DataFrame that has NaN values mixed into every filter column.
@@ -39,61 +41,6 @@ def _make_clean_df():
     })
 
 
-def _extract_dropdown_options(layout_div, dropdown_id):
-    """Recursively search the layout tree for a Dropdown with the given id
-    and return its options list.
-
-    Returns None if not found.
-    """
-    # dcc.Dropdown stores options as a list of dicts: [{"label": ..., "value": ...}, ...]
-    from dash import dcc
-    import dash_bootstrap_components as dbc
-
-    def _walk(component):
-        # Check if this component is a Dropdown with matching id
-        if hasattr(component, "id") and component.id == dropdown_id:
-            return getattr(component, "options", None)
-
-        # Recurse into children
-        children = getattr(component, "children", None)
-        if children is None:
-            return None
-        if not isinstance(children, (list, tuple)):
-            children = [children]
-        for child in children:
-            if child is None:
-                continue
-            result = _walk(child)
-            if result is not None:
-                return result
-        return None
-
-    return _walk(layout_div)
-
-
-def _extract_dropdown_value(layout_div, dropdown_id):
-    """Recursively search the layout tree for a Dropdown with the given id
-    and return its value (default selection).
-    """
-    from dash import dcc
-
-    def _walk(component):
-        if hasattr(component, "id") and component.id == dropdown_id:
-            return getattr(component, "value", None)
-        children = getattr(component, "children", None)
-        if children is None:
-            return None
-        if not isinstance(children, (list, tuple)):
-            children = [children]
-        for child in children:
-            if child is None:
-                continue
-            result = _walk(child)
-            if result is not None:
-                return result
-        return None
-
-    return _walk(layout_div)
 
 
 # ---------------------------------------------------------------------------
@@ -124,7 +71,7 @@ class TestLayoutFilterOptionsWithNaN:
         assert isinstance(result, html.Div)
 
         # Verify at least one filter has options (not all empty from fallback)
-        area_options = _extract_dropdown_options(result, "apac-dot-filter-area")
+        area_options = extract_dropdown_options(result, "apac-dot-filter-area")
         assert area_options is not None, "apac-dot-filter-area dropdown not found in layout"
         assert len(area_options) > 0, (
             "apac-dot-filter-area options should not be empty -- "
@@ -140,7 +87,7 @@ class TestLayoutFilterOptionsWithNaN:
         from src.pages.apac_dot_due_date import layout
 
         result = layout()
-        options = _extract_dropdown_options(result, "apac-dot-filter-month")
+        options = extract_dropdown_options(result, "apac-dot-filter-month")
         assert options is not None, "apac-dot-filter-month dropdown not found"
 
         option_values = [o["value"] for o in options]
@@ -161,7 +108,7 @@ class TestLayoutFilterOptionsWithNaN:
         from src.pages.apac_dot_due_date import layout
 
         result = layout()
-        options = _extract_dropdown_options(result, "apac-dot-filter-area")
+        options = extract_dropdown_options(result, "apac-dot-filter-area")
         assert options is not None, "apac-dot-filter-area dropdown not found"
 
         option_values = [o["value"] for o in options]
@@ -180,7 +127,7 @@ class TestLayoutFilterOptionsWithNaN:
         from src.pages.apac_dot_due_date import layout
 
         result = layout()
-        options = _extract_dropdown_options(result, "apac-dot-filter-category")
+        options = extract_dropdown_options(result, "apac-dot-filter-category")
         assert options is not None, "apac-dot-filter-category dropdown not found"
 
         option_values = [o["value"] for o in options]
@@ -199,7 +146,7 @@ class TestLayoutFilterOptionsWithNaN:
         from src.pages.apac_dot_due_date import layout
 
         result = layout()
-        options = _extract_dropdown_options(result, "apac-dot-filter-vendor")
+        options = extract_dropdown_options(result, "apac-dot-filter-vendor")
         assert options is not None, "apac-dot-filter-vendor dropdown not found"
 
         option_values = [o["value"] for o in options]
@@ -218,7 +165,7 @@ class TestLayoutFilterOptionsWithNaN:
         from src.pages.apac_dot_due_date import layout
 
         result = layout()
-        options = _extract_dropdown_options(result, "apac-dot-filter-amp-av")
+        options = extract_dropdown_options(result, "apac-dot-filter-amp-av")
         assert options is not None, "apac-dot-filter-amp-av dropdown not found"
 
         option_values = [o["value"] for o in options]
@@ -237,7 +184,7 @@ class TestLayoutFilterOptionsWithNaN:
         from src.pages.apac_dot_due_date import layout
 
         result = layout()
-        options = _extract_dropdown_options(result, "apac-dot-filter-order-type")
+        options = extract_dropdown_options(result, "apac-dot-filter-order-type")
         assert options is not None, "apac-dot-filter-order-type dropdown not found"
 
         option_values = [o["value"] for o in options]
@@ -257,7 +204,7 @@ class TestLayoutFilterOptionsWithNaN:
         from src.pages.apac_dot_due_date import layout
 
         result = layout()
-        default_months = _extract_dropdown_value(result, "apac-dot-filter-month")
+        default_months = extract_dropdown_value(result, "apac-dot-filter-month")
         assert default_months is not None, "apac-dot-filter-month default value not found"
 
         for v in default_months:
@@ -277,7 +224,7 @@ class TestLayoutFilterOptionsWithNaN:
         result = layout()
 
         # Check area filter is sorted and non-empty
-        area_options = _extract_dropdown_options(result, "apac-dot-filter-area")
+        area_options = extract_dropdown_options(result, "apac-dot-filter-area")
         area_values = [o["value"] for o in area_options]
         assert len(area_values) > 0, (
             "Area filter options must not be empty (fallback detected)"
@@ -287,7 +234,7 @@ class TestLayoutFilterOptionsWithNaN:
         )
 
         # Check vendor filter is sorted and non-empty
-        vendor_options = _extract_dropdown_options(result, "apac-dot-filter-vendor")
+        vendor_options = extract_dropdown_options(result, "apac-dot-filter-vendor")
         vendor_values = [o["value"] for o in vendor_options]
         assert len(vendor_values) > 0, (
             "Vendor filter options must not be empty (fallback detected)"
@@ -312,12 +259,12 @@ class TestLayoutFilterOptionsCleanData:
         assert isinstance(result, html.Div)
 
         # Verify month options
-        month_options = _extract_dropdown_options(result, "apac-dot-filter-month")
+        month_options = extract_dropdown_options(result, "apac-dot-filter-month")
         month_values = [o["value"] for o in month_options]
         assert sorted(month_values) == ["2024-01", "2024-02", "2024-03"]
 
         # Verify area options
-        area_options = _extract_dropdown_options(result, "apac-dot-filter-area")
+        area_options = extract_dropdown_options(result, "apac-dot-filter-area")
         area_values = [o["value"] for o in area_options]
         assert sorted(area_values) == ["APAC", "EMEA"]
 
@@ -353,7 +300,7 @@ class TestLayoutFilterOptionsAllNaN:
         from src.pages.apac_dot_due_date import layout
 
         result = layout()
-        area_options = _extract_dropdown_options(result, "apac-dot-filter-area")
+        area_options = extract_dropdown_options(result, "apac-dot-filter-area")
         assert area_options is not None, "apac-dot-filter-area dropdown not found"
         assert len(area_options) == 0, (
             f"Expected empty options for all-NaN column, got: {area_options}"

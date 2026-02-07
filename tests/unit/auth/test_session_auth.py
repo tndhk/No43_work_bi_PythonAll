@@ -178,10 +178,9 @@ class TestFlaskLoginIntegration:
 
         # When: Loading user
         with flask_app.test_request_context():
-            user = flask_app.login_manager.user_loader("testuser")
+            user = flask_app.login_manager._user_callback("testuser")
 
         # Then: User object returned
         assert user is not None
         assert user.id == "testuser"
         assert isinstance(user.groups, list)
-

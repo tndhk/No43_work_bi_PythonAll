@@ -1,12 +1,11 @@
 """Tests for chart templates."""
 import pytest
 import pandas as pd
-from dash import html
 import plotly.graph_objects as go
 from src.charts.templates import (
-    get_chart_template,
-    get_all_chart_types,
-    CHART_TEMPLATES,
+    render_bar_chart,
+    render_line_chart,
+    render_pie_chart,
 )
 
 
@@ -20,61 +19,9 @@ def sample_df() -> pd.DataFrame:
     })
 
 
-def test_get_all_chart_types():
-    """Test: get_all_chart_types returns all chart type identifiers."""
-    chart_types = get_all_chart_types()
-    assert len(chart_types) == 6
-    assert "summary-number" in chart_types
-    assert "bar" in chart_types
-    assert "line" in chart_types
-    assert "pie" in chart_types
-    assert "table" in chart_types
-    assert "pivot" in chart_types
-
-
-def test_get_chart_template_existing():
-    """Test: get_chart_template returns template for existing type."""
-    template = get_chart_template("bar")
-    assert "name" in template
-    assert "description" in template
-    assert "render" in template
-    assert callable(template["render"])
-
-
-def test_get_chart_template_default():
-    """Test: get_chart_template returns table template for unknown type."""
-    template = get_chart_template("unknown-type")
-    assert template == CHART_TEMPLATES["table"]
-
-
-def test_render_summary_number(sample_df):
-    """Test: Summary number template renders correctly."""
-    template = get_chart_template("summary-number")
-    result = template["render"](
-        dataset=sample_df,
-        filters=None,
-        params={"value_column": "amount", "agg_func": "sum"},
-    )
-
-    assert isinstance(result, html.Div)
-
-
-def test_render_summary_number_default_params(sample_df):
-    """Test: Summary number template uses default parameters."""
-    template = get_chart_template("summary-number")
-    result = template["render"](
-        dataset=sample_df,
-        filters=None,
-        params=None,
-    )
-
-    assert isinstance(result, html.Div)
-
-
 def test_render_bar_chart(sample_df):
     """Test: Bar chart template renders correctly."""
-    template = get_chart_template("bar")
-    result = template["render"](
+    result = render_bar_chart(
         dataset=sample_df,
         filters=None,
         params={"x_column": "category", "y_column": "amount"},
@@ -83,10 +30,20 @@ def test_render_bar_chart(sample_df):
     assert isinstance(result, go.Figure)
 
 
+def test_render_bar_chart_default_params(sample_df):
+    """Test: Bar chart uses default parameters when none provided."""
+    result = render_bar_chart(
+        dataset=sample_df,
+        filters=None,
+        params=None,
+    )
+
+    assert isinstance(result, go.Figure)
+
+
 def test_render_line_chart(sample_df):
     """Test: Line chart template renders correctly."""
-    template = get_chart_template("line")
-    result = template["render"](
+    result = render_line_chart(
         dataset=sample_df,
         filters=None,
         params={"x_column": "date", "y_column": "amount"},
@@ -95,10 +52,20 @@ def test_render_line_chart(sample_df):
     assert isinstance(result, go.Figure)
 
 
+def test_render_line_chart_default_params(sample_df):
+    """Test: Line chart uses default parameters when none provided."""
+    result = render_line_chart(
+        dataset=sample_df,
+        filters=None,
+        params=None,
+    )
+
+    assert isinstance(result, go.Figure)
+
+
 def test_render_pie_chart(sample_df):
     """Test: Pie chart template renders correctly."""
-    template = get_chart_template("pie")
-    result = template["render"](
+    result = render_pie_chart(
         dataset=sample_df,
         filters=None,
         params={"names_column": "category", "values_column": "amount"},
@@ -107,43 +74,25 @@ def test_render_pie_chart(sample_df):
     assert isinstance(result, go.Figure)
 
 
-def test_render_table(sample_df):
-    """Test: Table template renders correctly."""
-    template = get_chart_template("table")
-    result = template["render"](
+def test_render_pie_chart_default_params(sample_df):
+    """Test: Pie chart uses default parameters when none provided."""
+    result = render_pie_chart(
         dataset=sample_df,
         filters=None,
         params=None,
     )
 
-    assert isinstance(result, html.Div)
+    assert isinstance(result, go.Figure)
 
 
-def test_render_pivot_table(sample_df):
-    """Test: Pivot table template renders correctly."""
-    template = get_chart_template("pivot")
-    result = template["render"](
-        dataset=sample_df,
-        filters=None,
-        params={
-            "index_column": "category",
-            "values_column": "amount",
-            "agg_func": "sum",
-        },
-    )
+def test_deleted_symbols_not_importable():
+    """Test: Deleted functions and registry are no longer importable."""
+    import importlib
+    mod = importlib.import_module("src.charts.templates")
 
-    assert isinstance(result, html.Div)
-
-
-def test_render_empty_dataframe():
-    """Test: Templates handle empty DataFrame."""
-    empty_df = pd.DataFrame()
-
-    template = get_chart_template("table")
-    result = template["render"](
-        dataset=empty_df,
-        filters=None,
-        params=None,
-    )
-
-    assert isinstance(result, html.Div)
+    assert not hasattr(mod, "render_summary_number")
+    assert not hasattr(mod, "render_table")
+    assert not hasattr(mod, "render_pivot_table")
+    assert not hasattr(mod, "CHART_TEMPLATES")
+    assert not hasattr(mod, "get_chart_template")
+    assert not hasattr(mod, "get_all_chart_types")

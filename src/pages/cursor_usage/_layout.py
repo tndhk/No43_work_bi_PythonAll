@@ -3,7 +3,7 @@ from dash import html, dcc
 import dash_bootstrap_components as dbc
 
 from src.data.parquet_reader import ParquetReader
-from src.data.data_source_registry import get_dataset_id
+from src.data.data_source_registry import resolve_dataset_id
 from src.components.filters import create_date_range_filter, create_category_filter
 from ._constants import DASHBOARD_ID, CHART_ID_COST_TREND, ID_PREFIX
 from ._data_loader import load_filter_options
@@ -17,11 +17,7 @@ def build_layout():
     """
     # Load data to get available options for filters
     reader = ParquetReader()
-    dataset_id = get_dataset_id(DASHBOARD_ID, CHART_ID_COST_TREND)
-    if dataset_id is None:
-        raise ValueError(
-            f"Dataset ID not found for dashboard '{DASHBOARD_ID}' and chart '{CHART_ID_COST_TREND}'"
-        )
+    dataset_id = resolve_dataset_id(DASHBOARD_ID, CHART_ID_COST_TREND)
     options = load_filter_options(reader, dataset_id)
 
     return html.Div([

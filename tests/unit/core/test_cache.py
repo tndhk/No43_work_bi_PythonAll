@@ -45,7 +45,7 @@ def test_cache_key_by_dataset_id(mock_s3, flask_app, sample_df):
 
     df1 = sample_df.copy()
     df2 = sample_df.copy()
-    df2["extra"] = [1, 2, 3, 4, 5]
+    df2["extra"] = [1, 2, 3]
 
     upload_parquet_to_s3(mock_s3, "bi-datasets", s3_key1, df1)
     upload_parquet_to_s3(mock_s3, "bi-datasets", s3_key2, df2)

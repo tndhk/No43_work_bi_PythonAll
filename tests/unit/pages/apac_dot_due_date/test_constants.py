@@ -153,6 +153,190 @@ class TestBreakdownMap:
             assert isinstance(value, str), f"BREAKDOWN_MAP['{key}'] is not a string: {value}"
 
 
+class TestComponentIds:
+    """All component IDs must be defined as constants using ID_PREFIX.
+
+    This ensures consistency between _filters.py, _callbacks.py, and _layout.py
+    and prevents hardcoded strings from drifting out of sync.
+    """
+
+    # --- Control IDs ---
+
+    def test_ctrl_id_num_percent_exists(self):
+        from src.pages.apac_dot_due_date._constants import CTRL_ID_NUM_PERCENT
+
+        assert CTRL_ID_NUM_PERCENT is not None
+
+    def test_ctrl_id_num_percent_value(self):
+        from src.pages.apac_dot_due_date._constants import CTRL_ID_NUM_PERCENT, ID_PREFIX
+
+        assert CTRL_ID_NUM_PERCENT == f"{ID_PREFIX}ctrl-num-percent"
+
+    def test_ctrl_id_breakdown_exists(self):
+        from src.pages.apac_dot_due_date._constants import CTRL_ID_BREAKDOWN
+
+        assert CTRL_ID_BREAKDOWN is not None
+
+    def test_ctrl_id_breakdown_value(self):
+        from src.pages.apac_dot_due_date._constants import CTRL_ID_BREAKDOWN, ID_PREFIX
+
+        assert CTRL_ID_BREAKDOWN == f"{ID_PREFIX}ctrl-breakdown"
+
+    # --- Filter IDs ---
+
+    def test_filter_id_month_exists(self):
+        from src.pages.apac_dot_due_date._constants import FILTER_ID_MONTH
+
+        assert FILTER_ID_MONTH is not None
+
+    def test_filter_id_month_value(self):
+        from src.pages.apac_dot_due_date._constants import FILTER_ID_MONTH, ID_PREFIX
+
+        assert FILTER_ID_MONTH == f"{ID_PREFIX}filter-month"
+
+    def test_filter_id_prc_exists(self):
+        from src.pages.apac_dot_due_date._constants import FILTER_ID_PRC
+
+        assert FILTER_ID_PRC is not None
+
+    def test_filter_id_prc_value(self):
+        from src.pages.apac_dot_due_date._constants import FILTER_ID_PRC, ID_PREFIX
+
+        assert FILTER_ID_PRC == f"{ID_PREFIX}filter-prc"
+
+    def test_filter_id_area_exists(self):
+        from src.pages.apac_dot_due_date._constants import FILTER_ID_AREA
+
+        assert FILTER_ID_AREA is not None
+
+    def test_filter_id_area_value(self):
+        from src.pages.apac_dot_due_date._constants import FILTER_ID_AREA, ID_PREFIX
+
+        assert FILTER_ID_AREA == f"{ID_PREFIX}filter-area"
+
+    def test_filter_id_category_exists(self):
+        from src.pages.apac_dot_due_date._constants import FILTER_ID_CATEGORY
+
+        assert FILTER_ID_CATEGORY is not None
+
+    def test_filter_id_category_value(self):
+        from src.pages.apac_dot_due_date._constants import FILTER_ID_CATEGORY, ID_PREFIX
+
+        assert FILTER_ID_CATEGORY == f"{ID_PREFIX}filter-category"
+
+    def test_filter_id_vendor_exists(self):
+        from src.pages.apac_dot_due_date._constants import FILTER_ID_VENDOR
+
+        assert FILTER_ID_VENDOR is not None
+
+    def test_filter_id_vendor_value(self):
+        from src.pages.apac_dot_due_date._constants import FILTER_ID_VENDOR, ID_PREFIX
+
+        assert FILTER_ID_VENDOR == f"{ID_PREFIX}filter-vendor"
+
+    def test_filter_id_amp_av_exists(self):
+        from src.pages.apac_dot_due_date._constants import FILTER_ID_AMP_AV
+
+        assert FILTER_ID_AMP_AV is not None
+
+    def test_filter_id_amp_av_value(self):
+        from src.pages.apac_dot_due_date._constants import FILTER_ID_AMP_AV, ID_PREFIX
+
+        assert FILTER_ID_AMP_AV == f"{ID_PREFIX}filter-amp-av"
+
+    def test_filter_id_order_type_exists(self):
+        from src.pages.apac_dot_due_date._constants import FILTER_ID_ORDER_TYPE
+
+        assert FILTER_ID_ORDER_TYPE is not None
+
+    def test_filter_id_order_type_value(self):
+        from src.pages.apac_dot_due_date._constants import FILTER_ID_ORDER_TYPE, ID_PREFIX
+
+        assert FILTER_ID_ORDER_TYPE == f"{ID_PREFIX}filter-order-type"
+
+    # --- Chart IDs ---
+
+    def test_chart_id_reference_table_title_exists(self):
+        from src.pages.apac_dot_due_date._constants import CHART_ID_REFERENCE_TABLE_TITLE
+
+        assert CHART_ID_REFERENCE_TABLE_TITLE is not None
+
+    def test_chart_id_reference_table_title_value(self):
+        from src.pages.apac_dot_due_date._constants import (
+            CHART_ID_REFERENCE_TABLE_TITLE,
+            CHART_ID_REFERENCE_TABLE,
+        )
+
+        assert CHART_ID_REFERENCE_TABLE_TITLE == f"{CHART_ID_REFERENCE_TABLE}-title"
+
+    # --- All IDs use ID_PREFIX ---
+
+    def test_all_component_ids_start_with_id_prefix(self):
+        from src.pages.apac_dot_due_date._constants import (
+            ID_PREFIX,
+            CTRL_ID_NUM_PERCENT,
+            CTRL_ID_BREAKDOWN,
+            FILTER_ID_MONTH,
+            FILTER_ID_PRC,
+            FILTER_ID_AREA,
+            FILTER_ID_CATEGORY,
+            FILTER_ID_VENDOR,
+            FILTER_ID_AMP_AV,
+            FILTER_ID_ORDER_TYPE,
+            CHART_ID_REFERENCE_TABLE,
+            CHART_ID_REFERENCE_TABLE_TITLE,
+        )
+
+        all_ids = [
+            CTRL_ID_NUM_PERCENT,
+            CTRL_ID_BREAKDOWN,
+            FILTER_ID_MONTH,
+            FILTER_ID_PRC,
+            FILTER_ID_AREA,
+            FILTER_ID_CATEGORY,
+            FILTER_ID_VENDOR,
+            FILTER_ID_AMP_AV,
+            FILTER_ID_ORDER_TYPE,
+            CHART_ID_REFERENCE_TABLE,
+            CHART_ID_REFERENCE_TABLE_TITLE,
+        ]
+        for component_id in all_ids:
+            assert component_id.startswith(ID_PREFIX), (
+                f"Component ID '{component_id}' does not start with '{ID_PREFIX}'"
+            )
+
+    def test_all_component_ids_are_strings(self):
+        from src.pages.apac_dot_due_date._constants import (
+            CTRL_ID_NUM_PERCENT,
+            CTRL_ID_BREAKDOWN,
+            FILTER_ID_MONTH,
+            FILTER_ID_PRC,
+            FILTER_ID_AREA,
+            FILTER_ID_CATEGORY,
+            FILTER_ID_VENDOR,
+            FILTER_ID_AMP_AV,
+            FILTER_ID_ORDER_TYPE,
+            CHART_ID_REFERENCE_TABLE_TITLE,
+        )
+
+        all_ids = [
+            CTRL_ID_NUM_PERCENT,
+            CTRL_ID_BREAKDOWN,
+            FILTER_ID_MONTH,
+            FILTER_ID_PRC,
+            FILTER_ID_AREA,
+            FILTER_ID_CATEGORY,
+            FILTER_ID_VENDOR,
+            FILTER_ID_AMP_AV,
+            FILTER_ID_ORDER_TYPE,
+            CHART_ID_REFERENCE_TABLE_TITLE,
+        ]
+        for component_id in all_ids:
+            assert isinstance(component_id, str), (
+                f"Component ID {component_id!r} is not a string"
+            )
+
+
 class TestBreakdownMapIsSubsetOfColumnMap:
     """BREAKDOWN_MAP values should be a subset of COLUMN_MAP values,
     ensuring consistency between filter columns and breakdown columns."""

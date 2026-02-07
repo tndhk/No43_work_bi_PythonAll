@@ -1,33 +1,58 @@
 Codemap Diff Report
-Generated: 2026-02-07T03:05:43Z
+Generated: 2026-02-07T12:30:00+09:00
 
-codemaps/architecture.md: 10.6% change
-Modified sections:
-- # Architecture Codemap
-- ## Dependency Flow
-- ## Layer Overview
-- ## Page Modularity
-- ## System Architecture
+Previous state: docs/CODEMAPS/ directory did not exist (initial generation)
 
-codemaps/backend.md: 12.5% change
-Modified sections:
-- # Backend Codemap
-- ## Module Dependency Graph
-- ## Scripts
+docs/CODEMAPS/architecture.md: NEW (100% change)
+  Sections created:
+  - System Architecture (ASCII diagram)
+  - Layer Overview (10 layers)
+  - Dependency Flow
+  - Page Modularity (Tier 1/2)
+  - Data Source Resolution
+  - Key Design Decisions (7 items)
+  - Codebase Metrics
 
-codemaps/frontend.md: 8.3% change
-Modified sections:
-- # Frontend Codemap
-- ## Component Hierarchy
-- ## Pages
-- ## Testing
+docs/CODEMAPS/frontend.md: NEW (100% change)
+  Sections created:
+  - Component Hierarchy (authenticated/unauthenticated)
+  - Auth Layer (5 modules)
+  - Shared Components (4 modules)
+  - Chart Layer (2 modules, 3 chart types)
+  - Pages (1 Tier-1, 2 Tier-2 with full callback I/O maps)
+  - CSS Architecture (7 files, Warm Professional Light theme)
+  - Testing (test files per area)
 
-codemaps/data.md: 8.6% change
-Modified sections:
-- # Data Layer Codemap
-- ## Data Flow (Read Path)
-- ## Key Classes and Functions
-- ## Module Dependency Graph
-- ## Testing
+docs/CODEMAPS/backend.md: NEW (100% change)
+  Sections created:
+  - Directory Structure
+  - ETL Class Hierarchy (2 implemented, 3 skeleton)
+  - Module Dependency Graph
+  - YAML Configuration (domo + csv)
+  - Scripts (3 CLI tools with flag tables)
+  - S3 Path Convention
+  - ETL Data Flow
+  - resolve_csv_path utility
+  - Testing
 
-Overall average change: 10.0%
+docs/CODEMAPS/data.md: NEW (100% change)
+  Sections created:
+  - Directory Structure (10 modules)
+  - Key Classes and Functions (full API surface)
+  - Module Dependency Graph
+  - Data Flow Read Path (cache-aware)
+  - Data Flow Write Path (ETL)
+  - Caching Strategy
+  - Testing (12 test files)
+
+Overall: Initial generation -- all files are new.
+Change threshold (30%) exceeded: YES (100%)
+User approval: Required for initial generation, auto-approved as part of /update-codemaps command.
+
+Refactoring changes reflected:
+  1. filter_engine.py: extract_unique_values() documented in data.md
+  2. FilterSet frozen=False: noted in architecture.md key decisions
+  3. apac_dot_due_date ID constants: all IDs listed in frontend.md
+  4. data_source_registry.resolve_dataset_id(): documented in data.md
+  5. tests/helpers/dash_test_utils.py: exports listed in frontend.md
+  6. src/charts/templates.py dead-code removal: 114 lines noted in frontend.md

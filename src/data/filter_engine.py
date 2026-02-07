@@ -23,7 +23,7 @@ class DateRangeFilter:
     end_date: str    # ISO 8601 (YYYY-MM-DD)
 
 
-@dataclass(frozen=True)
+@dataclass
 class FilterSet:
     """Set of filters to apply."""
 
@@ -91,3 +91,18 @@ def apply_filters(df: pd.DataFrame, filter_set: FilterSet) -> pd.DataFrame:
         result = result[mask]
 
     return result
+
+
+def extract_unique_values(df: pd.DataFrame, column: str) -> list:
+    """Extract unique values from a column, sorted, excluding NaN/None.
+
+    Args:
+        df: DataFrame to extract values from.
+        column: Column name.
+
+    Returns:
+        Sorted list of unique values. Empty list if column is missing.
+    """
+    if column not in df.columns:
+        return []
+    return sorted(df[column].dropna().unique().tolist())

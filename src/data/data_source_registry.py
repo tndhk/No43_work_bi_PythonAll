@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import yaml
 
@@ -54,3 +54,42 @@ def get_dataset_id(dashboard_id: str, chart_id: str) -> str | None:
     if isinstance(dataset_id, str):
         return dataset_id
     return None
+
+
+def resolve_dataset_id(
+    dashboard_id: str,
+    chart_id: str,
+    fallback: Optional[str] = None,
+) -> str:
+    """Resolve dataset ID, raising or falling back when not found.
+
+    Wraps ``get_dataset_id`` with a consistent None-handling policy:
+    * If the registry contains the entry, return it.
+    * Otherwise, return *fallback* when provided; raise ``ValueError`` when not.
+
+    Args:
+        dashboard_id: Dashboard identifier (directory name under pages/).
+        chart_id: Chart key inside the dashboard's data_sources.yml.
+        fallback: Value to return when the registry lookup yields None.
+            When *fallback* is ``None`` (the default), a ``ValueError`` is
+            raised instead.
+
+    Returns:
+        The resolved dataset ID string.
+
+    Raises:
+        ValueError: If the dataset ID is not found and no fallback is given.
+        FileNotFoundError: If the dashboard config file does not exist
+            (propagated from ``load_dashboard_config``).
+    """
+    dataset_id = get_dataset_id(dashboard_id, chart_id)
+    if dataset_id is not None:
+        return dataset_id
+
+    if fallback is not None:
+        return fallback
+
+    raise ValueError(
+        f"Dataset ID not found for dashboard '{dashboard_id}' "
+        f"and chart '{chart_id}'"
+    )
