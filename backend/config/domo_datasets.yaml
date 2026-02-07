@@ -12,6 +12,22 @@ datasets:
       column: "exclude_flg"
       keep_value: "Not Exclude"
 
+  - name: "APAC DOT DDD Change + Issue(SQL)"
+    domo_dataset_id: "2aff337e-b2f1-45c9-b363-3b5b522a1245"
+    minio_dataset_id: "apac-dot-ddd-change-issue-sql"
+    partition_column: "edit month"
+    enabled: true
+    exclude_filter:
+      column: "exclude_flg"
+      keep_value: "Not Exclude"
+
+  - name: "Hamm_Dashboard"
+    domo_dataset_id: "0bc70adb-1b3c-4eab-b501-75811e9d6986"
+    minio_dataset_id: "hamm-dashboard"
+    partition_column: null
+    description: "Hamm dashboard source data from DOMO"
+    enabled: true
+
   # Add more datasets here following the same structure:
   # - name: "DataSet Name"
   #   domo_dataset_id: "uuid-from-domo-url"

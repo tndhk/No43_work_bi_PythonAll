@@ -1,8 +1,10 @@
-"""Chart 0 -- Reference Table: Number of Work Order.
+"""Chart 1 -- DDD Change + Issue Table: Number of Work Order.
 
 Pure function that builds a pivot-table DataTable from a filtered DataFrame.
 No side-effects, no I/O -- only DataFrame manipulation and Dash component
 construction.
+
+Uses COLUMN_MAP_2 / BREAKDOWN_MAP_2 for the change-issue dataset schema.
 """
 from __future__ import annotations
 
@@ -11,13 +13,13 @@ from typing import Any
 import pandas as pd
 from dash import dash_table, html
 
-from .._constants import BREAKDOWN_MAP, COLUMN_MAP
+from .._constants import BREAKDOWN_MAP_2, COLUMN_MAP_2
 
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
-_TITLE = "0) Reference : Number of Work Order"
+_TITLE = "1) DDD Change + Issue : Number of Work Order"
 
 
 def build(
@@ -25,24 +27,27 @@ def build(
     breakdown_tab: str,
     num_percent_mode: str,
 ) -> tuple[str, Any]:
-    """Build the reference pivot table.
+    """Build the DDD Change + Issue pivot table.
 
     Parameters
     ----------
     filtered_df:
-        Already-filtered DataFrame containing at least ``work order id``,
-        the month column, and the breakdown dimension columns.
+        Already-filtered DataFrame containing at least the work order id
+        column (COLUMN_MAP_2), the month column, and the breakdown dimension
+        columns from COLUMN_MAP_2.
     breakdown_tab:
-        Key into ``BREAKDOWN_MAP`` (e.g. ``"area"``, ``"category"``, ``"vendor"``).
+        Key into ``BREAKDOWN_MAP_2`` (e.g. ``"area"``, ``"category"``,
+        ``"vendor"``).
     num_percent_mode:
-        ``"number"`` for raw counts or ``"percent"`` for percentage of column total.
+        ``"number"`` for raw counts or ``"percent"`` for percentage of column
+        total.
 
     Returns
     -------
     tuple[str, Any]
         ``(title_string, dash_component)`` where the component is either a
-        ``dash_table.DataTable`` or an ``html.P`` placeholder when the data is
-        empty.
+        ``dash_table.DataTable`` or an ``html.P`` placeholder when the data
+        is empty.
     """
     # ------------------------------------------------------------------
     # Empty guard
@@ -56,15 +61,15 @@ def build(
     # ------------------------------------------------------------------
     # Determine breakdown column
     # ------------------------------------------------------------------
-    breakdown_column = BREAKDOWN_MAP[breakdown_tab]
+    breakdown_column = BREAKDOWN_MAP_2[breakdown_tab]
 
     # ------------------------------------------------------------------
     # Group by breakdown column + month, count unique work order IDs
     # ------------------------------------------------------------------
-    work_order_col = COLUMN_MAP["work_order_id"]
+    work_order_col = COLUMN_MAP_2["work_order_id"]
     pivot_data = (
         filtered_df
-        .groupby([breakdown_column, COLUMN_MAP["month"]])[work_order_col]
+        .groupby([breakdown_column, COLUMN_MAP_2["month"]])[work_order_col]
         .nunique()
         .reset_index()
     )
@@ -74,7 +79,7 @@ def build(
     # ------------------------------------------------------------------
     pivot_table = pivot_data.pivot(
         index=breakdown_column,
-        columns=COLUMN_MAP["month"],
+        columns=COLUMN_MAP_2["month"],
         values=work_order_col,
     ).fillna(0)
 

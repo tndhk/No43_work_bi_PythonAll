@@ -206,6 +206,60 @@ class TestChartSection:
             f"Expected html.Div, got {type(found).__name__}"
         )
 
+    # --- Chart 01 (DDD Change + Issue Table) ---
+
+    @patch("src.pages.apac_dot_due_date._layout.ParquetReader")
+    @patch("src.pages.apac_dot_due_date._layout.load_filter_options")
+    def test_contains_chart_01_title_id(self, mock_load_opts, mock_reader_cls):
+        """Chart 01 section must have an element with id='apac-dot-chart-01-title'."""
+        mock_load_opts.return_value = _make_filter_options()
+
+        from src.pages.apac_dot_due_date._layout import build_layout
+
+        result = build_layout()
+        found = find_component_by_id(result, "apac-dot-chart-01-title")
+        assert found is not None, "apac-dot-chart-01-title element not found in layout"
+
+    @patch("src.pages.apac_dot_due_date._layout.ParquetReader")
+    @patch("src.pages.apac_dot_due_date._layout.load_filter_options")
+    def test_chart_01_title_is_h3(self, mock_load_opts, mock_reader_cls):
+        """apac-dot-chart-01-title should be an H3 element."""
+        mock_load_opts.return_value = _make_filter_options()
+
+        from src.pages.apac_dot_due_date._layout import build_layout
+
+        result = build_layout()
+        found = find_component_by_id(result, "apac-dot-chart-01-title")
+        assert isinstance(found, html.H3), (
+            f"Expected html.H3, got {type(found).__name__}"
+        )
+
+    @patch("src.pages.apac_dot_due_date._layout.ParquetReader")
+    @patch("src.pages.apac_dot_due_date._layout.load_filter_options")
+    def test_contains_chart_01_id(self, mock_load_opts, mock_reader_cls):
+        """Chart 01 section must have an element with id='apac-dot-chart-01'."""
+        mock_load_opts.return_value = _make_filter_options()
+
+        from src.pages.apac_dot_due_date._layout import build_layout
+
+        result = build_layout()
+        found = find_component_by_id(result, "apac-dot-chart-01")
+        assert found is not None, "apac-dot-chart-01 element not found in layout"
+
+    @patch("src.pages.apac_dot_due_date._layout.ParquetReader")
+    @patch("src.pages.apac_dot_due_date._layout.load_filter_options")
+    def test_chart_01_is_div(self, mock_load_opts, mock_reader_cls):
+        """apac-dot-chart-01 should be an html.Div element."""
+        mock_load_opts.return_value = _make_filter_options()
+
+        from src.pages.apac_dot_due_date._layout import build_layout
+
+        result = build_layout()
+        found = find_component_by_id(result, "apac-dot-chart-01")
+        assert isinstance(found, html.Div), (
+            f"Expected html.Div, got {type(found).__name__}"
+        )
+
 
 # ===========================================================================
 # Layout structure order tests
@@ -217,16 +271,16 @@ class TestLayoutStructureOrder:
     @patch("src.pages.apac_dot_due_date._layout.ParquetReader")
     @patch("src.pages.apac_dot_due_date._layout.load_filter_options")
     def test_layout_children_count(self, mock_load_opts, mock_reader_cls):
-        """Layout should have at least 7 children: H1 + 5 filter rows + 1 chart row."""
+        """Layout should have at least 8 children: H1 + 5 filter rows + 2 chart rows."""
         mock_load_opts.return_value = _make_filter_options()
 
         from src.pages.apac_dot_due_date._layout import build_layout
 
         result = build_layout()
         children = result.children
-        # H1 + 5 filter rows (spread) + 1 table row = 7
-        assert len(children) >= 7, (
-            f"Expected at least 7 children, got {len(children)}"
+        # H1 + 5 filter rows (spread) + 2 table rows = 8
+        assert len(children) >= 8, (
+            f"Expected at least 8 children, got {len(children)}"
         )
 
     @patch("src.pages.apac_dot_due_date._layout.ParquetReader")
@@ -242,8 +296,8 @@ class TestLayoutStructureOrder:
 
     @patch("src.pages.apac_dot_due_date._layout.ParquetReader")
     @patch("src.pages.apac_dot_due_date._layout.load_filter_options")
-    def test_last_child_is_table_section_row(self, mock_load_opts, mock_reader_cls):
-        """Last child should be the dbc.Row containing the table section."""
+    def test_last_child_is_chart_01_section_row(self, mock_load_opts, mock_reader_cls):
+        """Last child should be the dbc.Row containing the chart-01 section."""
         mock_load_opts.return_value = _make_filter_options()
 
         from src.pages.apac_dot_due_date._layout import build_layout
@@ -253,9 +307,9 @@ class TestLayoutStructureOrder:
         assert isinstance(last_child, dbc.Row), (
             f"Expected last child to be dbc.Row, got {type(last_child).__name__}"
         )
-        # The table-title should be inside the last child
-        table_title = find_component_by_id(last_child, "apac-dot-chart-00-title")
-        assert table_title is not None, "apac-dot-chart-00-title not in last row"
+        # The chart-01-title should be inside the last child
+        table_title = find_component_by_id(last_child, "apac-dot-chart-01-title")
+        assert table_title is not None, "apac-dot-chart-01-title not in last row"
 
 
 # ===========================================================================
