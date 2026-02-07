@@ -5,6 +5,40 @@
 - S3/Parquetからデータ取得
 - Basic認証
 
+## ページ設計ポリシー
+
+### 2層ポリシー
+`src/pages/` のページは以下の2層に分類される:
+
+| 層 | 条件 | 形式 | 例 |
+|---|---|---|---|
+| Tier 1 | コールバックなし かつ データ読込なし | 単一ファイル | `dashboard_home.py` |
+| Tier 2 | コールバックあり または データ読込あり | パッケージ形式 | `cursor_usage/`, `apac_dot_due_date/` |
+
+### パッケージ形式のカノニカル構造
+
+```
+src/pages/<page_name>/
+├── __init__.py          # 必須: Dash登録 + layout() + コールバックインポート
+├── _constants.py        # 必須: DATASET_ID, ID_PREFIX, COLUMN_MAP
+├── _data_loader.py      # 必須: load_filter_options(), load_and_filter_data()
+├── _layout.py           # 必須: build_layout()
+├── _callbacks.py        # 必須: コールバック関数群
+├── _utils.py            # オプション: ヘルパー関数
+└── _chart_builders.py   # オプション: チャート生成関数
+```
+
+### ID_PREFIX 必須ルール
+- 全コンポーネントID（フィルタ、KPIカード、チャート、テーブル等）には `ID_PREFIX` を付与すること
+- 形式: `f"{ID_PREFIX}component-name"` (例: `"cu-filter-date"`, `"cu-kpi-total-cost"`)
+- 理由: 複数ページ間でのID衝突を防止
+
+### 新規ページ追加手順
+1. パッケージディレクトリ作成: `src/pages/<page_name>/`
+2. 必須5ファイル作成 (`__init__.py`, `_constants.py`, `_data_loader.py`, `_layout.py`, `_callbacks.py`)
+3. `app.py` に明示的インポート追加: `import src.pages.<page_name>  # noqa: F401`
+4. テスト作成: `tests/unit/pages/<page_name>/test_constants.py`, `test_data_loader.py`
+
 ## 開発メモ
 
 ### Parquet経由のdatetime列はtimezone-awareになる
@@ -62,23 +96,3 @@
 ### コマンドライン
 - Docker: `docker compose` を使用（`docker-compose` は非推奨/インストールされていない）
 - Python: `python3` を使用（`python` コマンドは存在しない）
-
-### ETLスクリプト実行
-```bash
-# 正しい実行方法
-python3 backend/scripts/load_*.py
-
-# 誤り（エラーになる）
-python backend/scripts/load_*.py
-```
-
-### Docker操作
-```bash
-# 正しい実行方法
-docker compose ps
-docker compose up -d
-docker compose logs -f
-
-# 誤り（エラーになる）
-docker-compose ps
-```

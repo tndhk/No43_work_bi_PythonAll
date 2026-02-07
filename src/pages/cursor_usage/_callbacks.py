@@ -1,157 +1,49 @@
-"""Cursor Usage Dashboard page."""
-import dash
-from dash import html, dcc, callback, Input, Output, dash_table
-import dash_bootstrap_components as dbc
-import pandas as pd
+"""Cursor Usage Dashboard callbacks module."""
+from dash import html, callback, Input, Output, dash_table
 import plotly.graph_objects as go
 
 from src.data.parquet_reader import ParquetReader
-from src.core.cache import get_cached_dataset
-from src.data.filter_engine import FilterSet, CategoryFilter, DateRangeFilter, apply_filters
-from src.components.filters import create_date_range_filter, create_category_filter
 from src.components.cards import create_kpi_card
 from src.charts.templates import render_line_chart, render_bar_chart, render_pie_chart
-
-dash.register_page(__name__, path="/cursor-usage", name="Cursor Usage", order=1)
-
-
-def layout():
-    """Cursor Usage Dashboard layout."""
-    dataset_id = "cursor-usage"
-
-    # Load data to get available options for filters
-    reader = ParquetReader()
-    try:
-        df = get_cached_dataset(reader, dataset_id)
-
-        # Extract date from ISO datetime string (strip timezone for filter compatibility)
-        df["Date"] = pd.to_datetime(df["Date"], utc=True).dt.tz_convert(None)
-        df["DateOnly"] = df["Date"].dt.date
-
-        # Get unique models for filter
-        models = sorted(df["Model"].unique().tolist())
-        min_date = df["DateOnly"].min().isoformat()
-        max_date = df["DateOnly"].max().isoformat()
-    except Exception:
-        # If data not loaded yet, use defaults
-        models = []
-        min_date = None
-        max_date = None
-
-    return html.Div([
-        html.H1("Cursor Usage Dashboard", className="mb-4"),
-
-        # Filters
-        dbc.Row([
-            dbc.Col([
-                create_date_range_filter(
-                    filter_id="date-filter",
-                    column_name="Date Range",
-                    min_date=min_date,
-                    max_date=max_date,
-                ),
-            ], md=6),
-            dbc.Col([
-                create_category_filter(
-                    filter_id="model-filter",
-                    column_name="Model",
-                    options=models,
-                    multi=True,
-                ),
-            ], md=6),
-        ], className="mb-4"),
-
-        # KPI Cards
-        dbc.Row([
-            dbc.Col([
-                html.Div(id="kpi-total-cost"),
-            ], md=4),
-            dbc.Col([
-                html.Div(id="kpi-total-tokens"),
-            ], md=4),
-            dbc.Col([
-                html.Div(id="kpi-request-count"),
-            ], md=4),
-        ], className="mb-4"),
-
-        # Charts Row 1
-        dbc.Row([
-            dbc.Col([
-                dcc.Graph(id="chart-cost-trend"),
-            ], md=12),
-        ], className="mb-4"),
-
-        # Charts Row 2
-        dbc.Row([
-            dbc.Col([
-                dcc.Graph(id="chart-token-efficiency"),
-            ], md=6),
-            dbc.Col([
-                dcc.Graph(id="chart-model-distribution"),
-            ], md=6),
-        ], className="mb-4"),
-
-        # Data Table
-        dbc.Row([
-            dbc.Col([
-                html.H3("Detailed Data", className="mb-3"),
-                html.Div(id="data-table"),
-            ], md=12),
-        ]),
-    ], className="page-container")
+from ._constants import DATASET_ID, ID_PREFIX
+from ._data_loader import load_and_filter_data
 
 
 @callback(
     [
-        Output("kpi-total-cost", "children"),
-        Output("kpi-total-tokens", "children"),
-        Output("kpi-request-count", "children"),
-        Output("chart-cost-trend", "figure"),
-        Output("chart-token-efficiency", "figure"),
-        Output("chart-model-distribution", "figure"),
-        Output("data-table", "children"),
+        Output(f"{ID_PREFIX}kpi-total-cost", "children"),
+        Output(f"{ID_PREFIX}kpi-total-tokens", "children"),
+        Output(f"{ID_PREFIX}kpi-request-count", "children"),
+        Output(f"{ID_PREFIX}chart-cost-trend", "figure"),
+        Output(f"{ID_PREFIX}chart-token-efficiency", "figure"),
+        Output(f"{ID_PREFIX}chart-model-distribution", "figure"),
+        Output(f"{ID_PREFIX}data-table", "children"),
     ],
     [
-        Input("date-filter", "start_date"),
-        Input("date-filter", "end_date"),
-        Input("model-filter", "value"),
+        Input(f"{ID_PREFIX}filter-date", "start_date"),
+        Input(f"{ID_PREFIX}filter-date", "end_date"),
+        Input(f"{ID_PREFIX}filter-model", "value"),
     ],
 )
 def update_dashboard(start_date, end_date, model_values):
-    """Update dashboard components based on filters."""
-    dataset_id = "cursor-usage"
+    """Update dashboard components based on filters.
+
+    Args:
+        start_date: Start date from date range filter (ISO string or None)
+        end_date: End date from date range filter (ISO string or None)
+        model_values: Selected models from dropdown (list or None)
+
+    Returns:
+        Tuple of (kpi_cost, kpi_tokens, kpi_requests, cost_trend_fig,
+                  efficiency_fig, distribution_fig, table_component)
+    """
     reader = ParquetReader()
 
     try:
-        # Load data
-        df = get_cached_dataset(reader, dataset_id)
-
-        # Convert Date column to datetime (strip timezone for filter compatibility)
-        df["Date"] = pd.to_datetime(df["Date"], utc=True).dt.tz_convert(None)
-        df["DateOnly"] = df["Date"].dt.date
-
-        # Build filters
-        filters = FilterSet()
-
-        if start_date and end_date:
-            filters.date_filters.append(
-                DateRangeFilter(
-                    column="Date",
-                    start_date=start_date,
-                    end_date=end_date,
-                )
-            )
-
-        if model_values:
-            filters.category_filters.append(
-                CategoryFilter(
-                    column="Model",
-                    values=model_values,
-                )
-            )
-
-        # Apply filters
-        filtered_df = apply_filters(df, filters)
+        # Load and filter data
+        filtered_df = load_and_filter_data(
+            reader, DATASET_ID, start_date, end_date, model_values
+        )
 
         if len(filtered_df) == 0:
             # Empty state

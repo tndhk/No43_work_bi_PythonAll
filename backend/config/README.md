@@ -82,6 +82,63 @@ datasets:
     enabled: true
 ```
 
+---
+
+## csv_datasets.yaml
+
+CSVファイルからのデータロードを管理するファイルです。DOMOパターンと同一の設定駆動方式。
+
+### 設定項目
+
+| 項目 | 必須 | 説明 | 例 |
+|------|------|------|-----|
+| `name` | ○ | DataSet識別名（人間向け） | "Cursor Usage Events" |
+| `minio_dataset_id` | ○ | MinIOのdataset ID（パス名） | "cursor-usage" |
+| `source_dir` | ○ | CSVファイルの格納ディレクトリ（project rootからの相対パス） | "backend/data_sources" |
+| `file_pattern` | ○ | globパターン | "team-usage-events-*.csv" |
+| `partition_column` | | パーティション分割するカラム名 | "Date" |
+| `description` | | DataSetの説明 | "Cursor team usage events data" |
+| `enabled` | ○ | 有効/無効フラグ | true |
+| `csv_options` | | CSV読み込みオプション | delimiter, encoding |
+
+### DataSet追加手順
+
+1. `csv_datasets.yaml` に新しいDataSetを追加
+2. `enabled: true` に設定
+3. `backend/scripts/load_csv.py` を実行して取得
+
+```bash
+# 設定確認
+python backend/scripts/load_csv.py --list
+
+# 特定DataSetのみ取得
+python backend/scripts/load_csv.py --dataset "DataSet Name"
+
+# 全DataSet一括取得
+python backend/scripts/load_csv.py --all
+
+# ドライラン
+python backend/scripts/load_csv.py --all --dry-run
+```
+
+### 設定例
+
+```yaml
+datasets:
+  - name: "Cursor Usage Events"
+    minio_dataset_id: "cursor-usage"
+    source_dir: "backend/data_sources"
+    file_pattern: "team-usage-events-*.csv"
+    partition_column: "Date"
+    enabled: true
+    description: "Cursor team usage events data"
+    # csv_options:
+    #   delimiter: ","
+    #   encoding: null
+```
+
+---
+
 ## 参考
 
 - [DOMO API Documentation](../../../docs/DOMO/DOMO_API_Documentation.md)

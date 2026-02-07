@@ -1,6 +1,6 @@
 # 運用ガイド (RUNBOOK)
 
-Last Updated: 2026-02-07
+Last Updated: 2026-02-07 (rev.2)
 
 ## このドキュメントについて
 
@@ -423,12 +423,41 @@ DOMO からのデータ取得はスケジューリングが必要。
 0 6 * * * cd /path/to/project && python backend/scripts/load_domo.py --all >> /var/log/domo-etl.log 2>&1
 ```
 
-### データセットの追加
+### CSV ETL定期実行
+
+CSV ファイルからのデータロードもスケジューリング可能。
+
+```bash
+# crontab例: 毎日午前5時に全有効CSVデータセットをロード
+0 5 * * * cd /path/to/project && python backend/scripts/load_csv.py --all >> /var/log/csv-etl.log 2>&1
+```
+
+CSV ETLの設定は `backend/config/csv_datasets.yaml` で管理する。DOMOパターンと同一の設定駆動方式。
+
+### データセットの追加（DOMO）
 
 1. `backend/config/domo_datasets.yaml` に新しいデータセットを追加
 2. `enabled: true` に設定
 3. `python backend/scripts/load_domo.py --dataset "Name"` で取得テスト
 4. `src/pages/` に新しいダッシュボードページを作成（モジュール化パターンは `src/pages/apac_dot_due_date/` を参照）
+
+### データセットの追加（CSV）
+
+1. `backend/config/csv_datasets.yaml` に新しいデータセットを追加
+2. `enabled: true` に設定
+3. `python backend/scripts/load_csv.py --dataset "Name"` でロードテスト
+4. 設定例:
+
+```yaml
+datasets:
+  - name: "New Dataset"
+    minio_dataset_id: "new-dataset"
+    source_dir: "backend/data_sources"
+    file_pattern: "*.csv"
+    partition_column: "date_column"  # or null
+    enabled: true
+    description: "Description"
+```
 
 ### データセットの削除/再取り込み
 
@@ -436,8 +465,11 @@ DOMO からのデータ取得はスケジューリングが必要。
 # データセット削除
 python backend/scripts/clear_dataset.py <dataset_id>
 
-# 再取り込み
+# 再取り込み（DOMO）
 python backend/scripts/load_domo.py --dataset "Name"
+
+# 再取り込み（CSV）
+python backend/scripts/load_csv.py --dataset "Name"
 ```
 
 ---

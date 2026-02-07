@@ -1,6 +1,6 @@
 # 開発者ガイド (CONTRIB)
 
-最終更新: 2026-02-07
+最終更新: 2026-02-07 (rev.2)
 
 ## このドキュメントについて
 
@@ -131,10 +131,20 @@ docker compose up --build
 | `python backend/scripts/load_domo.py --dataset "NAME"` | 特定DOMOデータセットをロード |
 | `python backend/scripts/load_domo.py --all` | 有効な全DOMOデータセットをロード |
 | `python backend/scripts/load_domo.py --all --dry-run` | ドライラン（実行せず内容確認） |
-| `python backend/scripts/load_cursor_usage.py` | Cursor利用CSVをS3にロード |
 | `python backend/scripts/clear_dataset.py <dataset_id>` | 指定データセットをS3から削除 |
 
 DOMO ETLの設定は `backend/config/domo_datasets.yaml` で管理する。詳細は `backend/config/README.md` を参照。
+
+### CSV ETL管理スクリプト
+
+| コマンド | 説明 |
+|---------|------|
+| `python backend/scripts/load_csv.py --list` | 設定済みCSVデータセット一覧 |
+| `python backend/scripts/load_csv.py --dataset "NAME"` | 特定CSVデータセットをロード |
+| `python backend/scripts/load_csv.py --all` | 有効な全CSVデータセットをロード |
+| `python backend/scripts/load_csv.py --all --dry-run` | ドライラン（実行せず内容確認） |
+
+CSV ETLの設定は `backend/config/csv_datasets.yaml` で管理する。DOMOパターンと同一の設定駆動方式。
 
 ### CSVアップロードCLIの使用例
 
@@ -195,6 +205,9 @@ tests/
         test_callbacks.py             # コールバックテスト
         charts/
           test_ch00_reference_table.py # Reference Tableチャートテスト
+      cursor_usage/                 # Cursor Usageモジュール別テスト
+        test_constants.py             # 定数テスト
+        test_data_loader.py           # データロード・フィルタテスト
     test_exceptions.py              # 例外テスト
     test_layout.py                  # レイアウトテスト
   etl/
@@ -321,7 +334,12 @@ work_BI_PythonAll/
     pages/                       # ダッシュボードページ（Dash Pages API）
       __init__.py
       dashboard_home.py          # ホームページ（登録ページ一覧カード表示）
-      cursor_usage.py            # Cursor利用状況ダッシュボード
+      cursor_usage/              # Cursor利用状況ダッシュボード（モジュール化）
+        __init__.py              # Dash register_page & layout() 定義
+        _constants.py            # データセットID、カラムマッピング、ID接頭辞
+        _data_loader.py          # データ読み込み & フィルタ適用ロジック
+        _layout.py               # ページレイアウト構成ビルダー
+        _callbacks.py            # Dashコールバック登録（@callback）
       apac_dot_due_date/         # APAC DOT Due Date ダッシュボード（モジュール化）
         __init__.py              # Dash register_page & layout() 定義
         _constants.py            # データセットID、カラムマッピング、ID接頭辞
@@ -342,6 +360,7 @@ work_BI_PythonAll/
     __init__.py
     config/                      # ETL設定
       domo_datasets.yaml         # DOMOデータセット定義
+      csv_datasets.yaml          # CSVデータセット定義（設定駆動ETL）
       README.md                  # 設定ファイルの使い方
     data_sources/                # データソース接続（未実装スタブ）
       __init__.py
@@ -357,7 +376,7 @@ work_BI_PythonAll/
     scripts/                     # ETL管理スクリプト
       __init__.py
       load_domo.py               # DOMOデータセットローダー（YAML設定ベース）
-      load_cursor_usage.py       # Cursor利用CSVローダー
+      load_csv.py                # CSVデータセットローダー（YAML設定ベース、汎用）
       clear_dataset.py           # データセット削除ユーティリティ
   scripts/                       # CLIツール
     __init__.py
@@ -393,7 +412,8 @@ work_BI_PythonAll/
 ### ディレクトリ説明
 
 - `src/pages/`: 各ダッシュボードページの Python 定義ファイル（Dash Pages API で自動登録）
-- `src/pages/apac_dot_due_date/`: モジュール化されたページパッケージ（詳細は「APAC DOT Due Date モジュール化設計」セクションを参照）
+- `src/pages/cursor_usage/`: Cursor利用状況ダッシュボード（モジュール化パッケージ）
+- `src/pages/apac_dot_due_date/`: APAC DOT Due Date ダッシュボード（モジュール化パッケージ、詳細は「APAC DOT Due Date モジュール化設計」セクションを参照）
 - `src/components/`: 再利用可能な UI コンポーネント（サイドバー、フィルタ、カード等）
 - `src/auth/`: Flask-Login ベースの認証レイヤー（FormAuthProvider + 将来SAML対応のProviderプロトコル）
 - `src/data/`: データアクセス層（S3/Parquet読み込み、フィルタ適用、型推論、設定管理）
@@ -401,7 +421,7 @@ work_BI_PythonAll/
 - `src/core/`: キャッシュとログの共通インフラ
 - `backend/etl/`: ETL スクリプト（データソースごとに独立、BaseETLを継承）
 - `backend/scripts/`: ETL 管理スクリプト（DOMO ローダー、データセット削除等）
-- `backend/config/`: ETL 設定ファイル（DOMO データセット YAML）
+- `backend/config/`: ETL 設定ファイル（DOMO データセット YAML、CSV データセット YAML）
 - `scripts/`: CLI ツール（CSV アップロード）
 - `assets/`: CSS スタイルシート（番号順に読み込まれる、Warm Professional Light テーマ）
 
@@ -539,7 +559,56 @@ src/pages/apac_dot_due_date/
 
 ---
 
-## 12. 開発フロー
+## 12. Cursor Usage モジュール化設計
+
+### モジュール構造と責務
+
+```
+src/pages/cursor_usage/
+  __init__.py              # Dash register_page + layout() エントリーポイント
+  _constants.py            # 定数定義（DATASET_ID, ID_PREFIX, COLUMN_MAP）
+  _data_loader.py          # データ読み込み（load_filter_options, load_and_filter_data）
+  _layout.py               # ページレイアウトビルダー（build_layout -> html.Div）
+  _callbacks.py            # Dashコールバック登録（update_dashboard）
+```
+
+| モジュール | 責務 | 依存先 |
+|-----------|------|--------|
+| `__init__.py` | ページ登録、layout()定義 | `_layout`, `_callbacks` |
+| `_constants.py` | ハードコード文字列の一元管理 | なし（純粋な定数） |
+| `_data_loader.py` | S3データ読み込み、フィルタ適用 | `ParquetReader`, `cache`, `filter_engine`, `_constants` |
+| `_layout.py` | ページ全体のレイアウト構築 | `_constants`, `_data_loader`, `components.filters` |
+| `_callbacks.py` | Dashコールバック（フィルタ -> KPI/チャート/テーブル更新） | `_constants`, `_data_loader`, `components.cards`, `charts.templates` |
+
+### データフロー
+
+```
+[ユーザー操作: フィルタ変更（日付範囲 / モデル選択）]
+    |
+    v
+[_callbacks.py: update_dashboard()]
+    |
+    +-> _data_loader.load_and_filter_data()
+    |     +-> get_cached_dataset() -> S3/Parquet読み込み
+    |     +-> timezone除去（UTC -> naive）
+    |     +-> apply_filters(df, FilterSet)
+    |
+    +-> KPI計算（Total Cost, Total Tokens, Request Count）
+    +-> チャート生成（Daily Cost Trend, Token Efficiency, Model Distribution）
+    +-> DataTable構築（直近100件）
+    |
+    v
+[画面: KPIカード3枚 + チャート3枚 + データテーブル]
+```
+
+### 命名規則
+
+- コンポーネントID: `cu-` プレフィックス（他ページとの衝突回避）
+- プライベートモジュール: `_` プレフィックス
+
+---
+
+## 13. 開発フロー
 
 ### Phase 1: ダッシュボード基盤（実装済）
 
@@ -557,6 +626,8 @@ src/pages/apac_dot_due_date/
 12. 実ダッシュボード実装（Cursor Usage, APAC DOT Due Date）
 13. APAC DOT Due Date ページモジュール化（パッケージ構造 + charts サブパッケージ）
 14. デザインテーマ移行（Minimal Luxury Dark -> Warm Professional Light）
+15. Cursor Usage ページモジュール化（パッケージ構造）
+16. CSV ETL設定駆動化（DOMOパターンの横展開、`load_csv.py` + `csv_datasets.yaml`）
 
 ### Phase 2: LLM 質問機能
 
@@ -572,14 +643,14 @@ src/pages/apac_dot_due_date/
 2. ロール管理機能
 3. ページ単位アクセス制御
 
-## 13. 関連ドキュメント
+## 14. 関連ドキュメント
 
 | ドキュメント | 内容 |
 |-------------|------|
 | `docs/tech-spec.md` | 技術仕様書 |
 | `docs/RUNBOOK.md` | 本番運用・トラブルシューティングガイド |
 | `docs/architecture.md` | システムアーキテクチャ図 |
-| `backend/config/README.md` | DOMO DataSet設定の使い方 |
+| `backend/config/README.md` | DOMO/CSV DataSet設定の使い方 |
 | `CLAUDE.md` | プロジェクト開発メモ |
 | `codemaps/architecture.md` | アーキテクチャコードマップ |
 | `codemaps/frontend.md` | フロントエンドコードマップ |

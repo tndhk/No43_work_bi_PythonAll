@@ -1,6 +1,6 @@
 # System Architecture
 
-Last Updated: 2026-02-07
+Last Updated: 2026-02-07 (rev.2)
 
 ## High-Level Architecture
 
@@ -78,7 +78,12 @@ src/
 +-- pages/                    # Dashboard Pages (Dash Pages API)
 |   +-- __init__.py
 |   +-- dashboard_home.py    # Home page (card grid)
-|   +-- cursor_usage.py      # Cursor Usage dashboard
+|   +-- cursor_usage/        # Cursor Usage dashboard (modularized)
+|   |   +-- __init__.py      # Page registration + layout()
+|   |   +-- _constants.py    # DATASET_ID, ID_PREFIX, COLUMN_MAP
+|   |   +-- _data_loader.py  # Data loading & filtering
+|   |   +-- _layout.py       # Page layout builder
+|   |   +-- _callbacks.py    # Dash callbacks (KPIs, charts, table)
 |   +-- apac_dot_due_date/   # APAC DOT Due Date dashboard (modularized)
 |       +-- __init__.py      # Page registration + layout()
 |       +-- _constants.py    # DATASET_ID, COLUMN_MAP, BREAKDOWN_MAP
@@ -107,6 +112,7 @@ src/
 backend/
 +-- config/              # ETL Configuration
 |   +-- domo_datasets.yaml  # DOMO DataSet definitions
+|   +-- csv_datasets.yaml   # CSV DataSet definitions
 |   +-- README.md           # Configuration guide
 |
 +-- data_sources/        # External Data Sources (stubs)
@@ -123,7 +129,7 @@ backend/
 |
 +-- scripts/             # ETL Management Scripts
     +-- load_domo.py         # DOMO dataset loader (YAML config)
-    +-- load_cursor_usage.py # Cursor usage CSV loader
+    +-- load_csv.py          # CSV dataset loader (YAML config, generic)
     +-- clear_dataset.py     # Dataset deletion utility
 ```
 
@@ -193,6 +199,13 @@ app.py
     +-- src.components.sidebar
     +-- src.pages.* (Dash Pages)
 
+src/pages/cursor_usage/__init__.py
++-- _layout.build_layout
++-- _callbacks (side-effect import for @callback registration)
+    +-- _data_loader.load_and_filter_data
+    +-- src.components.cards
+    +-- src.charts.templates (render_line_chart, render_bar_chart, render_pie_chart)
+
 src/pages/apac_dot_due_date/__init__.py
 +-- _layout.build_layout
 +-- _callbacks (side-effect import for @callback registration)
@@ -241,7 +254,7 @@ backend/etl/etl_domo.py
 
 ## Page Modularity Pattern
 
-The APAC DOT Due Date page demonstrates the modularized page pattern:
+Both Cursor Usage and APAC DOT Due Date pages follow the modularized page pattern:
 
 ```
 apac_dot_due_date/
