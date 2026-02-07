@@ -8,9 +8,7 @@
 
 ## User Preferences
 - Prefer YAML only for look/labels; keep calculation logic in Python templates.
-
-## Patterns That Work
-- 2026-02-07: With permissions set to full access and Docker running, MinIO health check and ParquetReader validation succeeded locally.
+- Wants human-editable settings separated clearly from non-editable logic.
 
 ## Patterns That Don't Work
 - 2026-02-07: `python3 backend/scripts/load_domo.py --dataset ...` failed due to DNS resolution for `api.domo.com` in this environment. If ETL is required, run in an environment with outbound DNS/network access.
