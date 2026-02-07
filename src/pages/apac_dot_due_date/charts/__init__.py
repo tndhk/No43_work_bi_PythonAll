@@ -3,3 +3,7 @@
 Each module exposes a ``build()`` function that accepts a filtered DataFrame
 and returns a (title, component) tuple suitable for Dash callbacks.
 """
+
+from . import _ch00_reference_table
+
+__all__ = ["_ch00_reference_table"]

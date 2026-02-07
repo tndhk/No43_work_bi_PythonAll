@@ -24,6 +24,10 @@ app = Dash(
     suppress_callback_exceptions=True,
 )
 
+# Package-style pages require explicit import because Dash's page scanner
+# skips __init__.py (starts with '_'). See: dash/_pages.py line 431
+import src.pages.apac_dot_due_date  # noqa: F401
+
 # Initialize Flask-Login
 app.server.config["SECRET_KEY"] = settings.secret_key
 init_login_manager(app.server)

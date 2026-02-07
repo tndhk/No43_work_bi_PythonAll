@@ -11,7 +11,7 @@ from typing import Any
 import pandas as pd
 from dash import dash_table, html
 
-from src.pages.apac_dot_due_date._constants import BREAKDOWN_MAP, COLUMN_MAP
+from .._constants import BREAKDOWN_MAP, COLUMN_MAP
 
 # ---------------------------------------------------------------------------
 # Public API

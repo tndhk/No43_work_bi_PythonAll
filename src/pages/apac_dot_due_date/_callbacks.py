@@ -7,9 +7,9 @@ the ``@callback`` decorator as a side effect.
 from dash import callback, html, Input, Output
 
 from src.data.parquet_reader import ParquetReader
-from src.pages.apac_dot_due_date._constants import DATASET_ID
-from src.pages.apac_dot_due_date._data_loader import load_and_filter_data
-from src.pages.apac_dot_due_date.charts import _ch00_reference_table
+from ._constants import DATASET_ID
+from ._data_loader import load_and_filter_data
+from .charts import _ch00_reference_table
 
 
 @callback(

@@ -8,7 +8,7 @@ import pandas as pd
 from src.data.parquet_reader import ParquetReader
 from src.core.cache import get_cached_dataset
 from src.data.filter_engine import FilterSet, CategoryFilter, apply_filters
-from src.pages.apac_dot_due_date._constants import COLUMN_MAP
+from ._constants import COLUMN_MAP
 
 
 def load_filter_options(reader: ParquetReader, dataset_id: str) -> dict:

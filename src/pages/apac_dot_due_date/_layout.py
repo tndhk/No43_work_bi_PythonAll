@@ -7,9 +7,9 @@ from dash import html
 import dash_bootstrap_components as dbc
 
 from src.data.parquet_reader import ParquetReader
-from src.pages.apac_dot_due_date._constants import DATASET_ID
-from src.pages.apac_dot_due_date._data_loader import load_filter_options
-from src.pages.apac_dot_due_date._filters import build_filter_layout
+from ._constants import DATASET_ID
+from ._data_loader import load_filter_options
+from ._filters import build_filter_layout
 
 
 def build_layout() -> html.Div:

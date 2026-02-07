@@ -25,6 +25,13 @@
   - Docker利用時は `docker-compose.yml` に `./assets:/app/assets` を追加してCSSを確実に反映
   - 反映確認はブラウザのハードリロードで行う
 
+### Package-style Pages（パッケージ形式のページ）
+- 単一ファイルページ（例: `cursor_usage.py`）はDashが自動検出する
+- パッケージ形式（例: `apac_dot_due_date/`）は `app.py` に明示的importが必要
+- 理由: Dashのスキャナーが `__init__.py` を `_` 始まりとしてスキップする
+- 新規パッケージページ追加時: `app.py` に `import src.pages.<name>  # noqa: F401` を追加
+- パッケージ内の `__init__.py` では `dash.register_page(__name__, ..., layout=layout)` のようにレイアウト関数を明示的に渡す必要がある（単一ファイルページでは自動検出されるが、パッケージ形式では必須）
+
 ## ETL開発の注意点
 
 ### DOMO API ETL
