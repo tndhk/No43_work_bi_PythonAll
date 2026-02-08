@@ -3,7 +3,7 @@
 ## プロジェクト概要
 - Plotly Dashベースのダッシュボード
 - S3/Parquetからデータ取得
-- Basic認証
+- Flask-Login + セッションベースのフォーム認証（`src/auth/`）
 
 ## ページ設計ポリシー
 
@@ -20,11 +20,12 @@
 ```
 src/pages/<page_name>/
 ├── __init__.py          # 必須: Dash登録 + build_layout参照 + コールバックインポート
-├── _constants.py        # 必須: DATASET_ID, ID_PREFIX, COLUMN_MAP, TABLE_SPECS, CHART_SPECS
+├── _constants.py        # 必須: DASHBOARD_ID, DATASET_ID, ID_PREFIX, COLUMN_MAP, TABLE_SPECS, CHART_SPECS
 ├── _data_loader.py      # 必須: load_filter_options(), load_and_filter_data()
 ├── _layout.py           # 必須: build_layout()
 ├── _callbacks.py        # 必須: コールバック関数群（薄いオーケストレータ）
 ├── _filters.py          # 条件付き必須: フィルタUI構築（フィルタ5個以上の場合）
+├── data_sources.yml     # 必須: チャートID -> データセットIDマッピング
 ├── SPEC.md              # 必須: ユーザー向け設計書（日本語）
 ├── _utils.py            # オプション: ヘルパー関数
 └── _chart_builders.py   # オプション: カスタム集計・描画ロジック
@@ -33,10 +34,13 @@ src/pages/<page_name>/
 #### ファイル別の役割
 
 **_constants.py**
-- 必須定数: `DATASET_ID`, `ID_PREFIX`, `COLUMN_MAP`
-- チャート/テーブル定義: `TABLE_SPECS` (dict[str, TableSpec]), `CHART_SPECS` (dict[str, ChartSpec])
+- 必須定数: `DASHBOARD_ID`, `ID_PREFIX`
+- `DATASET_ID`: レガシー/フォールバック用。実行時のデータセット解決は `data_sources.yml` 経由で `resolve_dataset_id()` を使用。後方互換性とテストフィクスチャーのため保持
+- `COLUMN_MAP`: 必須（トップレベルのdict、または複数データセットページではDatasetConfig内にネスト）
+- チャート/テーブル定義: `TABLE_SPECS` (dict[str, TableSpec]), `CHART_SPECS` (dict[str, ChartSpec])、または個別変数として定義（`COST_TREND_SPEC`, `DETAIL_TABLE_SPEC`等）
 - Specは `src.charts.specs` からインポート
-- フィルタクリアペア: `CLEAR_PAIRS` (list[tuple[str, str]]) - register_clear_callbacks()で使用
+- フィルタクリアペア: `CLEAR_PAIRS` (list[tuple[str, str]]) - 推奨: `_constants.py`に定義。インライン定義も可
+- 複数データセットの場合: `COLUMN_MAP`等をDatasetConfigなどにネストして定義可（apac_dot_due_date 参照）
 
 **_data_loader.py**
 - フィルタオプション取得: `load_filter_options()`
@@ -46,7 +50,7 @@ src/pages/<page_name>/
 **_callbacks.py**
 - 薄いオーケストレータ層（ビジネスロジックは最小限）
 - フィルタ入力受取 -> data_loader呼出 -> chart_builders呼出 -> 戻り値返却
-- クリアコールバック: `register_clear_callbacks(CLEAR_PAIRS)` を末尾で呼ぶ
+- クリアコールバック: `register_clear_callbacks(CLEAR_PAIRS)` を末尾で呼ぶ（CLEAR_PAIRSは `_constants.py` で定義推奨）
 - 共通empty_statesを使用: `create_empty_figure()`, `create_empty_table()`, `create_error_figure()`
 
 **_chart_builders.py**（オプション）
@@ -57,23 +61,40 @@ src/pages/<page_name>/
 
 #### 共通基盤の使用
 
-全ページで以下の共通基盤を使用:
+利用可能な共通基盤:
 
 ```python
-# チャート/テーブル構築
+# チャート/テーブル構築（全ページで使用）
 from src.charts.table_builder import build_table
 from src.charts.chart_builder import build_chart
 from src.charts.specs import TableSpec, ChartSpec
 
-# 空状態・エラー状態
+# 空状態・エラー状態（全ページで使用）
 from src.charts.empty_states import (
     create_empty_figure,
     create_empty_table,
     create_error_figure,
 )
 
-# コールバックヘルパー
+# コールバックヘルパー（全ページで使用）
 from src.utils.callback_helpers import register_clear_callbacks
+
+# データソース解決（全ページで使用）
+from src.data.data_source_registry import resolve_dataset_id
+
+# UIコンポーネント（全ページで使用）
+from src.components.filters import (
+    create_category_filter,
+    create_date_range_filter,
+    create_slicer_filter,
+)
+
+# データヘルパー（新規ページで利用可能）
+from src.utils.data_helpers import (
+    safe_load_filter_options,
+    strip_timezone,
+    resolve_single_dataset_id,
+)
 ```
 
 ### SPEC.md 必須ルール（MANDATORY）
@@ -91,20 +112,24 @@ from src.utils.callback_helpers import register_clear_callbacks
 
 ### 新規ページ追加手順
 1. パッケージディレクトリ作成: `src/pages/<page_name>/`
-2. 必須5ファイル作成 (`__init__.py`, `_constants.py`, `_data_loader.py`, `_layout.py`, `_callbacks.py`)
+2. 必須ファイル作成: `__init__.py`, `_constants.py`, `_data_loader.py`, `_layout.py`, `_callbacks.py`, `data_sources.yml`, `SPEC.md`
 3. `app.py` に明示的インポート追加: `import src.pages.<page_name>  # noqa: F401`
-4. テスト作成: `tests/unit/pages/<page_name>/test_constants.py`, `test_data_loader.py`
+   - 理由: Dashのスキャナーが `__init__.py` を `_` 始まりとしてスキップするため
+   - パッケージ内の `__init__.py` では `dash.register_page(__name__, ..., layout=layout)` のようにレイアウト関数を明示的に渡すこと
+4. テスト作成: 最低限 `test_constants.py`, `test_data_loader.py`, `test_data_sources.py`。推奨: `test_callbacks.py`, `test_layout.py`
+   - `tests/conftest.py` のグローバルモックを前提とする
 
 ## 開発メモ
 
 ### Parquet経由のdatetime列はtimezone-awareになる
 - ParquetにUTCタイムスタンプを保存すると、読み込み時に `datetime64[ns, UTC]` になる
 - `filter_engine.apply_filters` はtimezone-naiveなTimestampで比較するため、そのまま渡すと `TypeError: Invalid comparison between dtype=datetime64[ns, UTC] and Timestamp` が発生する
-- 対処: `pd.to_datetime(df["col"], utc=True).dt.tz_convert(None)` でtimezoneを除去してからフィルタに渡す
+- 対処: `strip_timezone(df, column_name)` ヘルパーを使用（`src.utils.data_helpers`）、または `pd.to_datetime(df["col"], utc=True).dt.tz_convert(None)` で手動変換
 
 ### Dash 4.x では dangerously_allow_html が廃止されている
 - `html.Div(content, dangerously_allow_html=True)` は Dash 4.0.0 で使えない
-- `render_table` (src/charts/templates.py) がこれを使っているため、テーブル表示には `dash.dash_table.DataTable` を直接使うこと
+- `src/charts/templates.py` に残っているレガシーラッパー（`render_bar_chart`, `render_line_chart`, `render_pie_chart`）は非推奨
+- 新規実装では `build_chart()` + `ChartSpec` と `build_table()` + `TableSpec` を使用すること
 
 ### Dash 4.x のドロップダウン/DatePickerが背面に回る
 - 症状: ドロップダウンのポップアップが他のカードやセクションの背面に隠れる
@@ -116,8 +141,9 @@ from src.utils.callback_helpers import register_clear_callbacks
 - 対処:
   - `[data-radix-popper-content-wrapper]`に`z-index: 9999 !important`を設定
   - `.dash-dropdown-content`に`background-color`を明示設定（デフォルトで透明になることがある）
-  - `.card`の`transition: all`を`transition: box-shadow 0.3s ease, border-color 0.3s ease`に限定（transformを含めない）
+  - `.card`の`transition`を`transform`を含まない形に限定（例: `transition: box-shadow 0.3s ease, border-color 0.3s ease`）
   - `.card:hover`の`transform: translateY(-2px)`を削除（スタッキングコンテキスト作成を防止）
+  - 既知の問題: `assets/04-animations.css:112`の`.card`は`transition: transform 0.3s ease, ...`を含んでいる。これ単体では問題を起こさない（`:hover`での`transform`がスタッキングコンテキストを作成）が、将来的な問題防止のため`transition: transform`は削除が望ましい。現状の回避策: フィルタを含むカードには`.hover-lift`クラスを付与しないこと
 
 - やってはいけないこと:
   - `[data-radix-popper-content-wrapper]`に`position`を上書きしてはいけない（Radixの内部位置計算が破壊される）
@@ -135,13 +161,6 @@ from src.utils.callback_helpers import register_clear_callbacks
   - `.dash-dropdown-search` - 検索入力
   - `.dash-dropdown-actions` - Select All / Deselect All ボタン
 - 旧Dash (2.x) の`.Select-menu-outer`/`.Select-option`等のセレクタは4.xでは無効
-
-### Package-style Pages（パッケージ形式のページ）
-- 単一ファイルページ（例: `cursor_usage.py`）はDashが自動検出する
-- パッケージ形式（例: `apac_dot_due_date/`）は `app.py` に明示的importが必要
-- 理由: Dashのスキャナーが `__init__.py` を `_` 始まりとしてスキップする
-- 新規パッケージページ追加時: `app.py` に `import src.pages.<name>  # noqa: F401` を追加
-- パッケージ内の `__init__.py` では `dash.register_page(__name__, ..., layout=layout)` のようにレイアウト関数を明示的に渡す必要がある（単一ファイルページでは自動検出されるが、パッケージ形式では必須）
 
 ## ETL開発の注意点
 
@@ -161,7 +180,8 @@ from src.utils.callback_helpers import register_clear_callbacks
 - 注意: NULL値レコードはパーティションから除外される（元データより行数が減る）
 
 ### CSV ETL（設定駆動化）
-- `backend/config/csv_datasets.yaml` でCSVデータセットを管理（DOMO APIと同じパターン）
+- `backend/config/csv_datasets.yaml` でCSVデータセットを管理
+- DOMO API ETLも同パターン: `backend/config/domo_datasets.yaml`
 - `backend/scripts/load_csv.py` で汎用ローダーを使用（個別スクリプト作成不要）
 - スタンドアロンETLスクリプトのモジュールインポートエラー対処:
   - `python3 backend/scripts/load_csv.py` で直接実行するとモジュールが見つからない
