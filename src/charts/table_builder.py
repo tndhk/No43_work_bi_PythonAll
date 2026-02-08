@@ -48,6 +48,9 @@ def build_table(
 
     data = df.to_dict("records")
 
+    # --- page_size guard: 0 is invalid for pagination, default to 20 -----
+    page_size = spec.page_size if spec.page_size > 0 else 20
+
     # --- build DataTable ---------------------------------------------------
     table = dash_table.DataTable(
         data=data,
@@ -58,7 +61,7 @@ def build_table(
         style_data_conditional=deepcopy(spec.style_data_conditional),
         sort_action=spec.sort_action,
         filter_action=spec.filter_action,
-        page_size=spec.page_size,
+        page_size=page_size,
     )
 
     return (spec.title, table)

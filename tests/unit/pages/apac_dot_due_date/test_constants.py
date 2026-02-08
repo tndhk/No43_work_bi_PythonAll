@@ -535,6 +535,23 @@ class TestTableSpecs:
                 f"TABLE_SPECS['{key}'].style_data_conditional missing"
             )
 
+    def test_table_specs_have_valid_page_size(self):
+        """Every TABLE_SPECS entry must have page_size > 0.
+
+        page_size=0 disables pagination, which can cause performance issues
+        with large datasets. Both ch00_reference_table and ch01_change_issue_table
+        must specify a positive page_size.
+        """
+        from src.pages.apac_dot_due_date._constants import TABLE_SPECS
+
+        expected_keys = ["ch00_reference_table", "ch01_change_issue_table"]
+        for key in expected_keys:
+            assert key in TABLE_SPECS, f"Expected key '{key}' not found in TABLE_SPECS"
+            spec = TABLE_SPECS[key]
+            assert spec.page_size > 0, (
+                f"TABLE_SPECS['{key}'].page_size must be > 0, got {spec.page_size}"
+            )
+
     def test_table_specs_consistent_with_datasets(self):
         """Every DATASETS entry's table_spec_key must exist in TABLE_SPECS."""
         from src.pages.apac_dot_due_date._constants import TABLE_SPECS, DATASETS

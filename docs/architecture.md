@@ -1,6 +1,6 @@
 # System Architecture
 
-Last Updated: 2026-02-08 (rev.3)
+Last Updated: 2026-02-08 (rev.4)
 
 ## High-Level Architecture
 
@@ -68,8 +68,12 @@ src/
 |   +-- models.py             # Pydantic models for type safety
 |
 +-- charts/                   # Visualization Layer
-|   +-- templates.py          # Chart template library (Line, Bar, Pie, etc.)
+|   +-- chart_builder.py     # Shared: DataFrame + ChartSpec -> go.Figure (bar/line/pie/stacked_bar)
+|   +-- table_builder.py     # Shared: DataFrame + TableSpec -> DataTable
+|   +-- empty_states.py      # Empty/error state placeholders (create_empty_figure, etc.)
+|   +-- specs.py             # ChartSpec, TableSpec (frozen dataclass definitions)
 |   +-- plotly_theme.py       # Plotly Warm Professional Light theme
+|   +-- templates.py          # Legacy chart templates (render_*_chart)
 |
 +-- core/                     # Infrastructure
 |   +-- cache.py             # TTL Cache initialization (flask-caching)
@@ -78,6 +82,7 @@ src/
 +-- utils/                    # Shared Utility Modules
 |   +-- data_helpers.py      # Data transformation helpers
 |   +-- filter_helpers.py    # Filter building helpers (build_filter_set_from_map)
+|   +-- callback_helpers.py  # register_clear_callbacks() for bulk clear-filter wiring
 |
 +-- pages/                    # Dashboard Pages (Dash Pages API)
 |   +-- __init__.py
@@ -136,6 +141,7 @@ backend/
 |   +-- etl_rds.py      # RDS -> Parquet transformation
 |   +-- etl_csv.py      # CSV -> Parquet transformation
 |   +-- etl_domo.py     # DOMO API -> Parquet (OAuth2 auth)
+|   +-- masking.py      # HMAC-SHA256 masking utility (apply_hmac_masking)
 |   +-- resolve_csv_path.py  # CSV file path resolution utility
 |
 +-- scripts/             # ETL Management Scripts

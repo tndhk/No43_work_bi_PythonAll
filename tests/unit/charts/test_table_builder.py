@@ -215,12 +215,21 @@ class TestTableConfiguration:
         _, table = build_table(_sample_df(), spec)
         assert table.page_size == 25
 
-    def test_default_page_size_zero(self):
+    def test_default_page_size_is_zero_in_spec(self):
         from src.charts.table_builder import build_table
 
         spec = _make_spec()
         _, table = build_table(_sample_df(), spec)
-        assert table.page_size == 0
+        # When page_size is 0 (default), builder guards it to 20
+        assert table.page_size == 20
+
+    def test_build_table_guards_zero_page_size(self):
+        """page_size=0 should be guarded to default value 20."""
+        from src.charts.table_builder import build_table
+
+        spec = _make_spec(page_size=0)
+        _, table = build_table(_sample_df(), spec)
+        assert table.page_size == 20
 
 
 # ---------------------------------------------------------------------------

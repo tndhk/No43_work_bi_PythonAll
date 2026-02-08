@@ -46,14 +46,14 @@ Dash アプリは S3 のクリーンデータを読んで可視化するだけ�
 - ページ構成: ページごとに自由に定義（データセット数もチャート構成もページごとに異なる）
 - ナビゲーション: 左サイドバー (Metabase / Redash 風)
 - デプロイ先: AWS ECS / Fargate
-- ローカル開発: Docker + docker-compose + MinIO
+- ローカル開発: Docker + docker compose + MinIO
 
 ### 1.2 ローカル開発
 
 | 項目 | 技術 | バージョン |
 |------|------|-----------|
 | コンテナ | Docker | 24.x |
-| オーケストレーション | docker-compose | 2.x |
+| オーケストレーション | docker compose (v2) | 2.x |
 | S3互換 | MinIO | latest |
 
 ### 1.4 ETL レイヤー

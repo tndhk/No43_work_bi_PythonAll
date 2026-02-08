@@ -141,6 +141,7 @@ TABLE_SPECS: dict[str, TableSpec] = {
                 "backgroundColor": "#eff6ff",
             }
         ],
+        page_size=20,
     ),
     "ch01_change_issue_table": TableSpec(
         title="1) DDD Change + Issue : Number of Work Order",
@@ -162,5 +163,6 @@ TABLE_SPECS: dict[str, TableSpec] = {
                 "backgroundColor": "#eff6ff",
             }
         ],
+        page_size=20,
     ),
 }

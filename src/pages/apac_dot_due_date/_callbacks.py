@@ -99,6 +99,9 @@ def build_pivot_table(
         style_data_conditional=resolved_conditional,
         column_display=table_spec.column_display,
         column_order=table_spec.column_order,
+        page_size=table_spec.page_size,
+        sort_action=table_spec.sort_action,
+        filter_action=table_spec.filter_action,
     )
 
     return build_table(pivot_df, resolved_spec)
