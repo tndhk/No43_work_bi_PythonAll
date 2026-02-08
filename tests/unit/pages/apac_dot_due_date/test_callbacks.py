@@ -1,7 +1,7 @@
 """Tests for APAC DOT Due Date callbacks module.
 
 TDD Step 1 (RED): These tests define the expected behavior of
-update_all_charts() before implementation.
+update_dashboard() before implementation.
 """
 import inspect
 
@@ -84,10 +84,10 @@ def _invoke_update(
     vendors=None, amp_av=None, order_types=None,
     num_percent="number", breakdown="area",
 ):
-    """Import and call update_all_charts with sensible defaults."""
-    from src.pages.apac_dot_due_date._callbacks import update_all_charts
+    """Import and call update_dashboard with sensible defaults."""
+    from src.pages.apac_dot_due_date._callbacks import update_dashboard
 
-    return update_all_charts(
+    return update_dashboard(
         num_percent,
         breakdown,
         months or ["2024-01"],
@@ -105,16 +105,16 @@ def _invoke_update(
 # ===========================================================================
 
 class TestModuleExists:
-    """_callbacks module must exist and expose update_all_charts."""
+    """_callbacks module must exist and expose update_dashboard."""
 
     def test_module_imports(self):
         """_callbacks module should be importable."""
         from src.pages.apac_dot_due_date import _callbacks  # noqa: F401
 
-    def test_update_all_charts_is_callable(self):
-        """update_all_charts must be a callable function."""
-        from src.pages.apac_dot_due_date._callbacks import update_all_charts
-        assert callable(update_all_charts)
+    def test_update_dashboard_is_callable(self):
+        """update_dashboard must be a callable function."""
+        from src.pages.apac_dot_due_date._callbacks import update_dashboard
+        assert callable(update_dashboard)
 
     def test_per_slicer_clear_callbacks_are_callable(self):
         """Per-slicer clear callbacks must be callable."""
@@ -137,11 +137,11 @@ class TestModuleExists:
 
 
 # ===========================================================================
-# update_all_charts return value tests
+# update_dashboard return value tests
 # ===========================================================================
 
-class TestUpdateAllChartsReturnValue:
-    """update_all_charts must return a 5-tuple of (kpi, title0, comp0, title1, comp1)."""
+class TestUpdateDashboardReturnValue:
+    """update_dashboard must return a 5-tuple of (kpi, title0, comp0, title1, comp1)."""
 
     @patch(_PATCH_BUILD_PIVOT)
     @patch(_PATCH_LOAD)
@@ -184,7 +184,7 @@ class TestUpdateAllChartsReturnValue:
 # ===========================================================================
 
 class TestLoadAndFilterDataDelegation:
-    """update_all_charts must call load_and_filter_data correctly for each dataset."""
+    """update_dashboard must call load_and_filter_data correctly for each dataset."""
 
     @patch(_PATCH_BUILD_PIVOT)
     @patch(_PATCH_LOAD)
@@ -307,7 +307,7 @@ class TestLoadAndFilterDataDelegation:
 # ===========================================================================
 
 class TestChartBuildDelegation:
-    """update_all_charts must pass filtered data and UI params to build_pivot_table."""
+    """update_dashboard must pass filtered data and UI params to build_pivot_table."""
 
     @patch(_PATCH_BUILD_PIVOT)
     @patch(_PATCH_LOAD)
@@ -376,7 +376,7 @@ class TestChartBuildDelegation:
 # ===========================================================================
 
 class TestErrorHandling:
-    """update_all_charts must handle exceptions gracefully with 5-tuple."""
+    """update_dashboard must handle exceptions gracefully with 5-tuple."""
 
     @patch(_PATCH_LOAD)
     @patch(_PATCH_READER)
@@ -447,10 +447,10 @@ class TestErrorHandling:
 class TestCallbackRegistration:
     """Importing _callbacks should register the Dash callback."""
 
-    def test_update_all_charts_has_callback_attributes(self):
-        """update_all_charts should have Dash callback metadata if registered."""
-        from src.pages.apac_dot_due_date._callbacks import update_all_charts
-        assert callable(update_all_charts)
+    def test_update_dashboard_has_callback_attributes(self):
+        """update_dashboard should have Dash callback metadata if registered."""
+        from src.pages.apac_dot_due_date._callbacks import update_dashboard
+        assert callable(update_dashboard)
 
     def test_per_slicer_clear_callbacks_have_callback_attributes(self):
         """Per-slicer clear callbacks should have callback metadata if registered."""

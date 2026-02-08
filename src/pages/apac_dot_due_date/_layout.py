@@ -3,7 +3,7 @@
 Extracts the page layout construction from __init__.layout() into a
 standalone, testable function.
 """
-from dash import html
+from dash import html, dcc
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 
@@ -63,34 +63,39 @@ def build_layout() -> html.Div:
         ], id="apac-dot-info-banner", className="apac-dot-info-banner mb-4"),
 
         # Filter rows (top and bottom) require MantineProvider for slicers
-        dmc.MantineProvider(filter_rows[0]),
-        dmc.MantineProvider(filter_rows[1]),
+        dmc.MantineProvider([filter_rows[0], filter_rows[1]]),
 
         # KPI Cards Section
-        dbc.Row([
-            dbc.Col([
-                dbc.Card([
-                    dbc.CardBody([
-                        html.H5("Total Work Orders", className="card-title"),
-                        html.H2(id=KPI_ID_TOTAL_WORK_ORDERS, className="card-text text-primary"),
-                    ])
-                ], className="mb-4"),
-            ], md=3),
-        ], className="mt-3"),
+        dcc.Loading([
+            dbc.Row([
+                dbc.Col([
+                    dbc.Card([
+                        dbc.CardBody([
+                            html.H5("Total Work Orders", className="card-title"),
+                            html.H2(id=KPI_ID_TOTAL_WORK_ORDERS, className="card-text text-primary"),
+                        ])
+                    ], className="mb-4"),
+                ], md=3),
+            ], className="mt-3"),
+        ]),
 
         # Reference / Table Section (Chart 00)
-        dbc.Row([
-            dbc.Col([
-                html.H3(id=CHART_ID_REFERENCE_TABLE_TITLE, className="mt-4 mb-3"),
-                html.Div(id=CHART_ID_REFERENCE_TABLE),
-            ], md=12),
+        dcc.Loading([
+            dbc.Row([
+                dbc.Col([
+                    html.H3(id=CHART_ID_REFERENCE_TABLE_TITLE, className="mt-4 mb-3"),
+                    html.Div(id=CHART_ID_REFERENCE_TABLE),
+                ], md=12),
+            ]),
         ]),
 
         # DDD Change + Issue Table Section (Chart 01)
-        dbc.Row([
-            dbc.Col([
-                html.H3(id=CHART_ID_CHANGE_ISSUE_TABLE_TITLE, className="mt-4 mb-3"),
-                html.Div(id=CHART_ID_CHANGE_ISSUE_TABLE),
-            ], md=12),
+        dcc.Loading([
+            dbc.Row([
+                dbc.Col([
+                    html.H3(id=CHART_ID_CHANGE_ISSUE_TABLE_TITLE, className="mt-4 mb-3"),
+                    html.Div(id=CHART_ID_CHANGE_ISSUE_TABLE),
+                ], md=12),
+            ]),
         ]),
     ], className="page-container")

@@ -5,7 +5,8 @@ import pandas as pd
 from src.data.parquet_reader import ParquetReader
 from src.core.cache import get_cached_dataset
 from src.data.data_source_registry import resolve_dataset_id
-from src.data.filter_engine import FilterSet, CategoryFilter, apply_filters, extract_unique_values
+from src.data.filter_engine import FilterSet, apply_filters, extract_unique_values
+from src.utils.filter_helpers import build_filter_set_from_map
 from ._constants import (
     COLUMN_MAP,
     DASHBOARD_ID,
@@ -21,6 +22,13 @@ from ._constants import (
     DERIVED_END_DATE,
 )
 
+
+# Extend COLUMN_MAP with derived columns for filter_set_from_map compatibility
+FILTER_COLUMN_MAP: dict[str, str] = {
+    **COLUMN_MAP,
+    "year": DERIVED_YEAR,
+    "month": DERIVED_MONTH,
+}
 
 CADENCE_WEEKLY = "weekly"
 CADENCE_MONTHLY = "monthly"
@@ -111,7 +119,7 @@ def _format_end_date_yearly(ts: Optional[pd.Timestamp]) -> str:
     return f"31-Dec-{ts.strftime('%y')}"
 
 
-def _add_cadence_columns(df: pd.DataFrame, cadence: str) -> pd.DataFrame:
+def add_cadence_columns(df: pd.DataFrame, cadence: str) -> pd.DataFrame:
     created_col = COLUMN_MAP["created_at"]
     df = df.copy()
 
@@ -194,47 +202,34 @@ def load_filter_options(reader: ParquetReader, dataset_id: str) -> dict:
 def load_and_filter_data(
     reader: ParquetReader,
     dataset_id: str,
-    regions,
-    years,
-    months,
-    task_ids,
-    content_types,
-    original_languages,
-    dialogue_values,
-    genres,
-    error_codes,
-    error_types,
+    column_map: dict[str, str],
+    regions=None,
+    years=None,
+    months=None,
+    task_ids=None,
+    content_types=None,
+    original_languages=None,
+    dialogue_values=None,
+    genres=None,
+    error_codes=None,
+    error_types=None,
 ) -> pd.DataFrame:
     """Load dataset and apply all filter criteria."""
     df = get_cached_dataset(reader, dataset_id)
     df = _prepare_base_df(df)
 
-    filters = FilterSet()
-
-    if regions:
-        filters.category_filters.append(CategoryFilter(column=COLUMN_MAP["region"], values=regions))
-    if years:
-        filters.category_filters.append(CategoryFilter(column=DERIVED_YEAR, values=years))
-    if months:
-        filters.category_filters.append(CategoryFilter(column=DERIVED_MONTH, values=months))
-    if task_ids:
-        filters.category_filters.append(CategoryFilter(column=COLUMN_MAP["id"], values=task_ids))
-    if content_types:
-        filters.category_filters.append(CategoryFilter(column=COLUMN_MAP["content_type"], values=content_types))
-    if original_languages:
-        filters.category_filters.append(CategoryFilter(column=COLUMN_MAP["original_language"], values=original_languages))
-    if dialogue_values:
-        filters.category_filters.append(CategoryFilter(column=COLUMN_MAP["dialogue"], values=dialogue_values))
-    if genres:
-        filters.category_filters.append(CategoryFilter(column=COLUMN_MAP["genre"], values=genres))
-    if error_codes:
-        filters.category_filters.append(CategoryFilter(column=COLUMN_MAP["error_code"], values=error_codes))
-    if error_types:
-        filters.category_filters.append(CategoryFilter(column=COLUMN_MAP["error_type"], values=error_types))
+    filter_pairs = [
+        ("region", regions),
+        ("year", years),
+        ("month", months),
+        ("id", task_ids),
+        ("content_type", content_types),
+        ("original_language", original_languages),
+        ("dialogue", dialogue_values),
+        ("genre", genres),
+        ("error_code", error_codes),
+        ("error_type", error_types),
+    ]
+    filters = build_filter_set_from_map(column_map, filter_pairs)
 
     return apply_filters(df, filters)
-
-
-def add_cadence_columns(df: pd.DataFrame, cadence: str) -> pd.DataFrame:
-    """Public wrapper for adding cadence-derived columns."""
-    return _add_cadence_columns(df, cadence)

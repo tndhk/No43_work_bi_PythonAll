@@ -38,6 +38,7 @@ from ._data_loader import (
     resolve_dataset_id_for_dashboard,
     load_and_filter_data,
     add_cadence_columns,
+    FILTER_COLUMN_MAP,
 )
 
 
@@ -343,16 +344,17 @@ def update_dashboard(
         df = load_and_filter_data(
             reader,
             dataset_id,
-            region_values,
-            year_values,
-            month_values,
-            task_ids,
-            content_type_values,
-            original_language_values,
-            dialogue_values,
-            genre_values,
-            error_code_values,
-            error_type_values,
+            FILTER_COLUMN_MAP,
+            regions=region_values,
+            years=year_values,
+            months=month_values,
+            task_ids=task_ids,
+            content_types=content_type_values,
+            original_languages=original_language_values,
+            dialogue_values=dialogue_values,
+            genres=genre_values,
+            error_codes=error_code_values,
+            error_types=error_type_values,
         )
 
         volume_summary = _build_volume_summary(df, cadence)

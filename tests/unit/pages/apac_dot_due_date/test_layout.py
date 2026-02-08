@@ -311,16 +311,16 @@ class TestLayoutStructureOrder:
     @patch("src.pages.apac_dot_due_date._layout.ParquetReader")
     @patch("src.pages.apac_dot_due_date._layout.load_filter_options")
     def test_layout_children_count(self, mock_load_opts, mock_reader_cls):
-        """Layout should have at least 7 children: H1 + banner + 2 filter rows + KPI + 2 chart rows."""
+        """Layout should have at least 6 children: H1 + banner + 1 MantineProvider (2 filter rows) + KPI + 2 chart rows."""
         mock_load_opts.return_value = _make_filter_options()
 
         from src.pages.apac_dot_due_date._layout import build_layout
 
         result = build_layout()
         children = result.children
-        # H1 + banner + 2 filter rows (spread) + KPI row + 2 table rows = 7
-        assert len(children) >= 7, (
-            f"Expected at least 7 children, got {len(children)}"
+        # H1 + banner + 1 MantineProvider (wrapping 2 filter rows) + KPI row + 2 table rows = 6
+        assert len(children) >= 6, (
+            f"Expected at least 6 children, got {len(children)}"
         )
 
     @patch("src.pages.apac_dot_due_date._layout.ParquetReader")
@@ -336,20 +336,20 @@ class TestLayoutStructureOrder:
 
     @patch("src.pages.apac_dot_due_date._layout.ParquetReader")
     @patch("src.pages.apac_dot_due_date._layout.load_filter_options")
-    def test_last_child_is_chart_01_section_row(self, mock_load_opts, mock_reader_cls):
-        """Last child should be the dbc.Row containing the chart-01 section."""
+    def test_last_child_is_chart_01_section_loading(self, mock_load_opts, mock_reader_cls):
+        """Last child should be the dcc.Loading wrapping the chart-01 section."""
         mock_load_opts.return_value = _make_filter_options()
 
         from src.pages.apac_dot_due_date._layout import build_layout
 
         result = build_layout()
         last_child = result.children[-1]
-        assert isinstance(last_child, dbc.Row), (
-            f"Expected last child to be dbc.Row, got {type(last_child).__name__}"
+        assert isinstance(last_child, dcc.Loading), (
+            f"Expected last child to be dcc.Loading, got {type(last_child).__name__}"
         )
         # The chart-01-title should be inside the last child
         table_title = find_component_by_id(last_child, "apac-dot-chart-01-title")
-        assert table_title is not None, "apac-dot-chart-01-title not in last row"
+        assert table_title is not None, "apac-dot-chart-01-title not in last Loading wrapper"
 
 
 # ===========================================================================
@@ -376,3 +376,25 @@ class TestBuildLayoutCallsFilterLayout:
 
         build_layout()
         mock_build_filter.assert_called_once_with(opts)
+
+
+# ===========================================================================
+# Loading wrapper tests
+# ===========================================================================
+
+class TestLoadingWrappers:
+    """build_layout must wrap KPI and table sections with dcc.Loading."""
+
+    @patch("src.pages.apac_dot_due_date._layout.ParquetReader")
+    @patch("src.pages.apac_dot_due_date._layout.load_filter_options")
+    def test_contains_loading_components(self, mock_load_opts, mock_reader_cls):
+        """Layout should contain at least 3 dcc.Loading wrappers (KPI + 2 tables)."""
+        mock_load_opts.return_value = _make_filter_options()
+
+        from src.pages.apac_dot_due_date._layout import build_layout
+
+        result = build_layout()
+        loading_components = find_components_by_type(result, dcc.Loading)
+        assert len(loading_components) >= 3, (
+            f"Expected at least 3 dcc.Loading wrappers, found {len(loading_components)}"
+        )

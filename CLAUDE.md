@@ -19,11 +19,12 @@
 
 ```
 src/pages/<page_name>/
-├── __init__.py          # 必須: Dash登録 + layout() + コールバックインポート
+├── __init__.py          # 必須: Dash登録 + build_layout参照 + コールバックインポート
 ├── _constants.py        # 必須: DATASET_ID, ID_PREFIX, COLUMN_MAP
 ├── _data_loader.py      # 必須: load_filter_options(), load_and_filter_data()
 ├── _layout.py           # 必須: build_layout()
 ├── _callbacks.py        # 必須: コールバック関数群
+├── _filters.py          # 条件付き必須: フィルタUI構築（フィルタ5個以上の場合）
 ├── SPEC.md              # 必須: ユーザー向け設計書（日本語）
 ├── _utils.py            # オプション: ヘルパー関数
 └── _chart_builders.py   # オプション: チャート生成関数

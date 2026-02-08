@@ -63,7 +63,7 @@ def _coerce_single_value(value, default: str) -> str:
         Input(FILTER_ID_ORDER_TYPE, "value"),
     ],
 )
-def update_all_charts(
+def update_dashboard(
     num_percent_mode,
     breakdown_tab,
     selected_months,
@@ -74,7 +74,7 @@ def update_all_charts(
     amp_av_values,
     order_type_values,
 ):
-    """Update all charts based on filter inputs.
+    """Update dashboard based on filter inputs.
 
     Loops through DATASETS configuration to load and filter each dataset,
     then builds pivot tables using the shared build_pivot_table function.

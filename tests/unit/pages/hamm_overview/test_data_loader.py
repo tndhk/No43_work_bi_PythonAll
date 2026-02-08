@@ -48,7 +48,7 @@ def test_load_filter_options_returns_expected_keys(mock_cache):
 
 @patch("src.pages.hamm_overview._data_loader.get_cached_dataset")
 def test_load_and_filter_data_filters_by_region_and_year(mock_cache):
-    from src.pages.hamm_overview._data_loader import load_and_filter_data
+    from src.pages.hamm_overview._data_loader import load_and_filter_data, FILTER_COLUMN_MAP
 
     mock_cache.return_value = _make_sample_df()
     reader = MagicMock()
@@ -56,16 +56,9 @@ def test_load_and_filter_data_filters_by_region_and_year(mock_cache):
     df = load_and_filter_data(
         reader,
         "hamm-dashboard",
+        FILTER_COLUMN_MAP,
         regions=["APAC"],
         years=["2026"],
-        months=[],
-        task_ids=[],
-        content_types=[],
-        original_languages=[],
-        dialogue_values=[],
-        genres=[],
-        error_codes=[],
-        error_types=[],
     )
 
     assert len(df) == 2
