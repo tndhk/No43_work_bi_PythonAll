@@ -1,6 +1,6 @@
 # 開発者ガイド (CONTRIB)
 
-最終更新: 2026-02-08 (rev.5)
+最終更新: 2026-02-08 (rev.6)
 
 ## このドキュメントについて
 
@@ -195,12 +195,20 @@ work_BI_PythonAll/
       data_source_registry.py    # chart_id -> dataset_id レジストリ
       parquet_reader.py          # Parquetファイル読み込み
       filter_engine.py           # フィルタロジック
+    utils/                       # 共通ユーティリティ
+      data_helpers.py            # データ変換ヘルパー
+      filter_helpers.py          # フィルタ構築ヘルパー（build_filter_set_from_map）
     pages/                       # ダッシュボードページ（Tier 1/2）
-      cursor_usage/
-        data_sources.yml         # Cursor Usageのデータソース設定
-      apac_dot_due_date/
-        data_sources.yml         # APAC DOT Due Dateのデータソース設定
+      dashboard_home.py          # ホームページ（Tier 1）
+      cursor_usage/              # Cursor Usage ダッシュボード
+        data_sources.yml         # データソース設定
+      apac_dot_due_date/         # APAC DOT Due Date ダッシュボード
+        _filters.py              # フィルタUI構築（slicer + category）
+        data_sources.yml         # データソース設定
+        charts/                  # チャート生成関数
       hamm_overview/             # HAMM Overview ダッシュボード
+        _filters.py              # フィルタUI構築（slicer + category + cadence chip）
+        data_sources.yml         # データソース設定
     layout.py                    # メインレイアウト（認証対応）
     exceptions.py                # カスタム例外クラス
   backend/

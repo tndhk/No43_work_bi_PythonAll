@@ -1,6 +1,6 @@
 # Plotly Dash BI Dashboard 技術仕様書 v0.2
 
-Last Updated: 2026-02-07
+Last Updated: 2026-02-08
 
 ## このドキュメントについて
 
@@ -37,7 +37,7 @@ Dash アプリは S3 のクリーンデータを読んで可視化するだけ�
 | S3 | boto3 | >=1.34.0 | AWS SDK |
 | 可視化 | Plotly | >=5.0.0 | インタラクティブグラフ |
 | ログ | structlog | >=23.0.0 | 構造化ログ |
-| キャッシュ | flask-caching | >=2.0.0 | TTL キャッシュ（SimpleCache, 300秒） |
+| キャッシュ | flask-caching | >=2.0.0 | TTL キャッシュ（SimpleCache, 3600秒） |
 | LLM（Phase 2） | Vertex AI SDK | - | Gemini Flash |
 
 ### 1.3 アーキテクチャ
@@ -294,7 +294,7 @@ flowchart TB
 
 ### 5.3 キャッシュ仕様
 
-- TTL キャッシュ: メモリ上にデータを保持し、一定時間（例: 5分）は再利用
+- TTL キャッシュ: メモリ上にデータを保持し、一定時間（1時間）は再利用
 - キャッシュキー: `dataset:{dataset_id}` （フィルタパラメータは含まない）
 - フィルタ適用: キャッシュされた全量DataFrameに対してインメモリで適用される
 - キャッシュ切れ時に S3 から再読み込み

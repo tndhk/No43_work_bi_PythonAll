@@ -1,6 +1,6 @@
 # 運用ガイド (RUNBOOK)
 
-Last Updated: 2026-02-08 (rev.5)
+Last Updated: 2026-02-08 (rev.6)
 
 ## このドキュメントについて
 
@@ -233,7 +233,7 @@ aws s3 ls s3://bi-datasets/datasets/ --recursive
 確認方法:
 
 - キャッシュは `flask-caching` の `SimpleCache`（インメモリ）を使用
-- TTL はデフォルト300秒（5分）
+- TTL はデフォルト3600秒（1時間）-- ETLが日次実行のため長めに設定
 - キャッシュキー: `dataset:<dataset_id>`
 
 解決策:
@@ -305,7 +305,24 @@ python backend/scripts/load_domo.py --all --dry-run
 - Parquetファイルのカラム名が `_constants.py` の `COLUMN_MAP` と一致しているか確認
 - キャッシュが古い場合はアプリ再起動でキャッシュクリア
 
-### Issue 9: ETLマスキングが失敗する
+### Issue 9: HAMM Overview のフィルタが動作しない
+
+症状: Cadence切り替えやリージョン/年フィルタが反映されない、またはフィルタ選択肢が空
+
+原因の調査:
+
+- S3にデータセット `hamm-dashboard` が存在するか確認
+- `_data_loader.load_filter_options()` がエラーなく完了しているか確認（エラー時は空リストを返す）
+- Cadence フィルタは `dash_mantine_components.ChipGroup` を使用しているため、Mantine 依存が正しくインストールされているか確認
+
+解決策:
+
+- DOMO ETLでデータをロード: `python3 backend/scripts/load_domo.py --dataset "HAMM Dashboard"`
+- `_constants.py` の `COLUMN_MAP` とParquetカラム名の一致確認
+- `dash-mantine-components` がインストールされているか確認: `pip install dash-mantine-components`
+- slicer フィルタのクリアボタンが動作しない場合は `_callbacks.py` にクリアコールバックが登録されているか確認
+
+### Issue 10: ETLマスキングが失敗する
 
 症状: `ETL_MASKING_SECRET environment variable is required` エラー
 

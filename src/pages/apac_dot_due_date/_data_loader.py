@@ -32,8 +32,10 @@ def _normalize_month_value(value) -> Optional[str]:
 
 
 def _normalize_month_series(series: pd.Series) -> pd.Series:
-    """Normalize a month-like Series to YYYY-MM strings."""
-    return series.apply(_normalize_month_value)
+    """Normalize a month-like Series to YYYY-MM strings (vectorized)."""
+    ts = pd.to_datetime(series, errors="coerce", utc=True).dt.tz_convert(None)
+    ts = ts.where(ts >= MIN_MONTH_START)
+    return ts.dt.strftime("%Y-%m")
 
 
 def _extract_normalized_months(df: pd.DataFrame, month_col: str) -> list[str]:

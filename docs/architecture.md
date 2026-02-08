@@ -1,6 +1,6 @@
 # System Architecture
 
-Last Updated: 2026-02-07 (rev.2)
+Last Updated: 2026-02-08 (rev.3)
 
 ## High-Level Architecture
 
@@ -75,6 +75,10 @@ src/
 |   +-- cache.py             # TTL Cache initialization (flask-caching)
 |   +-- logging.py           # Structured logging (structlog)
 |
++-- utils/                    # Shared Utility Modules
+|   +-- data_helpers.py      # Data transformation helpers
+|   +-- filter_helpers.py    # Filter building helpers (build_filter_set_from_map)
+|
 +-- pages/                    # Dashboard Pages (Dash Pages API)
 |   +-- __init__.py
 |   +-- dashboard_home.py    # Home page (card grid)
@@ -85,15 +89,22 @@ src/
 |   |   +-- _layout.py       # Page layout builder
 |   |   +-- _callbacks.py    # Dash callbacks (KPIs, charts, table)
 |   +-- apac_dot_due_date/   # APAC DOT Due Date dashboard (modularized)
+|   |   +-- __init__.py      # Page registration + layout()
+|   |   +-- _constants.py    # DATASET_ID, COLUMN_MAP, DatasetConfig
+|   |   +-- _data_loader.py  # Data loading & filtering
+|   |   +-- _filters.py      # Filter UI builder (slicer + category)
+|   |   +-- _layout.py       # Page layout builder
+|   |   +-- _callbacks.py    # Dash callbacks
+|   |   +-- charts/
+|   |       +-- __init__.py
+|   |       +-- _ch00_reference_table.py  # Pivot table builder
+|   +-- hamm_overview/       # HAMM Overview dashboard (modularized)
 |       +-- __init__.py      # Page registration + layout()
-|       +-- _constants.py    # DATASET_ID, COLUMN_MAP, BREAKDOWN_MAP
-|       +-- _data_loader.py  # Data loading & filtering
-|       +-- _filters.py      # Filter UI builder
-|       +-- _layout.py       # Page layout builder
-|       +-- _callbacks.py    # Dash callbacks
-|       +-- charts/
-|           +-- __init__.py
-|           +-- _ch00_reference_table.py  # Pivot table builder
+|       +-- _constants.py    # DATASET_ID, ID_PREFIX, COLUMN_MAP, filter/chart IDs
+|       +-- _data_loader.py  # Data loading, filtering, cadence column generation
+|       +-- _filters.py      # Filter UI builder (slicer + category + cadence chip)
+|       +-- _layout.py       # Page layout builder (MantineProvider)
+|       +-- _callbacks.py    # Dash callbacks (volume table/chart, task table, slicer clears)
 |
 +-- components/              # Reusable UI Components
 |   +-- __init__.py
@@ -210,7 +221,19 @@ src/pages/apac_dot_due_date/__init__.py
 +-- _layout.build_layout
 +-- _callbacks (side-effect import for @callback registration)
     +-- _data_loader.load_and_filter_data
+    +-- _filters.build_filter_layout
     +-- charts._ch00_reference_table.build
+    +-- src.utils.filter_helpers
+
+src/pages/hamm_overview/__init__.py
++-- _layout.build_layout
++-- _callbacks (side-effect import for @callback registration)
+    +-- _data_loader.load_and_filter_data
+    +-- _data_loader.add_cadence_columns
+    +-- _filters.build_filter_layout
+    +-- _filters.build_cadence_filter
+    +-- src.utils.filter_helpers
+    +-- dash_mantine_components (ChipGroup for cadence)
 
 src/data/parquet_reader.py
 +-- boto3 (S3)
@@ -237,8 +260,9 @@ backend/etl/etl_domo.py
 ## Caching Strategy
 
 - Layer: TTL-based in-memory cache (flask-caching)
-- TTL: 300-3600 seconds (configurable per dataset)
-- Key: `<dataset_id>_<filter_hash>`
+- TTL: 3600 seconds (1 hour) -- ETLが日次実行のため長めに設定
+- Key: `dataset:<dataset_id>` (フィルタパラメータは含まない)
+- フィルタはキャッシュされたDataFrameに対してインメモリで適用
 - Fallback: Direct S3 Parquet read on cache miss
 
 ## Authentication Flow
@@ -254,24 +278,27 @@ backend/etl/etl_domo.py
 
 ## Page Modularity Pattern
 
-Both Cursor Usage and APAC DOT Due Date pages follow the modularized page pattern:
+All Tier 2 pages (Cursor Usage, APAC DOT Due Date, HAMM Overview) follow the modularized page pattern:
 
 ```
-apac_dot_due_date/
+<page_name>/
   __init__.py          -> register_page + layout()
-  _constants.py        -> Dataset ID, column mappings
+  _constants.py        -> Dataset ID, column mappings, filter/chart IDs
   _data_loader.py      -> Data I/O (testable, no UI)
-  _filters.py          -> Filter UI (testable, no I/O)
+  _filters.py          -> Filter UI (testable, no I/O) -- slicer/category/chip builders
   _layout.py           -> Full layout builder
-  _callbacks.py        -> @callback registration
-  charts/
-    _ch{NN}_{name}.py  -> Pure function: build(df, ...) -> (title, component)
+  _callbacks.py        -> @callback registration + slicer clear callbacks
+  data_sources.yml     -> chart_id -> dataset_id mapping
+  SPEC.md              -> User-facing spec (Japanese)
+  charts/              -> (optional) Pure function chart builders
+    _ch{NN}_{name}.py  -> build(df, ...) -> (title, component)
 ```
 
 This pattern enables:
 - Independent testing of data logic vs UI logic vs chart logic
 - Adding charts without modifying existing code
 - Clear separation of concerns per module
+- Filter UI extraction via `_filters.py` for reusable filter layout builders
 
 ## Phase 2: LLM Integration
 
@@ -316,6 +343,7 @@ Per-page Authorization
 |-------|-----------|---------|
 | Frontend | Plotly Dash + Bootstrap | Interactive dashboards |
 | UI Components | Dash Bootstrap Components | Responsive UI |
+| UI Components | Dash Mantine Components | Chip/Slicer filters (Cadence等) |
 | Server | Flask (Gunicorn) | WSGI server |
 | Authentication | Flask-Login (Form) | User verification |
 | Caching | flask-caching | Performance optimization |

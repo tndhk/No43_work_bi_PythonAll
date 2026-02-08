@@ -15,7 +15,7 @@ def init_cache(server) -> None:
     """
     cache.init_app(server, config={
         "CACHE_TYPE": "SimpleCache",
-        "CACHE_DEFAULT_TIMEOUT": 300,  # 5 minutes
+        "CACHE_DEFAULT_TIMEOUT": 3600,  # 1 hour (daily ETL data)
     })
 
 

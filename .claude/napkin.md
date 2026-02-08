@@ -6,6 +6,7 @@
 | 2026-02-07 | self | Used exec_command to run apply_patch instead of apply_patch tool | Use apply_patch tool directly for patches |
 | 2026-02-07 | self | Repeatedly used exec_command to run apply_patch despite warning | Always use apply_patch tool for patches |
 | 2026-02-08 | self | Started ETL pytest run before checking test deps, failed on missing `boto3` import from `tests/conftest.py` | Check/install core test deps (at least `boto3`, `moto`) before running suite in this environment |
+| 2026-02-08 | self | test_data_loader.py で19件が DATASETS NameError。メソッド内importがある関数とない関数が混在 | テストファイルで定数をメソッド内importする場合、全メソッドで統一するかトップレベルimportにする |
 
 ## User Preferences
 - Prefer YAML only for look/labels; keep calculation logic in Python templates.
@@ -18,6 +19,8 @@
 - 2026-02-08: DOMO ETL (`python3 backend/scripts/load_domo.py --dataset ...`) works when network is available. Previous DNS failure was transient.
 - 2026-02-08: ISO week calculation fix in `_add_cadence_columns` - use Monday start (weekday 0 → offset 0) not Tuesday start.
 - 2026-02-08: Vendor component docs (e.g., Dash Dropdown) are better captured as concise "reference notes" unless they include project-specific guardrails or repeated failure patterns.
+- 2026-02-08: `_normalize_month_series` ベクトル化 — `.apply(func)` を `pd.to_datetime(..., utc=True).dt.tz_convert(None)` + `.where()` + `.dt.strftime()` に置換で66x高速化。
+- 2026-02-08: キャッシュTTL 300→3600変更は日次ETLデータに適切。テスト影響なし。
 
 ## Domain Notes
 - (project/domain context that matters)

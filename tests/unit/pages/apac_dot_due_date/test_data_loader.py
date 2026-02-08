@@ -9,6 +9,8 @@ import pytest
 import pandas as pd
 from unittest.mock import MagicMock, patch
 
+from src.pages.apac_dot_due_date._constants import DATASETS
+
 
 # ---------------------------------------------------------------------------
 # Test data helpers
@@ -300,7 +302,6 @@ class TestLoadAndFilterDataBasic:
     @patch("src.pages.apac_dot_due_date._data_loader.get_cached_dataset")
     def test_returns_dataframe(self, mock_cache):
         from src.pages.apac_dot_due_date._data_loader import load_and_filter_data
-        from src.pages.apac_dot_due_date._constants import DATASETS
 
         mock_cache.return_value = _make_sample_df()
         reader = MagicMock()
@@ -321,7 +322,6 @@ class TestLoadAndFilterDataBasic:
     @patch("src.pages.apac_dot_due_date._data_loader.get_cached_dataset")
     def test_no_filters_returns_all_rows(self, mock_cache):
         from src.pages.apac_dot_due_date._data_loader import load_and_filter_data
-        from src.pages.apac_dot_due_date._constants import DATASETS
 
         mock_cache.return_value = _make_sample_df()
         reader = MagicMock()
@@ -346,7 +346,6 @@ class TestLoadAndFilterDataPrcFilter:
     @patch("src.pages.apac_dot_due_date._data_loader.get_cached_dataset")
     def test_prc_only_filters_to_prc_rows(self, mock_cache):
         from src.pages.apac_dot_due_date._data_loader import load_and_filter_data
-        from src.pages.apac_dot_due_date._constants import DATASETS
 
         mock_cache.return_value = _make_sample_df()
         reader = MagicMock()
