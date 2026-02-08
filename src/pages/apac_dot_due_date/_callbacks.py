@@ -53,7 +53,7 @@ def _coerce_single_value(value, default: str) -> str:
     ],
     [
         Input(CTRL_ID_NUM_PERCENT, "value"),
-        Input(CTRL_ID_BREAKDOWN, "active_tab"),
+        Input(CTRL_ID_BREAKDOWN, "value"),
         Input(FILTER_ID_MONTH, "value"),
         Input(FILTER_ID_PRC, "value"),
         Input(FILTER_ID_AREA, "value"),

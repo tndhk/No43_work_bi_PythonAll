@@ -328,13 +328,13 @@ class TestChartBuildDelegation:
         # Check first call (reference dataset)
         call_args_list = mock_build_pivot.call_args_list
         assert len(call_args_list) >= 1
-        args_0, _ = call_args_list[0]
-        pd.testing.assert_frame_equal(args_0[0], sample_df)
+        kwargs_0 = call_args_list[0].kwargs
+        pd.testing.assert_frame_equal(kwargs_0["filtered_df"], sample_df)
 
         # Check second call (change_issue dataset)
         assert len(call_args_list) >= 2
-        args_1, _ = call_args_list[1]
-        pd.testing.assert_frame_equal(args_1[0], sample_df_2)
+        kwargs_1 = call_args_list[1].kwargs
+        pd.testing.assert_frame_equal(kwargs_1["filtered_df"], sample_df_2)
 
     @patch(_PATCH_BUILD_PIVOT)
     @patch(_PATCH_LOAD)
@@ -347,11 +347,11 @@ class TestChartBuildDelegation:
 
         call_args_list = mock_build_pivot.call_args_list
         assert len(call_args_list) >= 2
-        args_0, _ = call_args_list[0]
-        assert args_0[1] == "vendor"  # breakdown_tab parameter
+        kwargs_0 = call_args_list[0].kwargs
+        assert kwargs_0["breakdown_tab"] == "vendor"
 
-        args_1, _ = call_args_list[1]
-        assert args_1[1] == "vendor"
+        kwargs_1 = call_args_list[1].kwargs
+        assert kwargs_1["breakdown_tab"] == "vendor"
 
     @patch(_PATCH_BUILD_PIVOT)
     @patch(_PATCH_LOAD)
@@ -364,11 +364,11 @@ class TestChartBuildDelegation:
 
         call_args_list = mock_build_pivot.call_args_list
         assert len(call_args_list) >= 2
-        args_0, _ = call_args_list[0]
-        assert args_0[2] == "percent"  # num_percent_mode parameter
+        kwargs_0 = call_args_list[0].kwargs
+        assert kwargs_0["num_percent_mode"] == "percent"
 
-        args_1, _ = call_args_list[1]
-        assert args_1[2] == "percent"
+        kwargs_1 = call_args_list[1].kwargs
+        assert kwargs_1["num_percent_mode"] == "percent"
 
 
 # ===========================================================================

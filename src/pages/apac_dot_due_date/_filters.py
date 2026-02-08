@@ -69,14 +69,15 @@ def build_filter_layout(filter_options: dict) -> list:
             dbc.Card([
                 dbc.CardHeader("Break Down", className="filter-header"),
                 dbc.CardBody([
-                    dbc.Tabs(
+                    dcc.RadioItems(
                         id=CTRL_ID_BREAKDOWN,
-                        active_tab="area",
-                        children=[
-                            dbc.Tab(label="Area", tab_id="area"),
-                            dbc.Tab(label="Category", tab_id="category"),
-                            dbc.Tab(label="Vendor", tab_id="vendor"),
+                        options=[
+                            {"label": " Area", "value": "area"},
+                            {"label": " Category", "value": "category"},
+                            {"label": " Vendor", "value": "vendor"},
                         ],
+                        value="area",
+                        inline=True,
                     ),
                 ]),
             ], className="filter-card mb-3"),

@@ -122,40 +122,40 @@ class TestNumPercentToggle:
 
 
 # ===========================================================================
-# Break Down tabs tests
+# Break Down RadioItems tests
 # ===========================================================================
 
-class TestBreakdownTabs:
-    """First row must also contain the Break Down tabs."""
+class TestBreakdownRadioItems:
+    """First row must also contain the Break Down RadioItems."""
 
-    def test_control_row_contains_breakdown_tabs(self):
+    def test_control_row_contains_breakdown(self):
         from src.pages.apac_dot_due_date._filters import build_filter_layout
 
         rows = build_filter_layout(_make_filter_options())
         found = find_component_by_id(rows[0], "apac-dot-ctrl-breakdown")
         assert found is not None, "apac-dot-ctrl-breakdown not found in control row"
 
-    def test_breakdown_tabs_default_active_tab(self):
+    def test_breakdown_default_value(self):
         from src.pages.apac_dot_due_date._filters import build_filter_layout
 
         rows = build_filter_layout(_make_filter_options())
-        tabs = find_component_by_id(rows[0], "apac-dot-ctrl-breakdown")
-        assert tabs.active_tab == "area"
+        radio = find_component_by_id(rows[0], "apac-dot-ctrl-breakdown")
+        assert radio.value == "area"
 
-    def test_breakdown_tabs_has_three_tabs(self):
+    def test_breakdown_has_three_options(self):
         from src.pages.apac_dot_due_date._filters import build_filter_layout
 
         rows = build_filter_layout(_make_filter_options())
-        tabs = find_component_by_id(rows[0], "apac-dot-ctrl-breakdown")
-        assert len(tabs.children) == 3
+        radio = find_component_by_id(rows[0], "apac-dot-ctrl-breakdown")
+        assert len(radio.options) == 3
 
-    def test_breakdown_tabs_tab_ids(self):
+    def test_breakdown_option_values(self):
         from src.pages.apac_dot_due_date._filters import build_filter_layout
 
         rows = build_filter_layout(_make_filter_options())
-        tabs = find_component_by_id(rows[0], "apac-dot-ctrl-breakdown")
-        tab_ids = [tab.tab_id for tab in tabs.children]
-        assert tab_ids == ["area", "category", "vendor"]
+        radio = find_component_by_id(rows[0], "apac-dot-ctrl-breakdown")
+        values = [opt["value"] for opt in radio.options]
+        assert values == ["area", "category", "vendor"]
 
 
 # ===========================================================================
