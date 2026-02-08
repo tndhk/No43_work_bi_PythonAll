@@ -528,6 +528,11 @@ tbody tr:hover {
   color: white !important;
 }
 
+/* チェックマーク非表示（色変更のみで選択状態を判別） */
+.mantine-Chip-iconWrapper {
+  display: none !important;
+}
+
 .mantine-ChipGroup-root {
   display: flex !important;
   flex-wrap: wrap !important;
