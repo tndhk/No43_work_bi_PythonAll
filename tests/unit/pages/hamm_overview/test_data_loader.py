@@ -220,3 +220,97 @@ def test_prepare_base_df_preserves_original_video_duration():
 
     assert "video_duration" in result.columns
     assert result["video_duration"].iloc[0] == "00:10:00"
+
+
+# ---------------------------------------------------------------------------
+# build_volume_summary tests (moved from _callbacks.py to _data_loader.py)
+# ---------------------------------------------------------------------------
+
+def _make_prepared_df() -> pd.DataFrame:
+    """Create a DataFrame that has already been through _prepare_base_df.
+
+    This means: timezone-naive datetimes, string id, derived _year/_month.
+    """
+    return pd.DataFrame({
+        "id": ["1", "2", "3", "4"],
+        "title": ["A", "B", "C", "D"],
+        "status": ["Completed", "Completed", "Cancelled", "Completed"],
+        "created_at": pd.to_datetime([
+            "2026-01-05 10:00:00",
+            "2026-01-06 12:00:00",
+            "2026-01-07 14:00:00",
+            "2026-01-08 09:00:00",
+        ]),
+        "completed_at": pd.to_datetime([
+            "2026-01-06 10:00:00",
+            "2026-01-07 12:00:00",
+            "2026-01-08 14:00:00",
+            "2026-01-09 09:00:00",
+        ]),
+        "notification_company_name": ["APAC", "APAC", "APAC", "APAC"],
+        "video_type_description": ["Prelim", "ERV", "Prelim", "Prelim"],
+        "original_language_name": ["Japanese", "Korean", "Japanese", "Korean"],
+        "was dialogue provided?": ["Yes", "No", "Yes", "No"],
+        "genre_name": ["Crime", "Drama", "Crime", "Drama"],
+        "error code": ["E1", "E2", "E1", "E2"],
+        "error user vs system": ["User", "System", "User", "System"],
+        "video_duration": ["00:10:00", "00:20:00", "00:15:00", "00:25:00"],
+        "audio location": ["Full mix", "Separate audio", "Full mix", "Separate audio"],
+    })
+
+
+class TestBuildVolumeSummaryInDataLoader:
+    """build_volume_summary should be importable from _data_loader and work correctly."""
+
+    def test_importable_from_data_loader(self):
+        """build_volume_summary must be importable from _data_loader."""
+        from src.pages.hamm_overview._data_loader import build_volume_summary
+        assert callable(build_volume_summary)
+
+    def test_returns_dataframe(self):
+        from src.pages.hamm_overview._data_loader import build_volume_summary
+        df = _make_prepared_df()
+        result = build_volume_summary(df, "weekly")
+        assert isinstance(result, pd.DataFrame)
+
+    def test_has_expected_columns(self):
+        from src.pages.hamm_overview._data_loader import build_volume_summary
+        df = _make_prepared_df()
+        result = build_volume_summary(df, "weekly")
+        expected_cols = {
+            "Fiscal Year", "Fiscal Quarter", "ISO Week",
+            "Start Date", "End Date", "Prelim", "ERV", "VOLUME TOTAL",
+        }
+        # _sort_start_dt is an internal column that may or may not be present
+        result_cols = set(result.columns) - {"_sort_start_dt"}
+        assert result_cols == expected_cols
+
+    def test_excludes_cancelled_status(self):
+        """Cancelled status rows should be excluded from volume summary."""
+        from src.pages.hamm_overview._data_loader import build_volume_summary
+        df = _make_prepared_df()
+        result = build_volume_summary(df, "weekly")
+        # We have 4 rows, 1 Cancelled. So 3 non-cancelled tasks should be counted.
+        total = result["VOLUME TOTAL"].sum()
+        assert total == 3  # IDs 1, 2, 4 (ID 3 is Cancelled)
+
+    def test_volume_total_is_sum_of_prelim_and_erv(self):
+        from src.pages.hamm_overview._data_loader import build_volume_summary
+        df = _make_prepared_df()
+        result = build_volume_summary(df, "weekly")
+        for _, row in result.iterrows():
+            assert row["VOLUME TOTAL"] == row["Prelim"] + row["ERV"]
+
+    def test_sorted_by_start_date(self):
+        from src.pages.hamm_overview._data_loader import build_volume_summary
+        df = _make_prepared_df()
+        result = build_volume_summary(df, "weekly")
+        if "_sort_start_dt" in result.columns:
+            sort_vals = result["_sort_start_dt"].dropna().tolist()
+            assert sort_vals == sorted(sort_vals)
+
+    def test_empty_df_returns_empty_result(self):
+        from src.pages.hamm_overview._data_loader import build_volume_summary
+        df = _make_prepared_df().head(0)
+        result = build_volume_summary(df, "weekly")
+        assert len(result) == 0

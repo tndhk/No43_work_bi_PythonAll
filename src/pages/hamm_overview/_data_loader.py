@@ -20,6 +20,9 @@ from ._constants import (
     DERIVED_ISO_WEEK,
     DERIVED_START_DATE,
     DERIVED_END_DATE,
+    PRELIM_LABEL,
+    ERV_LABEL,
+    SORT_START_COL,
 )
 
 
@@ -233,3 +236,90 @@ def load_and_filter_data(
     filters = build_filter_set_from_map(column_map, filter_pairs)
 
     return apply_filters(df, filters)
+
+
+def _parse_start_date(value: str) -> pd.Timestamp:
+    """Parse a start date string (dd-Mon-yy) to a Timestamp for sorting."""
+    return pd.to_datetime(value, format="%d-%b-%y", errors="coerce")
+
+
+def build_volume_summary(df: pd.DataFrame, cadence: str) -> pd.DataFrame:
+    """Build a volume summary DataFrame grouped by cadence period.
+
+    Adds cadence columns, excludes Cancelled/Invalid statuses, groups
+    by time period and content type, and pivots to show Prelim/ERV counts.
+
+    Args:
+        df: Pre-filtered DataFrame (already through _prepare_base_df).
+        cadence: One of "weekly", "monthly", "quarterly", "yearly".
+
+    Returns:
+        A pivoted DataFrame with columns: Fiscal Year, Fiscal Quarter,
+        ISO Week, Start Date, End Date, Prelim, ERV, VOLUME TOTAL,
+        plus an internal _sort_start_dt column for ordering.
+    """
+    df = add_cadence_columns(df, cadence)
+
+    # Exclude Cancelled and Invalid status for volume summary
+    status_col = COLUMN_MAP["status"]
+    excluded_statuses = ["Cancelled", "Invalid"]
+    df = df[~df[status_col].isin(excluded_statuses)]
+
+    group_cols = [
+        DERIVED_FISCAL_YEAR,
+        DERIVED_FISCAL_QUARTER,
+        DERIVED_ISO_WEEK,
+        DERIVED_START_DATE,
+        DERIVED_END_DATE,
+        COLUMN_MAP["content_type"],
+    ]
+
+    summary = (
+        df.groupby(group_cols)[COLUMN_MAP["id"]]
+        .nunique()
+        .reset_index(name="count")
+    )
+
+    pivot = summary.pivot_table(
+        index=[
+            DERIVED_FISCAL_YEAR,
+            DERIVED_FISCAL_QUARTER,
+            DERIVED_ISO_WEEK,
+            DERIVED_START_DATE,
+            DERIVED_END_DATE,
+        ],
+        columns=COLUMN_MAP["content_type"],
+        values="count",
+        fill_value=0,
+    ).reset_index()
+
+    for label in (PRELIM_LABEL, ERV_LABEL):
+        if label not in pivot.columns:
+            pivot[label] = 0
+
+    pivot["VOLUME TOTAL"] = pivot[PRELIM_LABEL] + pivot[ERV_LABEL]
+
+    pivot = pivot.rename(columns={
+        DERIVED_FISCAL_YEAR: "Fiscal Year",
+        DERIVED_FISCAL_QUARTER: "Fiscal Quarter",
+        DERIVED_ISO_WEEK: "ISO Week",
+        DERIVED_START_DATE: "Start Date",
+        DERIVED_END_DATE: "End Date",
+    })
+
+    pivot = pivot[[
+        "Fiscal Year",
+        "Fiscal Quarter",
+        "ISO Week",
+        "Start Date",
+        "End Date",
+        PRELIM_LABEL,
+        ERV_LABEL,
+        "VOLUME TOTAL",
+    ]]
+
+    pivot[SORT_START_COL] = pivot["Start Date"].apply(_parse_start_date)
+
+    pivot = pivot.sort_values(by=[SORT_START_COL, "End Date"], kind="mergesort")
+
+    return pivot

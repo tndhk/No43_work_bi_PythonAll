@@ -1,5 +1,7 @@
 """Constants for the Hamm Overview dashboard."""
 
+from src.charts.specs import ChartSpec, TableSpec
+
 DASHBOARD_ID: str = "hamm_overview"
 DATASET_ID: str = "hamm-dashboard"
 ID_PREFIX: str = "hamm-"
@@ -35,6 +37,17 @@ CTRL_ID_CLEAR_DIALOGUE: str = f"{ID_PREFIX}ctrl-clear-dialogue"
 CTRL_ID_CLEAR_GENRE: str = f"{ID_PREFIX}ctrl-clear-genre"
 CTRL_ID_CLEAR_ERROR_TYPE: str = f"{ID_PREFIX}ctrl-clear-error-type"
 
+# Clear callback pairs: (filter_id, clear_button_id)
+CLEAR_PAIRS: list[tuple[str, str]] = [
+    (FILTER_ID_REGION, CTRL_ID_CLEAR_REGION),
+    (FILTER_ID_YEAR, CTRL_ID_CLEAR_YEAR),
+    (FILTER_ID_CONTENT_TYPE, CTRL_ID_CLEAR_CONTENT_TYPE),
+    (FILTER_ID_ORIGINAL_LANGUAGE, CTRL_ID_CLEAR_ORIGINAL_LANGUAGE),
+    (FILTER_ID_DIALOGUE, CTRL_ID_CLEAR_DIALOGUE),
+    (FILTER_ID_GENRE, CTRL_ID_CLEAR_GENRE),
+    (FILTER_ID_ERROR_TYPE, CTRL_ID_CLEAR_ERROR_TYPE),
+]
+
 # Derived column names
 DERIVED_YEAR: str = "_year"
 DERIVED_MONTH: str = "_month"
@@ -61,3 +74,80 @@ COLUMN_MAP: dict[str, str] = {
     "video_duration": "video_duration",
     "audio_details": "audio location",
 }
+
+# Label constants used in volume summary
+PRELIM_LABEL: str = "Prelim"
+ERV_LABEL: str = "ERV"
+
+# Internal sort column used in volume summary
+SORT_START_COL: str = "_sort_start_dt"
+
+# Compact table styling shared by volume and task tables
+_COMPACT_CELL: dict = {
+    "textAlign": "left",
+    "padding": "4px 6px",
+    "fontSize": "0.75rem",
+    "whiteSpace": "nowrap",
+}
+_COMPACT_HEADER: dict = {
+    "fontWeight": "bold",
+    "fontSize": "0.75rem",
+    "padding": "4px 6px",
+}
+
+# ---------------------------------------------------------------------------
+# Chart / Table Specs (declarative definitions)
+# ---------------------------------------------------------------------------
+
+VOLUME_TABLE_SPEC: TableSpec = TableSpec(
+    title="Volume Summary",
+    style_table={"overflowX": "auto", "height": "400px", "overflowY": "auto"},
+    style_cell=_COMPACT_CELL,
+    style_header=_COMPACT_HEADER,
+    style_data_conditional=[],
+    sort_action="native",
+    page_size=20,
+    column_order=[
+        "Fiscal Year",
+        "Fiscal Quarter",
+        "ISO Week",
+        "Start Date",
+        "End Date",
+        PRELIM_LABEL,
+        ERV_LABEL,
+        "VOLUME TOTAL",
+    ],
+)
+
+VOLUME_CHART_SPEC: ChartSpec = ChartSpec(
+    title="Volume Chart",
+    chart_type="stacked_bar",
+    x_column="Start Date",
+    y_columns=[ERV_LABEL, PRELIM_LABEL],
+    color_map={
+        ERV_LABEL: "#f6b3b3",
+        PRELIM_LABEL: "#e57f7f",
+    },
+    height=400,
+)
+
+TASK_TABLE_SPEC: TableSpec = TableSpec(
+    title="Task Details",
+    style_table={"overflowX": "auto"},
+    style_cell=_COMPACT_CELL,
+    style_header=_COMPACT_HEADER,
+    style_data_conditional=[],
+    sort_action="native",
+    page_size=20,
+    column_order=[
+        "Task ID",
+        "Task Name",
+        "Content Type",
+        "Task Status",
+        "Source File Duration",
+        "Audio Details",
+        "Job Created",
+        "Completed / Err",
+        "Total Duration",
+    ],
+)

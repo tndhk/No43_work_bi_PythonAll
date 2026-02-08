@@ -1,256 +1,101 @@
 # 開発者ガイド (CONTRIB)
 
-最終更新: 2026-02-08 (rev.6)
-
-## このドキュメントについて
-
-- 役割: 開発者向けクイックスタート、開発コマンド、プロジェクト構造の説明
-- 関連: 技術仕様は `docs/tech-spec.md` を参照
-- 情報源:
-  - `.env.example`
-  - 既存の runbook (`docs/RUNBOOK.md`)
-
----
+最終更新: 2026-02-08
 
 ## 1. 前提条件
 
-| ツール | バージョン |
-|--------|-----------|
-| Docker / Docker Compose | 最新安定版 |
-| Python | 3.9+ |
+| 項目 | 要件 |
+|------|------|
+| Python | 3.9以上 (`pyproject.toml` の `requires-python`) |
+| Docker | `docker compose` が使えること |
+| 環境変数 | `.env.example` を `.env` にコピーして設定 |
 
----
+## 2. セットアップ
 
-## 2. 開発ワークフローとセットアップ
-
-### クイックスタート
+### Docker Compose で起動
 
 ```bash
-# 1. 環境変数ファイル作成
 cp .env.example .env
-
-# 2. 全サービス起動
 docker compose up --build
 ```
 
-| サービス | URL | 説明 |
-|---------|-----|------|
-| Dashアプリ | http://localhost:8050 | Plotly Dashダッシュボード（ログイン画面が表示される） |
-| MinIO Console | http://localhost:9001 | S3互換ストレージ (admin: minioadmin/minioadmin) |
+確認先:
+- Dash: `http://localhost:8050`
+- MinIO Console: `http://localhost:9001`
 
-> Docker Compose 設定は `docker-compose.yml` を参照
-
-### ローカル実行（Dockerを使わない場合）
+### ローカルで直接起動
 
 ```bash
-# 仮想環境作成
 python3 -m venv .venv
 source .venv/bin/activate
-
-# 依存関係のインストール
 pip install -r requirements.txt
-
-# アプリ起動
 python3 app.py
 ```
 
----
+## 3. `package.json` scripts 参照
 
-## 3. 環境変数 (.env.example)
+このリポジトリのルートには `package.json` が存在しないため、npm scripts は未定義。
 
-`.env.example` を `.env` にコピーして設定します。
+| Script Name | Command | Purpose |
+|-------------|---------|---------|
+| (none) | N/A | `package.json` がないため該当なし |
 
-| 変数名 | デフォルト値 | 目的 | 形式・バリデーション |
-|--------|--------------|------|----------------------|
-| `S3_ENDPOINT` | `http://localhost:9000` | S3エンドポイント。ローカル開発時は MinIO を想定 | URL形式。AWS本番では空文字列でも可 |
-| `S3_REGION` | `ap-northeast-1` | S3リージョン | AWSリージョン文字列 |
-| `S3_BUCKET` | `bi-datasets` | データセットバケット名 | 英数字・ハイフン |
-| `S3_ACCESS_KEY` | `minioadmin` | S3アクセスキー（ローカル開発は MinIO デフォルト） | 文字列。IAMロール使用時は空可 |
-| `S3_SECRET_KEY` | `minioadmin` | S3シークレットキー（ローカル開発は MinIO デフォルト） | 文字列。IAMロール使用時は空可 |
-| `BASIC_AUTH_USERNAME` | `admin` | フォームログインのユーザー名 | 非空文字列 |
-| `BASIC_AUTH_PASSWORD` | `changeme` | フォームログインのパスワード | 非空文字列 |
-| `DOMO_CLIENT_ID` | (空) | DOMO API Client ID（ETL用） | DOMO Developer Portalで発行 |
-| `DOMO_CLIENT_SECRET` | (空) | DOMO API Client Secret（ETL用） | DOMO Developer Portalで発行 |
-| `ETL_MASKING_SECRET` | (空) | ETLマスキング用秘密鍵（masking有効時のみ必須） | 任意の文字列 |
+## 4. 実行コマンド一覧
 
----
-
-## 4. 開発コマンド
-
-### Python開発
-
-| コマンド | 説明 |
+| コマンド | 用途 |
 |---------|------|
-| `python3 app.py` | Dashアプリ起動（開発モード、ポート8050） |
-| `pytest` | テスト実行 |
-| `pytest --cov=src` | カバレッジ付きテスト |
-| `pytest --cov=src --cov-report=html` | HTMLカバレッジレポート生成 |
-| `pytest -v -k "test_name"` | 特定テストのみ実行 |
-| `ruff check src/` | リンティング |
-| `ruff format src/` | フォーマット |
+| `python3 app.py` | Dashアプリ起動 |
+| `pytest` | 全テスト実行 |
+| `pytest --cov=src --cov-report=term-missing` | カバレッジ付きテスト |
+| `ruff check src/` | Lint |
 | `mypy src/` | 型チェック |
+| `docker compose up --build -d` | コンテナ起動（dash/minio/minio-init） |
+| `docker compose logs -f dash` | Dashログ監視 |
+| `docker compose run --rm test` | `test` サービスのデフォルトテスト実行 |
+| `python3 backend/scripts/load_domo.py --list` | DOMO ETL対象一覧 |
+| `python3 backend/scripts/load_domo.py --dataset \"<name>\"` | DOMO ETL単体実行 |
+| `python3 backend/scripts/load_domo.py --all [--dry-run]` | DOMO ETL一括実行/ドライラン |
+| `python3 backend/scripts/load_csv.py --list` | CSV ETL対象一覧 |
+| `python3 backend/scripts/load_csv.py --dataset \"<name>\"` | CSV ETL単体実行 |
+| `python3 backend/scripts/load_csv.py --all [--dry-run]` | CSV ETL一括実行/ドライラン |
+| `python3 backend/scripts/clear_dataset.py <dataset_id>` | データセットのS3/MinIOオブジェクト削除 |
+| `python3 scripts/upload_csv.py <csv> --dataset-id <id> [--partition-col <col>]` | 単体CSVアップロード |
 
-### Docker Compose
+`test` サービスは `profiles: [test]` なので `docker compose up` では自動起動しない。
 
-| コマンド | 説明 |
-|---------|------|
-| `docker compose up --build` | 全サービス起動（dash + minio + minio-init） |
-| `docker compose up -d --build` | バックグラウンド起動 |
-| `docker compose down` | 停止 |
-| `docker compose down -v` | 停止 + ボリューム削除（MinIOデータも消える） |
-| `docker compose logs -f dash` | Dashアプリログ確認 |
-| `docker compose logs -f minio` | MinIOログ確認 |
-| `docker compose run --rm test` | テスト実行（Docker内） |
-| `docker compose run --rm test pytest -k "test_name"` | 特定テストのみ（Docker内） |
-| `docker compose run --rm test pytest --cov=src` | カバレッジ付き（Docker内） |
+## 5. 環境変数 (`.env.example`)
 
-### ETL実行
+| 変数 | 目的 | 形式 | 既定値 (`.env.example`) | バリデーション/注意点 |
+|------|------|------|-------------------------|----------------------|
+| `S3_ENDPOINT` | S3/MinIO接続先 | URL or 空文字 | `http://localhost:9000` | `src/data/config.py` では省略可。Docker Composeのdashは `http://minio:9000` を使用 |
+| `S3_REGION` | リージョン設定 | 文字列 | `ap-northeast-1` | `src/data/config.py` の既定値も同じ |
+| `S3_BUCKET` | データ保存先バケット | 文字列 | `bi-datasets` | `src/data/config.py` の既定値も同じ |
+| `S3_ACCESS_KEY` | S3アクセスキー | 文字列 | `minioadmin` | `src/data/config.py` では省略可 |
+| `S3_SECRET_KEY` | S3シークレットキー | 文字列 | `minioadmin` | `src/data/config.py` では省略可 |
+| `BASIC_AUTH_USERNAME` | フォーム認証ユーザー名 | 非空文字列 | `admin` | 未設定時は `settings.basic_auth_username` にフォールバック |
+| `BASIC_AUTH_PASSWORD` | フォーム認証パスワード | 非空文字列 | `changeme` | 未設定時は `settings.basic_auth_password` にフォールバック |
+| `DOMO_CLIENT_ID` | DOMO API認証 | 文字列 | 空 | `backend/etl/etl_domo.py` でDOMO ETL実行時は必須 |
+| `DOMO_CLIENT_SECRET` | DOMO API認証 | 文字列 | 空 | `backend/etl/etl_domo.py` でDOMO ETL実行時は必須 |
+| `ETL_MASKING_SECRET` | ETLマスキング用秘密鍵 | 文字列 | 空 | `masking.enabled: true` のdatasetでは必須 (`backend/etl/masking.py`) |
 
-| コマンド | 説明 |
-|---------|------|
-| `python3 backend/scripts/load_domo.py --all` | DOMO ETL全データセット実行 |
-| `python3 backend/scripts/load_csv.py --all` | CSV ETL全データセット実行 |
-| `python3 backend/scripts/load_domo.py --dataset "Name"` | DOMO ETL個別実行 |
-| `python3 backend/scripts/load_csv.py --dataset "Name"` | CSV ETL個別実行 |
-| `python3 backend/scripts/clear_dataset.py <dataset_id>` | データセット削除 |
-| `python3 scripts/upload_csv.py <csv_file> --dataset-id <id> [--partition-col <col>]` | CSVアップロードCLI |
+補足:
+- `.env` の値にダブルクォートを含めない運用が前提（`CLAUDE.md` のETL注意点）。
 
-DOMO ETL の設定は `backend/config/domo_datasets.yaml` で管理する。詳細は `backend/config/README.md` を参照。
+## 6. テスト手順とカバレッジ要件
 
-### CSVアップロードCLIの使用例
-
-```bash
-# パーティションなし（単一ファイル）
-python3 scripts/upload_csv.py data.csv --dataset-id my-dataset
-
-# 日付カラムでパーティション分割
-python3 scripts/upload_csv.py data.csv --dataset-id my-dataset --partition-col date
-```
-
-ETL は cron / systemd timer で定期実行する想定。
-
----
-
-## 5. テスト
-
-### テスト基準
-
-| コンポーネント | 基準 |
-|---------------|------|
-| Python | pytest pass |
-
-### カバレッジ要件
-
-- 日常開発では `pytest --cov=src` の実行を推奨
-- 重要変更では `--cov-report=term-missing` で未網羅の確認を推奨
-
-### テスト実行
+### 実行手順
 
 ```bash
-# 仮想環境で実行
-source .venv/bin/activate
 pytest
-
-# カバレッジ付き
-pytest --cov=src --cov-report=html
-```
-
-### Dockerでテスト実行
-
-```bash
-# 全テスト実行
+pytest --cov=src --cov-report=term-missing
 docker compose run --rm test
-
-# 特定テストのみ
-docker compose run --rm test pytest -v -k "test_config"
-
-# カバレッジ付き
-docker compose run --rm test pytest --cov=src --cov-report=term-missing
 ```
 
-> test サービスは `profiles: [test]` を使用しているため、`docker compose up` では起動しません。
-> `tests/` ディレクトリはボリュームマウントされているため、ローカルの変更が即座に反映されます。
+### 要件
 
----
+- 強制閾値:
+  - `pyproject.toml` に `--cov-fail-under` は未設定。閾値の自動強制は現状なし。
+- 目標値:
+  - `docs/tech-spec.md` のテスト戦略に「単体テスト 80%」の目標記載あり。
 
-## 6. プロジェクト構造
-
-```
-work_BI_PythonAll/
-  app.py                         # Dashアプリエントリーポイント
-  requirements.txt               # 依存パッケージ
-  .env.example                   # 環境変数テンプレート
-  docker-compose.yml             # Docker Compose設定（dash, minio, minio-init, test）
-  Dockerfile.dev                 # 開発用Dockerfile (python:3.9-slim)
-  pyproject.toml                 # pytest/ruff/mypy設定
-  CLAUDE.md                      # プロジェクト開発メモ
-  src/
-    auth/                        # 認証レイヤー（Flask-Login）
-    charts/                      # チャートテンプレート、テーマ
-    components/                  # 再利用可能UIコンポーネント（カード、フィルタ、サイドバー）
-    core/                        # インフラ（キャッシュ、ログ）
-    data/                        # データアクセスレイヤー
-      config.py                  # Pydantic Settings（環境変数管理）
-      data_loader.py             # 共通データローダー
-      data_source_registry.py    # chart_id -> dataset_id レジストリ
-      parquet_reader.py          # Parquetファイル読み込み
-      filter_engine.py           # フィルタロジック
-    utils/                       # 共通ユーティリティ
-      data_helpers.py            # データ変換ヘルパー
-      filter_helpers.py          # フィルタ構築ヘルパー（build_filter_set_from_map）
-    pages/                       # ダッシュボードページ（Tier 1/2）
-      dashboard_home.py          # ホームページ（Tier 1）
-      cursor_usage/              # Cursor Usage ダッシュボード
-        data_sources.yml         # データソース設定
-      apac_dot_due_date/         # APAC DOT Due Date ダッシュボード
-        _filters.py              # フィルタUI構築（slicer + category）
-        data_sources.yml         # データソース設定
-        charts/                  # チャート生成関数
-      hamm_overview/             # HAMM Overview ダッシュボード
-        _filters.py              # フィルタUI構築（slicer + category + cadence chip）
-        data_sources.yml         # データソース設定
-    layout.py                    # メインレイアウト（認証対応）
-    exceptions.py                # カスタム例外クラス
-  backend/
-    config/                      # ETL設定（YAML）
-    etl/                         # ETLパイプライン（BaseETL, CsvETL, DomoApiETL）
-    scripts/                     # ETL実行スクリプト
-  docs/
-    CONTRIB.md
-    RUNBOOK.md
-    architecture.md
-    tech-spec.md
-```
-
-詳細なディレクトリ構造は [architecture.md](architecture.md) を参照。
-
----
-
-## 7. Git ワークフロー
-
-### ブランチ命名
-
-- `feature/xxx` - 機能開発
-- `fix/xxx` - バグ修正
-- `docs/xxx` - ドキュメント
-- `refactor/xxx` - リファクタリング
-
-### コミットメッセージ
-
-```
-<type>: <summary>
-
-<body (optional)>
-```
-
-type: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`
-
-### PR前チェック
-
-```bash
-# Python（リンティング、型チェック、テスト）
-ruff check src/ && mypy src/ && pytest --cov=src
-
-# フォーマット確認（変更がある場合は自動修正）
-ruff format --check src/
-```
+実運用では、PR前に `ruff check src/`、`mypy src/`、`pytest --cov=src` を実行する。

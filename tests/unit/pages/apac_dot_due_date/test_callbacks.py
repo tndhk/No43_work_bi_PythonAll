@@ -1,13 +1,17 @@
 """Tests for APAC DOT Due Date callbacks module.
 
 TDD Step 1 (RED): These tests define the expected behavior of
-update_dashboard() before implementation.
-"""
-import inspect
+update_dashboard() after refactoring.
 
+Refactored architecture:
+- build_pivot_data() (from _chart_builders) produces a DataFrame
+- build_table() (from src.charts.table_builder) renders it
+- register_clear_callbacks() replaces 7 individual clear functions
+- TABLE_SPECS is imported from _constants (not charts._table_specs)
+"""
 import pytest
 import pandas as pd
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, call
 from dash import html
 
 from tests.helpers.dash_test_utils import extract_text_recursive
@@ -59,7 +63,7 @@ def _make_empty_df() -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------------------
-# Common mock patch paths
+# Common mock patch paths (updated for refactored architecture)
 # ---------------------------------------------------------------------------
 _PATCH_READER = "src.pages.apac_dot_due_date._callbacks.ParquetReader"
 _PATCH_LOAD = "src.pages.apac_dot_due_date._callbacks.load_and_filter_data"
@@ -116,24 +120,32 @@ class TestModuleExists:
         from src.pages.apac_dot_due_date._callbacks import update_dashboard
         assert callable(update_dashboard)
 
-    def test_per_slicer_clear_callbacks_are_callable(self):
-        """Per-slicer clear callbacks must be callable."""
-        from src.pages.apac_dot_due_date._callbacks import (
-            clear_month,
-            clear_prc,
-            clear_area,
-            clear_category,
-            clear_vendor,
-            clear_amp_av,
-            clear_order_type,
-        )
-        assert callable(clear_month)
-        assert callable(clear_prc)
-        assert callable(clear_area)
-        assert callable(clear_category)
-        assert callable(clear_vendor)
-        assert callable(clear_amp_av)
-        assert callable(clear_order_type)
+
+class TestImportSources:
+    """_callbacks must import from the correct (refactored) locations."""
+
+    def test_imports_build_pivot_data_from_chart_builders(self):
+        """build_pivot_data must be importable from _chart_builders."""
+        from src.pages.apac_dot_due_date._chart_builders import build_pivot_data
+        assert callable(build_pivot_data)
+
+    def test_imports_build_table_from_shared_module(self):
+        """build_table must be importable from src.charts.table_builder."""
+        from src.charts.table_builder import build_table
+        assert callable(build_table)
+
+    def test_imports_table_specs_from_constants(self):
+        """TABLE_SPECS must be importable from _constants."""
+        from src.pages.apac_dot_due_date._constants import TABLE_SPECS
+        assert isinstance(TABLE_SPECS, dict)
+
+    def test_no_charts_subpackage_imports(self):
+        """_callbacks must NOT import from the old .charts subpackage."""
+        import src.pages.apac_dot_due_date._callbacks as cb_module
+        import inspect
+        source = inspect.getsource(cb_module)
+        assert ".charts._pivot_table_builder" not in source
+        assert ".charts._table_specs" not in source
 
 
 # ===========================================================================
@@ -160,7 +172,7 @@ class TestUpdateDashboardReturnValue:
     def test_returns_kpi_and_chart_build_outputs(
         self, mock_reader_cls, mock_load, mock_build_pivot
     ):
-        """Return value: position 0 is KPI, positions 1-2 from first build_pivot_table, 3-4 from second."""
+        """Return value: position 0 is KPI, positions 1-2 from first build, 3-4 from second."""
         _setup_happy_path(mock_reader_cls, mock_load, mock_build_pivot)
         expected_title_0 = "0) Reference : Number of Work Order"
         expected_comp_0 = html.Div("ref table")
@@ -452,25 +464,6 @@ class TestCallbackRegistration:
         from src.pages.apac_dot_due_date._callbacks import update_dashboard
         assert callable(update_dashboard)
 
-    def test_per_slicer_clear_callbacks_have_callback_attributes(self):
-        """Per-slicer clear callbacks should have callback metadata if registered."""
-        from src.pages.apac_dot_due_date._callbacks import (
-            clear_month,
-            clear_prc,
-            clear_area,
-            clear_category,
-            clear_vendor,
-            clear_amp_av,
-            clear_order_type,
-        )
-        assert callable(clear_month)
-        assert callable(clear_prc)
-        assert callable(clear_area)
-        assert callable(clear_category)
-        assert callable(clear_vendor)
-        assert callable(clear_amp_av)
-        assert callable(clear_order_type)
-
 
 # ===========================================================================
 # Integration: __init__.py imports _callbacks
@@ -484,33 +477,38 @@ class TestInitImportsCallbacks:
         from src.pages.apac_dot_due_date import _callbacks  # noqa: F401
 
 
-class TestPerSlicerClear:
-    """Per-slicer clear callbacks should reset only their target value."""
+# ===========================================================================
+# Clear callbacks: now using register_clear_callbacks
+# ===========================================================================
 
-    def test_clear_month(self):
-        from src.pages.apac_dot_due_date._callbacks import clear_month
-        assert clear_month(1) == []
+class TestClearCallbacksUseRegisterHelper:
+    """Clear callbacks must be registered via register_clear_callbacks utility."""
 
-    def test_clear_prc(self):
-        from src.pages.apac_dot_due_date._callbacks import clear_prc
-        assert clear_prc(1) is None
+    def test_callbacks_module_uses_register_clear_callbacks(self):
+        """_callbacks.py source must call register_clear_callbacks."""
+        import inspect
+        import src.pages.apac_dot_due_date._callbacks as cb_module
+        source = inspect.getsource(cb_module)
+        assert "register_clear_callbacks" in source
 
-    def test_clear_area(self):
-        from src.pages.apac_dot_due_date._callbacks import clear_area
-        assert clear_area(1) == []
+    def test_no_individual_clear_functions_defined(self):
+        """_callbacks.py should NOT define individual clear_month, clear_area, etc. functions."""
+        import inspect
+        import src.pages.apac_dot_due_date._callbacks as cb_module
+        source = inspect.getsource(cb_module)
+        # Should not have `def clear_month` etc. defined individually
+        assert "def clear_month" not in source
+        assert "def clear_area" not in source
+        assert "def clear_category" not in source
+        assert "def clear_vendor" not in source
+        assert "def clear_amp_av" not in source
+        assert "def clear_order_type" not in source
 
-    def test_clear_category(self):
-        from src.pages.apac_dot_due_date._callbacks import clear_category
-        assert clear_category(1) == []
-
-    def test_clear_vendor(self):
-        from src.pages.apac_dot_due_date._callbacks import clear_vendor
-        assert clear_vendor(1) == []
-
-    def test_clear_amp_av(self):
-        from src.pages.apac_dot_due_date._callbacks import clear_amp_av
-        assert clear_amp_av(1) == []
-
-    def test_clear_order_type(self):
-        from src.pages.apac_dot_due_date._callbacks import clear_order_type
-        assert clear_order_type(1) == []
+    def test_prc_clear_returns_none_as_default(self):
+        """PRC clear callback must return None (not []) since it is a single-select filter."""
+        # register_clear_callbacks for PRC must use default_value=None
+        import inspect
+        import src.pages.apac_dot_due_date._callbacks as cb_module
+        source = inspect.getsource(cb_module)
+        # There should be a register_clear_callbacks call with default_value=None for PRC
+        assert "default_value=None" in source

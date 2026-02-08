@@ -1,9 +1,12 @@
 """Constants for the APAC DOT Due Date Dashboard page.
 
-Centralizes dataset identifiers, column name mappings, and ID prefixes
-to avoid hardcoded strings scattered across layout and callback code.
+Centralizes dataset identifiers, column name mappings, table specs,
+and ID prefixes to avoid hardcoded strings scattered across layout
+and callback code.
 """
 from dataclasses import dataclass
+
+from src.charts.specs import TableSpec
 
 # Dashboard identifier (used for config lookup)
 DASHBOARD_ID: str = "apac_dot_due_date"
@@ -109,5 +112,55 @@ DATASETS: dict[str, DatasetConfig] = {
         },
         table_spec_key="ch01_change_issue_table",
         skip_filters=frozenset(["amp_av"]),
+    ),
+}
+
+
+# ---------------------------------------------------------------------------
+# Table specifications (previously in charts/_table_specs.py)
+# Uses the shared TableSpec from src.charts.specs.
+# ---------------------------------------------------------------------------
+TABLE_SPECS: dict[str, TableSpec] = {
+    "ch00_reference_table": TableSpec(
+        title="0) Reference : Number of Work Order",
+        style_table={"overflowX": "auto"},
+        style_cell={
+            "textAlign": "left",
+            "padding": "8px",
+            "fontSize": "14px",
+        },
+        style_header={
+            "fontWeight": "bold",
+            "backgroundColor": "#2563eb",
+            "color": "white",
+        },
+        style_data_conditional=[
+            {
+                "if": {"filter_query": "{breakdown_col} = \"GRAND TOTAL\""},
+                "fontWeight": "bold",
+                "backgroundColor": "#eff6ff",
+            }
+        ],
+    ),
+    "ch01_change_issue_table": TableSpec(
+        title="1) DDD Change + Issue : Number of Work Order",
+        style_table={"overflowX": "auto"},
+        style_cell={
+            "textAlign": "left",
+            "padding": "8px",
+            "fontSize": "14px",
+        },
+        style_header={
+            "fontWeight": "bold",
+            "backgroundColor": "#2563eb",
+            "color": "white",
+        },
+        style_data_conditional=[
+            {
+                "if": {"filter_query": "{breakdown_col} = \"GRAND TOTAL\""},
+                "fontWeight": "bold",
+                "backgroundColor": "#eff6ff",
+            }
+        ],
     ),
 }

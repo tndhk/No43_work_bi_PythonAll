@@ -20,14 +20,60 @@
 ```
 src/pages/<page_name>/
 ├── __init__.py          # 必須: Dash登録 + build_layout参照 + コールバックインポート
-├── _constants.py        # 必須: DATASET_ID, ID_PREFIX, COLUMN_MAP
+├── _constants.py        # 必須: DATASET_ID, ID_PREFIX, COLUMN_MAP, TABLE_SPECS, CHART_SPECS
 ├── _data_loader.py      # 必須: load_filter_options(), load_and_filter_data()
 ├── _layout.py           # 必須: build_layout()
-├── _callbacks.py        # 必須: コールバック関数群
+├── _callbacks.py        # 必須: コールバック関数群（薄いオーケストレータ）
 ├── _filters.py          # 条件付き必須: フィルタUI構築（フィルタ5個以上の場合）
 ├── SPEC.md              # 必須: ユーザー向け設計書（日本語）
 ├── _utils.py            # オプション: ヘルパー関数
-└── _chart_builders.py   # オプション: チャート生成関数
+└── _chart_builders.py   # オプション: カスタム集計・描画ロジック
+```
+
+#### ファイル別の役割
+
+**_constants.py**
+- 必須定数: `DATASET_ID`, `ID_PREFIX`, `COLUMN_MAP`
+- チャート/テーブル定義: `TABLE_SPECS` (dict[str, TableSpec]), `CHART_SPECS` (dict[str, ChartSpec])
+- Specは `src.charts.specs` からインポート
+- フィルタクリアペア: `CLEAR_PAIRS` (list[tuple[str, str]]) - register_clear_callbacks()で使用
+
+**_data_loader.py**
+- フィルタオプション取得: `load_filter_options()`
+- データ読込・フィルタリング: `load_and_filter_data()`
+- データ変換ロジック（集計前の整形など）
+
+**_callbacks.py**
+- 薄いオーケストレータ層（ビジネスロジックは最小限）
+- フィルタ入力受取 -> data_loader呼出 -> chart_builders呼出 -> 戻り値返却
+- クリアコールバック: `register_clear_callbacks(CLEAR_PAIRS)` を末尾で呼ぶ
+- 共通empty_statesを使用: `create_empty_figure()`, `create_empty_table()`, `create_error_figure()`
+
+**_chart_builders.py**（オプション）
+- カスタム集計ロジック（pivot, groupby, 複雑な計算など）
+- 共通ビルダーで対応できないカスタム描画
+- 共通ビルダーを活用: `build_table(df, spec)`, `build_chart(df, spec)`
+- Spec定義は `_constants.py` に配置（このファイルには置かない）
+
+#### 共通基盤の使用
+
+全ページで以下の共通基盤を使用:
+
+```python
+# チャート/テーブル構築
+from src.charts.table_builder import build_table
+from src.charts.chart_builder import build_chart
+from src.charts.specs import TableSpec, ChartSpec
+
+# 空状態・エラー状態
+from src.charts.empty_states import (
+    create_empty_figure,
+    create_empty_table,
+    create_error_figure,
+)
+
+# コールバックヘルパー
+from src.utils.callback_helpers import register_clear_callbacks
 ```
 
 ### SPEC.md 必須ルール（MANDATORY）

@@ -475,3 +475,71 @@ class TestChartId01:
         from src.pages.apac_dot_due_date._constants import CHART_ID_CHANGE_ISSUE_TABLE_TITLE
 
         assert isinstance(CHART_ID_CHANGE_ISSUE_TABLE_TITLE, str)
+
+
+class TestTableSpecs:
+    """TABLE_SPECS must be defined in _constants.py using shared TableSpec from src.charts.specs."""
+
+    def test_table_specs_exists(self):
+        """TABLE_SPECS dict must be importable from _constants."""
+        from src.pages.apac_dot_due_date._constants import TABLE_SPECS
+        assert TABLE_SPECS is not None
+
+    def test_table_specs_is_dict(self):
+        from src.pages.apac_dot_due_date._constants import TABLE_SPECS
+        assert isinstance(TABLE_SPECS, dict)
+
+    def test_table_specs_has_expected_keys(self):
+        from src.pages.apac_dot_due_date._constants import TABLE_SPECS
+        assert "ch00_reference_table" in TABLE_SPECS
+        assert "ch01_change_issue_table" in TABLE_SPECS
+
+    def test_table_specs_uses_shared_table_spec_class(self):
+        """TABLE_SPECS values must be instances of the shared TableSpec from src.charts.specs."""
+        from src.pages.apac_dot_due_date._constants import TABLE_SPECS
+        from src.charts.specs import TableSpec
+
+        for key, spec in TABLE_SPECS.items():
+            assert isinstance(spec, TableSpec), (
+                f"TABLE_SPECS['{key}'] is {type(spec).__module__}.{type(spec).__name__}, "
+                f"not src.charts.specs.TableSpec"
+            )
+
+    def test_reference_table_spec_title(self):
+        from src.pages.apac_dot_due_date._constants import TABLE_SPECS
+        assert TABLE_SPECS["ch00_reference_table"].title == "0) Reference : Number of Work Order"
+
+    def test_change_issue_table_spec_title(self):
+        from src.pages.apac_dot_due_date._constants import TABLE_SPECS
+        assert TABLE_SPECS["ch01_change_issue_table"].title == "1) DDD Change + Issue : Number of Work Order"
+
+    def test_table_specs_have_style_table(self):
+        from src.pages.apac_dot_due_date._constants import TABLE_SPECS
+        for key, spec in TABLE_SPECS.items():
+            assert isinstance(spec.style_table, dict), f"TABLE_SPECS['{key}'].style_table missing"
+
+    def test_table_specs_have_style_cell(self):
+        from src.pages.apac_dot_due_date._constants import TABLE_SPECS
+        for key, spec in TABLE_SPECS.items():
+            assert isinstance(spec.style_cell, dict), f"TABLE_SPECS['{key}'].style_cell missing"
+
+    def test_table_specs_have_style_header(self):
+        from src.pages.apac_dot_due_date._constants import TABLE_SPECS
+        for key, spec in TABLE_SPECS.items():
+            assert isinstance(spec.style_header, dict), f"TABLE_SPECS['{key}'].style_header missing"
+
+    def test_table_specs_have_style_data_conditional(self):
+        from src.pages.apac_dot_due_date._constants import TABLE_SPECS
+        for key, spec in TABLE_SPECS.items():
+            assert isinstance(spec.style_data_conditional, list), (
+                f"TABLE_SPECS['{key}'].style_data_conditional missing"
+            )
+
+    def test_table_specs_consistent_with_datasets(self):
+        """Every DATASETS entry's table_spec_key must exist in TABLE_SPECS."""
+        from src.pages.apac_dot_due_date._constants import TABLE_SPECS, DATASETS
+        for ds_key, ds_cfg in DATASETS.items():
+            assert ds_cfg.table_spec_key in TABLE_SPECS, (
+                f"DATASETS['{ds_key}'].table_spec_key='{ds_cfg.table_spec_key}' "
+                f"not found in TABLE_SPECS"
+            )

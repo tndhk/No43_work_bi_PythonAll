@@ -156,3 +156,180 @@ class TestChartIds:
         assert const.CHART_ID_TOKEN_EFFICIENCY == "cu-chart-token-efficiency"
         assert const.CHART_ID_MODEL_DISTRIBUTION == "cu-chart-model-distribution"
         assert const.CHART_ID_DATA_TABLE == "cu-data-table"
+
+
+# ===========================================================================
+# ChartSpec declarations (Step 5b)
+# ===========================================================================
+
+class TestCostTrendChartSpec:
+    """COST_TREND_SPEC must define a line chart for daily cost trend."""
+
+    def test_cost_trend_spec_exists(self):
+        from src.pages.cursor_usage._constants import COST_TREND_SPEC
+
+        assert COST_TREND_SPEC is not None
+
+    def test_cost_trend_spec_is_chart_spec(self):
+        from src.pages.cursor_usage._constants import COST_TREND_SPEC
+        from src.charts.specs import ChartSpec
+
+        assert isinstance(COST_TREND_SPEC, ChartSpec)
+
+    def test_cost_trend_spec_chart_type_is_line(self):
+        from src.pages.cursor_usage._constants import COST_TREND_SPEC
+
+        assert COST_TREND_SPEC.chart_type == "line"
+
+    def test_cost_trend_spec_title(self):
+        from src.pages.cursor_usage._constants import COST_TREND_SPEC
+
+        assert COST_TREND_SPEC.title == "Daily Cost Trend"
+
+    def test_cost_trend_spec_x_column(self):
+        from src.pages.cursor_usage._constants import COST_TREND_SPEC, COLUMN_MAP
+
+        assert COST_TREND_SPEC.x_column == COLUMN_MAP["date"]
+
+    def test_cost_trend_spec_y_columns(self):
+        from src.pages.cursor_usage._constants import COST_TREND_SPEC, COLUMN_MAP
+
+        assert COST_TREND_SPEC.y_columns == [COLUMN_MAP["cost"]]
+
+    def test_cost_trend_spec_show_legend_false(self):
+        from src.pages.cursor_usage._constants import COST_TREND_SPEC
+
+        assert COST_TREND_SPEC.show_legend is False
+
+
+class TestTokenEfficiencyChartSpec:
+    """TOKEN_EFFICIENCY_SPEC must define a bar chart for token efficiency."""
+
+    def test_token_efficiency_spec_exists(self):
+        from src.pages.cursor_usage._constants import TOKEN_EFFICIENCY_SPEC
+
+        assert TOKEN_EFFICIENCY_SPEC is not None
+
+    def test_token_efficiency_spec_is_chart_spec(self):
+        from src.pages.cursor_usage._constants import TOKEN_EFFICIENCY_SPEC
+        from src.charts.specs import ChartSpec
+
+        assert isinstance(TOKEN_EFFICIENCY_SPEC, ChartSpec)
+
+    def test_token_efficiency_spec_chart_type_is_bar(self):
+        from src.pages.cursor_usage._constants import TOKEN_EFFICIENCY_SPEC
+
+        assert TOKEN_EFFICIENCY_SPEC.chart_type == "bar"
+
+    def test_token_efficiency_spec_title(self):
+        from src.pages.cursor_usage._constants import TOKEN_EFFICIENCY_SPEC
+
+        assert TOKEN_EFFICIENCY_SPEC.title == "Token Efficiency by Model (Tokens per $)"
+
+    def test_token_efficiency_spec_x_column(self):
+        from src.pages.cursor_usage._constants import TOKEN_EFFICIENCY_SPEC, COLUMN_MAP
+
+        assert TOKEN_EFFICIENCY_SPEC.x_column == COLUMN_MAP["model"]
+
+    def test_token_efficiency_spec_y_columns(self):
+        from src.pages.cursor_usage._constants import TOKEN_EFFICIENCY_SPEC
+
+        assert TOKEN_EFFICIENCY_SPEC.y_columns == ["TokensPerCost"]
+
+    def test_token_efficiency_spec_show_legend_false(self):
+        from src.pages.cursor_usage._constants import TOKEN_EFFICIENCY_SPEC
+
+        assert TOKEN_EFFICIENCY_SPEC.show_legend is False
+
+
+class TestModelDistributionChartSpec:
+    """MODEL_DISTRIBUTION_SPEC must define a pie chart for cost distribution."""
+
+    def test_model_distribution_spec_exists(self):
+        from src.pages.cursor_usage._constants import MODEL_DISTRIBUTION_SPEC
+
+        assert MODEL_DISTRIBUTION_SPEC is not None
+
+    def test_model_distribution_spec_is_chart_spec(self):
+        from src.pages.cursor_usage._constants import MODEL_DISTRIBUTION_SPEC
+        from src.charts.specs import ChartSpec
+
+        assert isinstance(MODEL_DISTRIBUTION_SPEC, ChartSpec)
+
+    def test_model_distribution_spec_chart_type_is_pie(self):
+        from src.pages.cursor_usage._constants import MODEL_DISTRIBUTION_SPEC
+
+        assert MODEL_DISTRIBUTION_SPEC.chart_type == "pie"
+
+    def test_model_distribution_spec_title(self):
+        from src.pages.cursor_usage._constants import MODEL_DISTRIBUTION_SPEC
+
+        assert MODEL_DISTRIBUTION_SPEC.title == "Cost Distribution by Model"
+
+    def test_model_distribution_spec_x_column(self):
+        from src.pages.cursor_usage._constants import MODEL_DISTRIBUTION_SPEC, COLUMN_MAP
+
+        assert MODEL_DISTRIBUTION_SPEC.x_column == COLUMN_MAP["model"]
+
+    def test_model_distribution_spec_y_columns(self):
+        from src.pages.cursor_usage._constants import MODEL_DISTRIBUTION_SPEC, COLUMN_MAP
+
+        assert MODEL_DISTRIBUTION_SPEC.y_columns == [COLUMN_MAP["cost"]]
+
+
+# ===========================================================================
+# TableSpec declaration (Step 5b)
+# ===========================================================================
+
+class TestDetailTableSpec:
+    """DETAIL_TABLE_SPEC must define the data table for cursor usage details."""
+
+    def test_detail_table_spec_exists(self):
+        from src.pages.cursor_usage._constants import DETAIL_TABLE_SPEC
+
+        assert DETAIL_TABLE_SPEC is not None
+
+    def test_detail_table_spec_is_table_spec(self):
+        from src.pages.cursor_usage._constants import DETAIL_TABLE_SPEC
+        from src.charts.specs import TableSpec
+
+        assert isinstance(DETAIL_TABLE_SPEC, TableSpec)
+
+    def test_detail_table_spec_title(self):
+        from src.pages.cursor_usage._constants import DETAIL_TABLE_SPEC
+
+        assert DETAIL_TABLE_SPEC.title == "Detailed Data"
+
+    def test_detail_table_spec_page_size(self):
+        from src.pages.cursor_usage._constants import DETAIL_TABLE_SPEC
+
+        assert DETAIL_TABLE_SPEC.page_size == 20
+
+    def test_detail_table_spec_style_table_has_overflow(self):
+        from src.pages.cursor_usage._constants import DETAIL_TABLE_SPEC
+
+        assert "overflowX" in DETAIL_TABLE_SPEC.style_table
+        assert DETAIL_TABLE_SPEC.style_table["overflowX"] == "auto"
+
+    def test_detail_table_spec_style_cell_text_align(self):
+        from src.pages.cursor_usage._constants import DETAIL_TABLE_SPEC
+
+        assert DETAIL_TABLE_SPEC.style_cell["textAlign"] == "left"
+
+    def test_detail_table_spec_style_header_font_weight(self):
+        from src.pages.cursor_usage._constants import DETAIL_TABLE_SPEC
+
+        assert DETAIL_TABLE_SPEC.style_header["fontWeight"] == "bold"
+
+    def test_detail_table_spec_column_order(self):
+        from src.pages.cursor_usage._constants import DETAIL_TABLE_SPEC, COLUMN_MAP
+
+        expected_order = [
+            COLUMN_MAP["date"],
+            COLUMN_MAP["user"],
+            COLUMN_MAP["model"],
+            COLUMN_MAP["kind"],
+            COLUMN_MAP["total_tokens"],
+            COLUMN_MAP["cost"],
+        ]
+        assert DETAIL_TABLE_SPEC.column_order == expected_order

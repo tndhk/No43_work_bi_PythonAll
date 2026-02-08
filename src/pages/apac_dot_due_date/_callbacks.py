@@ -2,16 +2,24 @@
 
 Extracted from __init__.py to separate callback registration from page
 registration.  Importing this module triggers callback registration via
-the ``@callback`` decorator as a side effect.
+the ``@callback`` decorator and ``register_clear_callbacks()`` as side
+effects.
 """
+from copy import deepcopy
+
 from dash import callback, html, Input, Output
 
 from src.data.parquet_reader import ParquetReader
 from src.data.data_source_registry import resolve_dataset_id
+from src.charts.table_builder import build_table
+from src.charts.empty_states import create_empty_table
+from src.utils.callback_helpers import register_clear_callbacks
+from ._chart_builders import build_pivot_data
 from ._constants import (
     DASHBOARD_ID,
     KPI_ID_TOTAL_WORK_ORDERS,
     DATASETS,
+    TABLE_SPECS,
     CTRL_ID_NUM_PERCENT,
     CTRL_ID_BREAKDOWN,
     CTRL_ID_CLEAR_MONTH,
@@ -30,8 +38,6 @@ from ._constants import (
     FILTER_ID_ORDER_TYPE,
 )
 from ._data_loader import load_and_filter_data
-from .charts._pivot_table_builder import build_pivot_table
-from .charts._table_specs import TABLE_SPECS
 
 
 def _coerce_single_value(value, default: str) -> str:
@@ -41,6 +47,61 @@ def _coerce_single_value(value, default: str) -> str:
     if value is None:
         return default
     return value
+
+
+def build_pivot_table(
+    filtered_df,
+    breakdown_tab,
+    num_percent_mode,
+    column_map,
+    breakdown_map,
+    table_spec,
+):
+    """Aggregate data and render as a titled DataTable.
+
+    Combines build_pivot_data() for aggregation with build_table()
+    for rendering.  The {breakdown_col} placeholder in
+    style_data_conditional is resolved before rendering.
+    """
+    if len(filtered_df) == 0:
+        return (table_spec.title, create_empty_table())
+
+    pivot_df = build_pivot_data(
+        filtered_df=filtered_df,
+        breakdown_tab=breakdown_tab,
+        num_percent_mode=num_percent_mode,
+        column_map=column_map,
+        breakdown_map=breakdown_map,
+    )
+
+    # Resolve {breakdown_col} placeholder in style_data_conditional
+    breakdown_column = breakdown_map[breakdown_tab]
+    resolved_conditional = deepcopy(table_spec.style_data_conditional)
+    for rule in resolved_conditional:
+        if not isinstance(rule, dict):
+            continue
+        condition = rule.get("if")
+        if not isinstance(condition, dict):
+            continue
+        filter_query = condition.get("filter_query")
+        if isinstance(filter_query, str):
+            condition["filter_query"] = filter_query.replace(
+                "{breakdown_col}", f"{{{breakdown_column}}}"
+            )
+
+    # Create a spec with resolved conditionals for rendering
+    from src.charts.specs import TableSpec as SharedTableSpec
+    resolved_spec = SharedTableSpec(
+        title=table_spec.title,
+        style_table=table_spec.style_table,
+        style_cell=table_spec.style_cell,
+        style_header=table_spec.style_header,
+        style_data_conditional=resolved_conditional,
+        column_display=table_spec.column_display,
+        column_order=table_spec.column_order,
+    )
+
+    return build_table(pivot_df, resolved_spec)
 
 
 @callback(
@@ -77,7 +138,7 @@ def update_dashboard(
     """Update dashboard based on filter inputs.
 
     Loops through DATASETS configuration to load and filter each dataset,
-    then builds pivot tables using the shared build_pivot_table function.
+    then builds pivot tables using build_pivot_data + build_table.
     """
     reader = ParquetReader()
     prc_filter_value = _coerce_single_value(prc_filter_value, "all")
@@ -109,7 +170,7 @@ def update_dashboard(
             if ds_key == "reference":
                 filtered_df_for_kpi = filtered_df
 
-            # Build pivot table directly (no wrapper needed)
+            # Build pivot table (aggregation + rendering)
             title, comp = build_pivot_table(
                 filtered_df=filtered_df,
                 breakdown_tab=breakdown_tab,
@@ -147,64 +208,22 @@ def update_dashboard(
         )
 
 
-@callback(
-    Output(FILTER_ID_MONTH, "value"),
-    Input(CTRL_ID_CLEAR_MONTH, "n_clicks"),
-    prevent_initial_call=True,
+# ---------------------------------------------------------------------------
+# Clear-filter callbacks (registered via shared helper)
+# ---------------------------------------------------------------------------
+
+# Multi-select filters: reset to empty list
+register_clear_callbacks([
+    (FILTER_ID_MONTH, CTRL_ID_CLEAR_MONTH),
+    (FILTER_ID_AREA, CTRL_ID_CLEAR_AREA),
+    (FILTER_ID_CATEGORY, CTRL_ID_CLEAR_CATEGORY),
+    (FILTER_ID_VENDOR, CTRL_ID_CLEAR_VENDOR),
+    (FILTER_ID_AMP_AV, CTRL_ID_CLEAR_AMP_AV),
+    (FILTER_ID_ORDER_TYPE, CTRL_ID_CLEAR_ORDER_TYPE),
+])
+
+# PRC is single-select: reset to None
+register_clear_callbacks(
+    [(FILTER_ID_PRC, CTRL_ID_CLEAR_PRC)],
+    default_value=None,
 )
-def clear_month(_n_clicks):
-    return []
-
-
-@callback(
-    Output(FILTER_ID_PRC, "value"),
-    Input(CTRL_ID_CLEAR_PRC, "n_clicks"),
-    prevent_initial_call=True,
-)
-def clear_prc(_n_clicks):
-    return None
-
-
-@callback(
-    Output(FILTER_ID_AREA, "value"),
-    Input(CTRL_ID_CLEAR_AREA, "n_clicks"),
-    prevent_initial_call=True,
-)
-def clear_area(_n_clicks):
-    return []
-
-
-@callback(
-    Output(FILTER_ID_CATEGORY, "value"),
-    Input(CTRL_ID_CLEAR_CATEGORY, "n_clicks"),
-    prevent_initial_call=True,
-)
-def clear_category(_n_clicks):
-    return []
-
-
-@callback(
-    Output(FILTER_ID_VENDOR, "value"),
-    Input(CTRL_ID_CLEAR_VENDOR, "n_clicks"),
-    prevent_initial_call=True,
-)
-def clear_vendor(_n_clicks):
-    return []
-
-
-@callback(
-    Output(FILTER_ID_AMP_AV, "value"),
-    Input(CTRL_ID_CLEAR_AMP_AV, "n_clicks"),
-    prevent_initial_call=True,
-)
-def clear_amp_av(_n_clicks):
-    return []
-
-
-@callback(
-    Output(FILTER_ID_ORDER_TYPE, "value"),
-    Input(CTRL_ID_CLEAR_ORDER_TYPE, "n_clicks"),
-    prevent_initial_call=True,
-)
-def clear_order_type(_n_clicks):
-    return []

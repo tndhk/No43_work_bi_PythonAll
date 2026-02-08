@@ -1,416 +1,140 @@
 # 運用ガイド (RUNBOOK)
 
-Last Updated: 2026-02-08 (rev.6)
+最終更新: 2026-02-08
 
-## このドキュメントについて
+このRUNBOOKは、現行リポジトリで確認できる手順のみを記載する。  
+クラウド本番基盤（ECS/EKS/VMなど）の標準手順は、このリポジトリ内に定義がないため `TBD`。
 
-- 役割: デプロイメント、モニタリング、トラブルシューティング、ロールバック手順
-- 関連: 開発者ガイドは `docs/CONTRIB.md`、技術仕様は `docs/tech-spec.md` を参照
+## 1. デプロイ前提
 
----
+| 項目 | 内容 |
+|------|------|
+| コンテナ実行 | `docker compose` が利用可能 |
+| 設定ファイル | `.env` が存在し、必要変数が設定済み |
+| 依存関係 | `Dockerfile.dev` と `requirements.txt` で解決可能 |
 
-## 1. デプロイメント前の確認
-
-### 前提条件
-
-- Docker / Docker Compose 最新安定版
-- AWS CLI がセットアップ済み
-- 本番環境の AWS credentials が利用可能
-- 本番 S3 バケット、RDS、その他リソースが構築済み
-
-### デプロイ前チェックリスト
+最低チェック:
 
 ```bash
-# 1. すべてのテストが通っているか確認
-pytest --cov=src
-
-# 2. リンティング、型チェック、フォーマット確認
 ruff check src/
 mypy src/
-
-# 3. Git ワークフロー確認
-git status                    # ローカル変更がない
-git log -1 --oneline          # 最新コミット確認
-git branch                    # ブランチ確認
+pytest --cov=src --cov-report=term-missing
 ```
 
----
+## 2. デプロイ手順（現行リポジトリ運用）
 
-## 2. デプロイメント手順
-
-### ローカル環境からの本番デプロイ（AWS ECS / Fargate 想定）
-
-#### Step 1: Docker イメージの構築
+### 手順A: Composeで更新起動
 
 ```bash
-# イメージを構築
-docker build -t bi-dashboard:latest .
-
-# ECR にタグ付け
-aws ecr get-login-password --region ap-northeast-1 | docker login --username AWS --password-stdin <ACCOUNT_ID>.dkr.ecr.ap-northeast-1.amazonaws.com
-
-docker tag bi-dashboard:latest <ACCOUNT_ID>.dkr.ecr.ap-northeast-1.amazonaws.com/bi-dashboard:latest
+cp .env.example .env  # 初回のみ
+docker compose down
+docker compose up --build -d
 ```
 
-#### Step 2: ECR にプッシュ
+### 手順B: 起動確認
 
 ```bash
-docker push <ACCOUNT_ID>.dkr.ecr.ap-northeast-1.amazonaws.com/bi-dashboard:latest
+docker compose ps
+docker compose logs --tail=100 dash
+docker compose logs --tail=100 minio
 ```
 
-#### Step 3: ECS タスク定義を更新
+確認ポイント:
+- `dash` と `minio` が `healthy`
+- Dashにアクセスできる (`http://localhost:8050`)
+- MinIO Consoleにアクセスできる (`http://localhost:9001`)
 
+## 3. モニタリングとアラート
+
+### 現在このリポジトリで定義済み
+
+- `docker-compose.yml` に `dash` と `minio` の `healthcheck` 定義あり
+- ログ確認は `docker compose logs` ベース
+
+### アラート設定
+
+- リポジトリ内に通知連携（Slack/PagerDuty/CloudWatch Alarm等）の設定ファイルはなし
+- 現行運用: 手動監視が基本
+- 自動アラート標準は `TBD`
+
+## 4. トラブルシューティング
+
+### 4.1 アプリが起動しない
+
+確認:
 ```bash
-# タスク定義 JSON を編集してイメージリビジョンを更新
-aws ecs register-task-definition --cli-input-json file://task-definition.json
-
-# デプロイ（サービス更新）
-aws ecs update-service \
-  --cluster bi-dashboard-cluster \
-  --service bi-dashboard-service \
-  --force-new-deployment
+docker compose logs --tail=200 dash
 ```
 
-#### Step 4: デプロイ状況の確認
+対処:
+- `.env` が存在するか確認
+- ポート `8050` 競合を解消
+- 依存更新後は `docker compose up --build -d` で再ビルド
 
+### 4.2 データが表示されない
+
+確認:
 ```bash
-# サービスのタスク状況を確認
-aws ecs describe-services --cluster bi-dashboard-cluster --services bi-dashboard-service
-
-# ログを確認
-aws logs tail /ecs/bi-dashboard --follow
+docker compose logs --tail=200 dash
 ```
 
----
-
-## 3. 環境設定（本番）
-
-### ベース環境変数（.env.example 由来）
-
-ローカル開発向けの変数一覧は [CONTRIB.md](CONTRIB.md) sec.3 を参照。本番運用での主な違い:
-
-- `S3_ENDPOINT`: 本番では `https://s3.ap-northeast-1.amazonaws.com` または空文字列
-- `S3_ACCESS_KEY` / `S3_SECRET_KEY`: AWS Secrets Manager より取得（IAMロール使用時は不要）
-- `BASIC_AUTH_PASSWORD`: AWS Secrets Manager より取得。Phase 3で SAML に置き換え
-
-### 追加設定（.env.example 以外）
-
-本番運用では以下の設定が必要になる場合があります。`.env.example` には含まれていないため、運用側で明示的に管理します。
-
-| 変数 | 説明 | 備考 |
-|------|------|------|
-| `SECRET_KEY` | Flaskセッション秘密鍵 | Secrets Manager より取得（本番では固定値が必要） |
-| `AUTH_PROVIDER_TYPE` | 認証プロバイダ種別 | `form`（Phase 3で `saml` に切替可能） |
-| `DOMO_CLIENT_ID` | DOMO API Client ID | DOMO Developer Portalで発行 |
-| `DOMO_CLIENT_SECRET` | DOMO API Client Secret | DOMO Developer Portalで発行 |
-| `ETL_MASKING_SECRET` | ETLマスキング用HMAC秘密鍵 | masking有効なDataSet使用時に必須 |
-| `RDS_HOST` | RDS エンドポイント | RDS 使用時のみ |
-| `RDS_PORT` | RDS ポート | 通常 `5432` |
-| `RDS_USER` | RDS ユーザー | Secrets Manager より取得 |
-| `RDS_PASSWORD` | RDS パスワード | Secrets Manager より取得 |
-| `RDS_DATABASE` | データベース名 | - |
-| `GOOGLE_APPLICATION_CREDENTIALS` | GCP サービスアカウント JSON | Vertex AI 使用時 |
-| `VERTEX_AI_PROJECT` | GCP プロジェクト ID | Vertex AI 使用時 |
-| `VERTEX_AI_LOCATION` | Vertex AI リージョン | `asia-northeast1` |
-
-### AWS Secrets Manager でシークレット管理
-
-```bash
-# 本番シークレットの登録例
-aws secretsmanager create-secret \
-  --name bi-dashboard-secrets \
-  --secret-string '{"S3_ACCESS_KEY":"xxx","S3_SECRET_KEY":"yyy","SECRET_KEY":"zzz","BASIC_AUTH_PASSWORD":"aaa"}'
-
-# ECS タスク定義から参照
-"secrets": [
-  {
-    "name": "S3_ACCESS_KEY",
-    "valueFrom": "arn:aws:secretsmanager:ap-northeast-1:ACCOUNT_ID:secret:bi-dashboard-secrets:S3_ACCESS_KEY::"
-  }
-]
-```
-
----
-
-## 4. モニタリング
-
-### ログ確認
-
-```bash
-# CloudWatch ログを監視
-aws logs tail /ecs/bi-dashboard --follow
-
-# エラーレベルのログのみ取得
-aws logs filter-log-events \
-  --log-group-name /ecs/bi-dashboard \
-  --filter-pattern "ERROR"
-```
-
-### メトリクス確認
-
-- CPU 使用率
-- メモリ使用率
-- HTTP レスポンスコード
-- S3 API 呼び出し数
-
-### アラート設定（CloudWatch）
-
-```bash
-# CPU > 80% でアラート
-aws cloudwatch put-metric-alarm \
-  --alarm-name bi-dashboard-cpu-high \
-  --alarm-description "CPU usage high" \
-  --metric-name CPUUtilization \
-  --namespace AWS/ECS \
-  --statistic Average \
-  --period 300 \
-  --threshold 80 \
-  --comparison-operator GreaterThanThreshold
-```
-
----
-
-## 5. 一般的な問題とトラブルシューティング
-
-### Issue 1: ダッシュボードが起動しない
-
-症状: ECS タスクが起動直後に停止
-
-原因の調査:
-
-```bash
-# ログを確認
-aws logs tail /ecs/bi-dashboard --follow
-
-# タスク定義を確認
-aws ecs describe-tasks --cluster bi-dashboard-cluster --tasks <TASK_ARN>
-```
-
-解決策:
-
-- 環境変数が正しく設定されているか確認（特に `SECRET_KEY`）
-- S3 バケットへのアクセス権限確認
-- Docker イメージのビルドエラーを確認
-
-### Issue 2: S3 からデータが読み込めない
-
-症状: "Dataset file not found" エラー、または空のダッシュボード
-
-原因の調査:
-
-```bash
-# IAM アクセスキーの権限確認
-aws iam get-user
-
-# S3 バケットへのアクセステスト
-aws s3 ls s3://bi-datasets/
-
-# オブジェクトの確認
-aws s3 ls s3://bi-datasets/datasets/ --recursive
-```
-
-解決策:
-
-- IAM ポリシーが `s3:GetObject` / `s3:ListBucket` を含むか確認
-- バケットのリージョンが正しいか確認
-- `datasets/<dataset_id>/data/part-0000.parquet` または `datasets/<dataset_id>/partitions/` のパス構造を確認
-- ファイル形式が Parquet か確認
-
-### Issue 3: メモリ不足エラー
-
-症状: "MemoryError" / "OOM Killed"
-
-解決策:
-
-- ECS タスク定義のメモリ制限を増加
-- 大きな Parquet ファイルを分割
-- Parquet フィルタリングの推進（列フィルタ、行グループフィルタ）
-
-### Issue 4: キャッシュが効いていない
-
-症状: 毎回フル読み込みされている（ログでキャッシュミスが頻発）
-
-確認方法:
-
-- キャッシュは `flask-caching` の `SimpleCache`（インメモリ）を使用
-- TTL はデフォルト3600秒（1時間）-- ETLが日次実行のため長めに設定
-- キャッシュキー: `dataset:<dataset_id>`
-
-解決策:
-
-- キャッシュ TTL 設定を確認（`src/core/cache.py`）
-- プロセスが再起動されていないか確認（SimpleCacheはプロセスメモリに保持）
-- 本番でスケールアウトする場合は Redis キャッシュバックエンドの使用を検討
-- キャッシュキーの衝突確認
-
-### Issue 5: ログインできない
-
-症状: ログインフォームでユーザー名/パスワードを入力してもログインできない
-
-原因の調査:
-
-- `BASIC_AUTH_USERNAME` と `BASIC_AUTH_PASSWORD` 環境変数が正しく設定されているか確認
-- `SECRET_KEY` が設定されているか確認（セッション管理に必須）
-
-解決策:
-
-- 環境変数の値にダブルクォートが含まれていないか確認（`.env`ファイルでは `BASIC_AUTH_PASSWORD=changeme` と記載、`"changeme"` は誤り）
-- `SECRET_KEY` を固定値に設定（プロセス再起動でセッションが無効化されるのを防ぐ）
-
-### Issue 6: DOMO ETLが失敗する
-
-症状: `load_domo.py` 実行時にエラー
-
-原因の調査:
-
-```bash
-# 設定ファイルを確認
-cat backend/config/domo_datasets.yaml
-
-# ドライランで設定内容確認
-python backend/scripts/load_domo.py --all --dry-run
-```
-
-解決策:
-
-- `DOMO_CLIENT_ID` と `DOMO_CLIENT_SECRET` が `.env` に設定されているか確認
-- `.env` の値にダブルクォートが含まれていないか確認
-- DOMO Dataset IDが正しいか確認（DOMOのURL末尾のUUID）
-- ネットワーク接続を確認（`api.domo.com` へのアクセス）
-
-### Issue 7: Dash 4.x ドロップダウンが背面に隠れる
-
-症状: DateRangeやDropdownのプルダウンがKPIカードの背面に隠れる
-
-原因: Dash 4.x (Radix) のポップアップの z-index が低い
-
-解決策:
-
-- `assets/03-components.css` に z-index 修正が含まれているか確認
-- Docker利用時は `./assets:/app/assets` のボリュームマウントを確認
-- ブラウザのハードリロード（Ctrl+Shift+R）で確認
-
-### Issue 8: APAC DOT Due Date フィルタ値が表示されない
-
-症状: フィルタドロップダウンの選択肢が空、またはフィルタが機能しない
-
-原因の調査:
-
-- S3にデータセット `apac-dot-due-date` が存在するか確認
-- `_data_loader.load_filter_options()` がエラーなく完了しているか確認（エラー時は空リストを返す）
-
-解決策:
-
-- DOMO ETLでデータをロード: `python backend/scripts/load_domo.py --dataset "APAC DOT join Due Date change(first time)"`
-- Parquetファイルのカラム名が `_constants.py` の `COLUMN_MAP` と一致しているか確認
-- キャッシュが古い場合はアプリ再起動でキャッシュクリア
-
-### Issue 9: HAMM Overview のフィルタが動作しない
-
-症状: Cadence切り替えやリージョン/年フィルタが反映されない、またはフィルタ選択肢が空
-
-原因の調査:
-
-- S3にデータセット `hamm-dashboard` が存在するか確認
-- `_data_loader.load_filter_options()` がエラーなく完了しているか確認（エラー時は空リストを返す）
-- Cadence フィルタは `dash_mantine_components.ChipGroup` を使用しているため、Mantine 依存が正しくインストールされているか確認
-
-解決策:
-
-- DOMO ETLでデータをロード: `python3 backend/scripts/load_domo.py --dataset "HAMM Dashboard"`
-- `_constants.py` の `COLUMN_MAP` とParquetカラム名の一致確認
-- `dash-mantine-components` がインストールされているか確認: `pip install dash-mantine-components`
-- slicer フィルタのクリアボタンが動作しない場合は `_callbacks.py` にクリアコールバックが登録されているか確認
-
-### Issue 10: ETLマスキングが失敗する
-
-症状: `ETL_MASKING_SECRET environment variable is required` エラー
-
-解決策:
-
+対処:
+- `S3_ENDPOINT/S3_BUCKET` を再確認
+- MinIO利用時は `minio-init` により `bi-datasets` バケットが作成されているか確認
+- 必要データをETLで再投入:
+  - `python3 backend/scripts/load_domo.py --all`
+  - `python3 backend/scripts/load_csv.py --all`
+
+### 4.3 DOMO ETLが失敗する
+
+対処:
+- `.env` に `DOMO_CLIENT_ID` と `DOMO_CLIENT_SECRET` を設定
+- 設定確認: `python3 backend/scripts/load_domo.py --list`
+- ドライラン: `python3 backend/scripts/load_domo.py --all --dry-run`
+- `.env` 値にダブルクォートを含めない
+
+### 4.4 ETLマスキングで失敗する
+
+症状:
+- `ETL_MASKING_SECRET is required` 系エラー
+
+対処:
 - `.env` に `ETL_MASKING_SECRET` を設定
-- `backend/config/{csv,domo}_datasets.yaml` の `masking.enabled` を確認
-- `masking.strict: true` の場合、対象カラムがデータに存在するか確認
+- 対象datasetの `masking.enabled` 設定を確認
 
----
+### 4.5 フィルタ比較エラー（timezone）
 
-## 6. ロールバック手順
+症状:
+- `Invalid comparison between dtype=datetime64[ns, UTC] and Timestamp`
 
-### 本番環境でのロールバック
+対処:
+- datetime列を timezone-naive に変換してからフィルタ処理する
+- 例: `pd.to_datetime(col, utc=True).dt.tz_convert(None)`
 
-#### 方法 1: 前のタスク定義にロールバック
+## 5. ロールバック
 
-```bash
-# 前のタスク定義リビジョンを取得
-aws ecs describe-task-definition \
-  --task-definition bi-dashboard:1 \
-  --region ap-northeast-1
-
-# ロールバック（サービス更新）
-aws ecs update-service \
-  --cluster bi-dashboard-cluster \
-  --service bi-dashboard-service \
-  --task-definition bi-dashboard:1 \
-  --force-new-deployment
-```
-
-#### 方法 2: 前の Docker イメージをデプロイ
+### 5.1 アプリのロールバック（Compose運用）
 
 ```bash
-# ECR イメージ履歴を確認
-aws ecr describe-images --repository-name bi-dashboard
-
-# 前のイメージをタグ
-docker pull <ACCOUNT_ID>.dkr.ecr.ap-northeast-1.amazonaws.com/bi-dashboard:previous-tag
-docker tag <ACCOUNT_ID>.dkr.ecr.ap-northeast-1.amazonaws.com/bi-dashboard:previous-tag <ACCOUNT_ID>.dkr.ecr.ap-northeast-1.amazonaws.com/bi-dashboard:latest
-docker push <ACCOUNT_ID>.dkr.ecr.ap-northeast-1.amazonaws.com/bi-dashboard:latest
-
-# タスク定義を更新してデプロイ
-aws ecs update-service --cluster bi-dashboard-cluster --service bi-dashboard-service --force-new-deployment
+docker compose down
+# 既知の安定コミット/タグへ戻してから
+docker compose up --build -d
 ```
 
-### データのロールバック
+注記:
+- コミット/タグ運用ルールはリポジトリ内に固定定義がないため、チーム運用に従うこと。
 
-DOMO ETLで取り込んだデータに問題がある場合:
+### 5.2 データのロールバック
 
 ```bash
-# 問題のあるデータセットを削除
-python backend/scripts/clear_dataset.py <dataset_id>
-
-# 正しいデータを再取り込み
-python backend/scripts/load_domo.py --dataset "Dataset Name"
+python3 backend/scripts/clear_dataset.py <dataset_id>
+python3 backend/scripts/load_domo.py --dataset "<dataset_name>"
 ```
 
----
+CSVデータの場合は `load_csv.py` を使用。
 
-## 7. 定期メンテナンス
+## 6. 未定義事項 (TBD)
 
-### 日次タスク
-
-- ログの監視（エラーがないか）
-- S3 データ同期の確認
-
-### 週次タスク
-
-- キャッシュの有効性確認
-- ダッシュボードレスポンス時間の測定
-- ETL ジョブの成功確認（DOMOデータの最新性）
-
-### 月次タスク
-
-- セキュリティアップデート確認
-- 依存パッケージのセキュリティ脆弱性チェック
-- ディスク容量と AWS リソース使用量の確認
-
-```bash
-# 依存パッケージの脆弱性チェック
-pip-audit requirements.txt
-```
-
----
-
-## 8. 本番初期設定チェックリスト
-
-- [ ] S3 バケット作成 & IAM ポリシー設定
-- [ ] ECR リポジトリ作成
-- [ ] ECS クラスター & サービス作成
+- 本番環境の標準デプロイ先（ECS/EKS/VM等）
+- 本番監視基盤とアラート通知経路
+- 本番用シークレット管理標準

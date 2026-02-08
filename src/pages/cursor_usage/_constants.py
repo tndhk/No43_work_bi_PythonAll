@@ -1,8 +1,10 @@
 """Constants for the Cursor Usage Dashboard page.
 
-Centralizes dataset identifiers, column name mappings, and ID prefixes
-to avoid hardcoded strings scattered across layout and callback code.
+Centralizes dataset identifiers, column name mappings, ID prefixes,
+and declarative ChartSpec / TableSpec definitions.
 """
+
+from src.charts.specs import ChartSpec, TableSpec
 
 # Dashboard identifier (used for config lookup)
 DASHBOARD_ID: str = "cursor_usage"
@@ -33,3 +35,47 @@ COLUMN_MAP: dict[str, str] = {
     "user": "User",
     "kind": "Kind",
 }
+
+# ---------------------------------------------------------------------------
+# Chart / Table Specs (declarative definitions)
+# ---------------------------------------------------------------------------
+
+COST_TREND_SPEC: ChartSpec = ChartSpec(
+    title="Daily Cost Trend",
+    chart_type="line",
+    x_column=COLUMN_MAP["date"],
+    y_columns=[COLUMN_MAP["cost"]],
+    show_legend=False,
+)
+
+TOKEN_EFFICIENCY_SPEC: ChartSpec = ChartSpec(
+    title="Token Efficiency by Model (Tokens per $)",
+    chart_type="bar",
+    x_column=COLUMN_MAP["model"],
+    y_columns=["TokensPerCost"],
+    show_legend=False,
+)
+
+MODEL_DISTRIBUTION_SPEC: ChartSpec = ChartSpec(
+    title="Cost Distribution by Model",
+    chart_type="pie",
+    x_column=COLUMN_MAP["model"],
+    y_columns=[COLUMN_MAP["cost"]],
+)
+
+DETAIL_TABLE_SPEC: TableSpec = TableSpec(
+    title="Detailed Data",
+    style_table={"overflowX": "auto"},
+    style_cell={"textAlign": "left", "padding": "8px"},
+    style_header={"fontWeight": "bold"},
+    style_data_conditional=[],
+    page_size=20,
+    column_order=[
+        COLUMN_MAP["date"],
+        COLUMN_MAP["user"],
+        COLUMN_MAP["model"],
+        COLUMN_MAP["kind"],
+        COLUMN_MAP["total_tokens"],
+        COLUMN_MAP["cost"],
+    ],
+)

@@ -24,6 +24,7 @@
 
 ## Domain Notes
 - (project/domain context that matters)
+- 2026-02-08: docs同期タスクで `package.json` 指定があっても、このリポジトリは非Node構成で `package.json` が存在しない。scripts表は「未定義」を明示し、補助的に `pyproject.toml` と `backend/scripts/*.py` を参照して運用コマンドを文書化する。
 - 2026-02-08: `.claude/skills/dash-bi-workflow/SKILL.md` と `.codex/skills/dash-bi-workflow/SKILL.md` はシンボリックリンクではなく同一inode（ハードリンク）。
 - 2026-02-08: `apac_dot_due_date` フィルタは2段構成（上段3-4ブロック、下段5ブロック）へ再編しても、既存IDを維持すればコールバック互換を保てる。
 - 2026-02-08: `src.pages.apac_dot_due_date._data_loader` を直接 import すると `__init__.py` の `dash.register_page` が走って PageError になる場合がある。ページ配下モジュールの単体確認は `py_compile` 優先。
@@ -31,4 +32,6 @@
 - 2026-02-08: `apac_dot_due_date` の callback テスト3件は `build_pivot_table` の位置引数前提で失敗。実装はキーワード引数呼び出しのため、テスト修正が必要（UI Slicer変更とは独立）。
 - 2026-02-08: dmc.ChipGroupを使うページでは対象コンポーネントがMantineProvider配下である必要。全体を包むとlayoutテスト前提を崩す場合があるため、必要な行のみMantineProviderでラップする。
 - 2026-02-08: Slicer単位のClear要求では、全体ボタンより `create_slicer_filter` に clear button オプションを追加してヘッダー内で統一実装するとレイアウト差分を最小化できる。
-- 2026-02-08: Slicerの標準化は `create_slicer_filter` に clear UI を集約し、各ページで clear callback だけ追加する構成が最小変更で横展開しやすい。
+- 2026-02-08: Slicerの標準化は `create_slicer_filter` に clear UI を集約し、各ページで clear callback だけ追加する構成が最小変更で横展開しやすい。- 2026-02-08: AGENTS.md で Markdown太字と絵文字が禁止。ドキュメント更新時も `**` と emoji を使わない。
+- 2026-02-08: ドキュメント更新はリポジトリで確認できる運用だけを記載し、未確認インフラ前提はTBD明記が必要。
+- 2026-02-08: ドキュメント刷新時、既存RUNBOOKに未確認クラウド前提が混在していたため、Compose運用ベースに置換しTBDを明記すると整合が保てる。
