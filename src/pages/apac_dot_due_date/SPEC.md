@@ -2,6 +2,7 @@
 
 ## 概要
 APAC DOT（Delivery On Time）のDue Date Delivery実績を追跡するダッシュボードです。月別のWork Order数をピボットテーブルで表示し、納期遵守状況を分析できます。
+画面上部には、On-Timeが高く見える背景と確認観点を示す説明バナーを配置しています。
 
 ## KPI
 ページ上部にフィルタ適用後の主要指標を表示します。
@@ -26,28 +27,37 @@ APAC DOT（Delivery On Time）のDue Date Delivery実績を追跡するダッシ
 - Category: メトリックワークストリーム別の集計
 - Vendor: ベンダー別の集計
 
+## フィルタ配置
+フィルタは2段で配置されています。
+- 上段: 件数/割合、分類軸、月、PRC
+- 下段: Area、Category、Vendor、AMP VS AV、Order Type
+
 ## フィルタの使い方
 
+### 個別Clear
+各Slicer（月、PRC、Area、Category、Vendor、AMP VS AV、Order Type）には個別のClear操作があり、対象項目のみ選択を解除できます。
+
 ### 月
-対象月を選択します。複数月を選択して期間比較も可能です。
+対象月をSlicerで選択します。表示は年月（YYYY-MM）形式です。複数月を選択して期間比較も可能です。
+選択可能な月は2024年1月以降に限定されています。
 
 ### PRC
-PRCコードで絞り込みます（データ固有の分類）。
+PRC分類をSlicerで1つ選択して絞り込みます（データ固有の分類）。
 
 ### Area
-ビジネスエリアで絞り込みます。
+ビジネスエリアをSlicerで選択して絞り込みます。
 
 ### Category
-メトリックワークストリームで絞り込みます。
+メトリックワークストリームをSlicerで選択して絞り込みます。
 
 ### Vendor
-ベンダー名で絞り込みます。
+ベンダー名をSlicerで選択して絞り込みます。
 
 ### AMP VS AV
-AMP/AVスコープで絞り込みます。
+AMP/AVスコープをSlicerで選択して絞り込みます。
 
 ### Order Type
-オーダータイプ（注文タグ）で絞り込みます。
+オーダータイプ（注文タグ）をSlicerで選択して絞り込みます。
 
 ## チャート・テーブルの見方
 

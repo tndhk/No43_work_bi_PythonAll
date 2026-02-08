@@ -5,6 +5,7 @@ import pandas as pd
 from typing import Optional
 from backend.etl.base_etl import BaseETL
 from src.data.type_inferrer import infer_schema, apply_types
+from backend.etl.masking import apply_hmac_masking
 
 
 class DomoApiETL(BaseETL):
@@ -26,6 +27,7 @@ class DomoApiETL(BaseETL):
         client_secret: Optional[str] = None,
         partition_column: Optional[str] = None,
         exclude_filter: Optional[dict] = None,
+        masking: Optional[dict] = None,
     ):
         self.dataset_id = dataset_id
         # Strip quotes if present (for .env files with quoted values)
@@ -35,6 +37,7 @@ class DomoApiETL(BaseETL):
         ).strip('"')
         self.partition_column = partition_column
         self.exclude_filter = exclude_filter
+        self.masking = masking or {}
         self.access_token: Optional[str] = None
 
         if not self.client_id or not self.client_secret:
@@ -159,6 +162,20 @@ class DomoApiETL(BaseETL):
                 print(f"  Excluded rows: {excluded_count:,}")
             else:
                 print(f"⚠ Exclude filter skipped (column '{column}' not found or invalid config)")
+
+        if self.masking.get("enabled"):
+            columns = self.masking.get("columns", [])
+            strict = self.masking.get("strict", True)
+            secret = os.getenv("ETL_MASKING_SECRET", "")
+
+            df = apply_hmac_masking(
+                df=df,
+                columns=columns,
+                secret=secret,
+                strict=strict,
+            )
+            print("✓ Masking applied")
+            print(f"  Masked columns: {columns}")
 
         print("✓ Data transformation complete")
         print(f"  Final shape: {df.shape}")

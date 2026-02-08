@@ -92,6 +92,24 @@ class TestPageTitle:
 
 
 # ===========================================================================
+# Info banner tests
+# ===========================================================================
+
+class TestInfoBanner:
+    """build_layout must include the top information banner."""
+
+    @patch("src.pages.apac_dot_due_date._layout.ParquetReader")
+    @patch("src.pages.apac_dot_due_date._layout.load_filter_options")
+    def test_contains_info_banner(self, mock_load_opts, mock_reader_cls):
+        mock_load_opts.return_value = _make_filter_options()
+
+        from src.pages.apac_dot_due_date._layout import build_layout
+
+        result = build_layout()
+        found = find_component_by_id(result, "apac-dot-info-banner")
+        assert found is not None, "apac-dot-info-banner not found in layout"
+
+# ===========================================================================
 # Filter section tests
 # ===========================================================================
 
@@ -145,6 +163,28 @@ class TestFilterSection:
         result = build_layout()
         found = find_component_by_id(result, "apac-dot-filter-prc")
         assert found is not None, "apac-dot-filter-prc not found in layout"
+
+    @patch("src.pages.apac_dot_due_date._layout.ParquetReader")
+    @patch("src.pages.apac_dot_due_date._layout.load_filter_options")
+    def test_contains_per_slicer_clear_buttons(self, mock_load_opts, mock_reader_cls):
+        """Layout must include clear button for each slicer."""
+        mock_load_opts.return_value = _make_filter_options()
+
+        from src.pages.apac_dot_due_date._layout import build_layout
+
+        result = build_layout()
+        clear_ids = [
+            "apac-dot-ctrl-clear-month",
+            "apac-dot-ctrl-clear-prc",
+            "apac-dot-ctrl-clear-area",
+            "apac-dot-ctrl-clear-category",
+            "apac-dot-ctrl-clear-vendor",
+            "apac-dot-ctrl-clear-amp-av",
+            "apac-dot-ctrl-clear-order-type",
+        ]
+        for clear_id in clear_ids:
+            found = find_component_by_id(result, clear_id)
+            assert found is not None, f"{clear_id} not found in layout"
 
 
 # ===========================================================================
@@ -271,16 +311,16 @@ class TestLayoutStructureOrder:
     @patch("src.pages.apac_dot_due_date._layout.ParquetReader")
     @patch("src.pages.apac_dot_due_date._layout.load_filter_options")
     def test_layout_children_count(self, mock_load_opts, mock_reader_cls):
-        """Layout should have at least 8 children: H1 + 5 filter rows + 2 chart rows."""
+        """Layout should have at least 7 children: H1 + banner + 2 filter rows + KPI + 2 chart rows."""
         mock_load_opts.return_value = _make_filter_options()
 
         from src.pages.apac_dot_due_date._layout import build_layout
 
         result = build_layout()
         children = result.children
-        # H1 + 5 filter rows (spread) + 2 table rows = 8
-        assert len(children) >= 8, (
-            f"Expected at least 8 children, got {len(children)}"
+        # H1 + banner + 2 filter rows (spread) + KPI row + 2 table rows = 7
+        assert len(children) >= 7, (
+            f"Expected at least 7 children, got {len(children)}"
         )
 
     @patch("src.pages.apac_dot_due_date._layout.ParquetReader")
@@ -329,7 +369,7 @@ class TestBuildLayoutCallsFilterLayout:
         mock_load_opts.return_value = opts
         # Return minimal valid filter rows so layout construction doesn't fail
         mock_build_filter.return_value = [
-            dbc.Row() for _ in range(5)
+            dbc.Row() for _ in range(2)
         ]
 
         from src.pages.apac_dot_due_date._layout import build_layout

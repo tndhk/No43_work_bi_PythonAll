@@ -60,13 +60,34 @@ src/pages/<page_name>/
 - `render_table` (src/charts/templates.py) がこれを使っているため、テーブル表示には `dash.dash_table.DataTable` を直接使うこと
 
 ### Dash 4.x のドロップダウン/DatePickerが背面に回る
-- 症状: DateRangeやModelのプルダウンがKPIカードの背面に隠れる、マウス位置で不安定
-- 原因: Dash 4.x (Radix) のポップアップが `dash-dropdown-content` / `dash-options-list` を使い、z-indexが低いまま
+- 症状: ドロップダウンのポップアップが他のカードやセクションの背面に隠れる
+- 原因は2つある（両方対処が必要）:
+
+  1. z-indexの不足: Dash 4.x (Radix UI) のポップアップはデフォルトでz-indexが低い
+  2. スタッキングコンテキスト: `.card`クラス（`dbc.Card`が自動付与）に`transform`や`transition: all`が設定されていると、新しいスタッキングコンテキストが作成され、内部の`z-index: 9999`が外部要素に対して無効になる
+
 - 対処:
-  - `assets/03-components.css` に以下を追加して前面固定:
-    - `.dash-dropdown-content`, `.dash-options-list`, `.dash-dropdown-options`, `.dash-datepicker-content` へ `z-index: 9999 !important`
-  - Docker利用時は `docker-compose.yml` に `./assets:/app/assets` を追加してCSSを確実に反映
-  - 反映確認はブラウザのハードリロードで行う
+  - `[data-radix-popper-content-wrapper]`に`z-index: 9999 !important`を設定
+  - `.dash-dropdown-content`に`background-color`を明示設定（デフォルトで透明になることがある）
+  - `.card`の`transition: all`を`transition: box-shadow 0.3s ease, border-color 0.3s ease`に限定（transformを含めない）
+  - `.card:hover`の`transform: translateY(-2px)`を削除（スタッキングコンテキスト作成を防止）
+
+- やってはいけないこと:
+  - `[data-radix-popper-content-wrapper]`に`position`を上書きしてはいけない（Radixの内部位置計算が破壊される）
+  - `position: fixed`や`position: relative`を外部から設定すると、ポップアップの位置ずれや背景透明の原因になる
+
+### Dash 4.x dcc.Dropdown の実際のHTML構造
+- Dash 4.0.0はRadix UIベースの独自ドロップダウンを使用（React Selectではない）
+- ポータルは`body`直下ではなく`.dash-dropdown-wrapper`内にレンダリングされる
+- 主なCSSクラス:
+  - `.dash-dropdown` - トリガーボタン
+  - `.dash-dropdown-wrapper` - 外側ラッパー（ポータルコンテナ）
+  - `.dash-dropdown-content` - ポップアップパネル全体
+  - `.dash-dropdown-options` - オプションリストコンテナ
+  - `.dash-dropdown-option` - 個々のオプション
+  - `.dash-dropdown-search` - 検索入力
+  - `.dash-dropdown-actions` - Select All / Deselect All ボタン
+- 旧Dash (2.x) の`.Select-menu-outer`/`.Select-option`等のセレクタは4.xでは無効
 
 ### Package-style Pages（パッケージ形式のページ）
 - 単一ファイルページ（例: `cursor_usage.py`）はDashが自動検出する

@@ -26,6 +26,15 @@ FILTER_ID_ERROR_CODE: str = f"{ID_PREFIX}filter-error-code"
 FILTER_ID_ERROR_TYPE: str = f"{ID_PREFIX}filter-error-type"
 FILTER_ID_CADENCE: str = f"{ID_PREFIX}filter-cadence"
 
+# Per-slicer clear control IDs
+CTRL_ID_CLEAR_REGION: str = f"{ID_PREFIX}ctrl-clear-region"
+CTRL_ID_CLEAR_YEAR: str = f"{ID_PREFIX}ctrl-clear-year"
+CTRL_ID_CLEAR_CONTENT_TYPE: str = f"{ID_PREFIX}ctrl-clear-content-type"
+CTRL_ID_CLEAR_ORIGINAL_LANGUAGE: str = f"{ID_PREFIX}ctrl-clear-original-language"
+CTRL_ID_CLEAR_DIALOGUE: str = f"{ID_PREFIX}ctrl-clear-dialogue"
+CTRL_ID_CLEAR_GENRE: str = f"{ID_PREFIX}ctrl-clear-genre"
+CTRL_ID_CLEAR_ERROR_TYPE: str = f"{ID_PREFIX}ctrl-clear-error-type"
+
 # Derived column names
 DERIVED_YEAR: str = "_year"
 DERIVED_MONTH: str = "_month"

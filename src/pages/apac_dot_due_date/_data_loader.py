@@ -12,6 +12,37 @@ from src.data.filter_engine import apply_filters, extract_unique_values
 from src.utils.filter_helpers import build_filter_set_from_map
 from ._constants import DATASETS
 
+MIN_MONTH_START = pd.Timestamp("2024-01-01")
+
+
+def _normalize_month_value(value) -> Optional[str]:
+    """Normalize raw month-like value to YYYY-MM and apply lower-bound cutoff."""
+    if pd.isna(value):
+        return None
+
+    parsed = pd.to_datetime(value, errors="coerce", utc=True)
+    if pd.isna(parsed):
+        return None
+
+    parsed = parsed.tz_convert(None)
+    if parsed < MIN_MONTH_START:
+        return None
+
+    return parsed.strftime("%Y-%m")
+
+
+def _normalize_month_series(series: pd.Series) -> pd.Series:
+    """Normalize a month-like Series to YYYY-MM strings."""
+    return series.apply(_normalize_month_value)
+
+
+def _extract_normalized_months(df: pd.DataFrame, month_col: str) -> list[str]:
+    """Extract unique normalized months from a DataFrame column."""
+    if month_col not in df.columns:
+        return []
+    months = _normalize_month_series(df[month_col]).dropna().unique().tolist()
+    return sorted(months)
+
 
 def load_filter_options(
     reader: ParquetReader,
@@ -37,7 +68,7 @@ def load_filter_options(
 
         df = get_cached_dataset(reader, dataset_id)
 
-        months = extract_unique_values(df, ref_config.column_map["month"])
+        months = _extract_normalized_months(df, ref_config.column_map["month"])
         areas = extract_unique_values(df, ref_config.column_map["area"])
         workstreams = extract_unique_values(df, ref_config.column_map["category"])
         vendors = extract_unique_values(df, ref_config.column_map["vendor"])
@@ -48,7 +79,7 @@ def load_filter_options(
         if dataset_id_2 is not None:
             try:
                 df2 = get_cached_dataset(reader, dataset_id_2)
-                months_2 = extract_unique_values(df2, change_config.column_map["month"])
+                months_2 = _extract_normalized_months(df2, change_config.column_map["month"])
                 months = sorted(set(months + months_2))
                 order_types = extract_unique_values(df2, change_config.column_map["order_type"])
             except Exception:
@@ -121,6 +152,20 @@ def load_and_filter_data(
         Filtered DataFrame.
     """
     df = get_cached_dataset(reader, dataset_id)
+    month_col = column_map.get("month")
+
+    # Normalize month to YYYY-MM and enforce lower bound.
+    if month_col and month_col in df.columns:
+        df = df.copy()
+        df[month_col] = _normalize_month_series(df[month_col])
+        df = df[df[month_col].notna()]
+
+        if selected_months:
+            selected_months = sorted({
+                month
+                for month in (_normalize_month_value(value) for value in selected_months)
+                if month
+            })
 
     # --- PRC filter (custom logic, applied before FilterSet) ---
     job_name_col = column_map.get("job_name")

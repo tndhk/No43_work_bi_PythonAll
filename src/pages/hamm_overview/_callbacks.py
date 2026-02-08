@@ -5,14 +5,11 @@ from dash import callback, Input, Output, html, dash_table
 import plotly.graph_objects as go
 
 from src.data.parquet_reader import ParquetReader
-from src.components.cards import create_kpi_card
 from ._constants import (
     COLUMN_MAP,
     CHART_ID_VOLUME_TABLE,
     CHART_ID_VOLUME_CHART,
     CHART_ID_TASK_TABLE,
-    CHART_ID_KPI_TOTAL_TASKS,
-    CHART_ID_KPI_AVG_VIDEO_DURATION,
     FILTER_ID_REGION,
     FILTER_ID_YEAR,
     FILTER_ID_MONTH,
@@ -24,6 +21,13 @@ from ._constants import (
     FILTER_ID_ERROR_CODE,
     FILTER_ID_ERROR_TYPE,
     FILTER_ID_CADENCE,
+    CTRL_ID_CLEAR_REGION,
+    CTRL_ID_CLEAR_YEAR,
+    CTRL_ID_CLEAR_CONTENT_TYPE,
+    CTRL_ID_CLEAR_ORIGINAL_LANGUAGE,
+    CTRL_ID_CLEAR_DIALOGUE,
+    CTRL_ID_CLEAR_GENRE,
+    CTRL_ID_CLEAR_ERROR_TYPE,
     DERIVED_FISCAL_YEAR,
     DERIVED_FISCAL_QUARTER,
     DERIVED_ISO_WEEK,
@@ -40,6 +44,18 @@ from ._data_loader import (
 PRELIM_LABEL = "Prelim"
 ERV_LABEL = "ERV"
 SORT_START_COL = "_sort_start_dt"
+
+_COMPACT_CELL = {
+    "textAlign": "left",
+    "padding": "4px 6px",
+    "fontSize": "0.75rem",
+    "whiteSpace": "nowrap",
+}
+_COMPACT_HEADER = {
+    "fontWeight": "bold",
+    "fontSize": "0.75rem",
+    "padding": "4px 6px",
+}
 
 
 def _ensure_list(value) -> list:
@@ -70,9 +86,9 @@ def _build_volume_table(df: pd.DataFrame) -> html.Div:
         columns=[{"name": c, "id": c} for c in display_columns],
         sort_action="native",
         page_size=20,
-        style_table={"overflowX": "auto"},
-        style_cell={"textAlign": "left", "padding": "8px"},
-        style_header={"fontWeight": "bold"},
+        style_table={"overflowX": "auto", "height": "400px", "overflowY": "auto"},
+        style_cell=_COMPACT_CELL,
+        style_header=_COMPACT_HEADER,
     )
     return table_component
 
@@ -178,8 +194,8 @@ def _build_task_table(df: pd.DataFrame) -> html.Div:
         sort_action="native",
         page_size=20,
         style_table={"overflowX": "auto"},
-        style_cell={"textAlign": "left", "padding": "8px"},
-        style_header={"fontWeight": "bold"},
+        style_cell=_COMPACT_CELL,
+        style_header=_COMPACT_HEADER,
     )
     return table_component
 
@@ -264,8 +280,6 @@ def _build_volume_summary(df: pd.DataFrame, cadence: str) -> pd.DataFrame:
 
 
 @callback(
-    Output(CHART_ID_KPI_TOTAL_TASKS, "children"),
-    Output(CHART_ID_KPI_AVG_VIDEO_DURATION, "children"),
     Output(CHART_ID_VOLUME_TABLE, "children"),
     Output(CHART_ID_VOLUME_CHART, "figure"),
     Output(CHART_ID_TASK_TABLE, "children"),
@@ -341,18 +355,6 @@ def update_dashboard(
             error_type_values,
         )
 
-        total_tasks = df[COLUMN_MAP["id"]].nunique()
-        kpi_total_tasks = create_kpi_card("Total Tasks", f"{total_tasks:,}")
-
-        avg_seconds = df["_video_duration_seconds"].mean()
-        if pd.isna(avg_seconds):
-            avg_duration_str = "N/A"
-        else:
-            mins, secs = divmod(int(avg_seconds), 60)
-            hrs, mins = divmod(mins, 60)
-            avg_duration_str = f"{hrs:02d}:{mins:02d}:{secs:02d}"
-        kpi_avg_duration = create_kpi_card("Average Video Duration", avg_duration_str)
-
         volume_summary = _build_volume_summary(df, cadence)
         volume_chart_df = _strip_sort_column(volume_summary)
         volume_table_df = _strip_sort_column(
@@ -367,7 +369,7 @@ def update_dashboard(
         volume_chart = _build_volume_chart(volume_chart_df)
         task_table = _build_task_table(df)
 
-        return kpi_total_tasks, kpi_avg_duration, volume_table, volume_chart, task_table
+        return volume_table, volume_chart, task_table
 
     except Exception as exc:
         error_msg = html.P(f"Error loading data: {exc}", className="text-danger")
@@ -379,6 +381,67 @@ def update_dashboard(
             showarrow=False,
         )
         empty_fig.update_layout(height=400)
-        kpi_error = create_kpi_card("Total Tasks", "0")
-        kpi_error_duration = create_kpi_card("Average Video Duration", "N/A")
-        return kpi_error, kpi_error_duration, error_msg, empty_fig, error_msg
+        return error_msg, empty_fig, error_msg
+
+
+@callback(
+    Output(FILTER_ID_REGION, "value"),
+    Input(CTRL_ID_CLEAR_REGION, "n_clicks"),
+    prevent_initial_call=True,
+)
+def clear_region(_n_clicks):
+    return []
+
+
+@callback(
+    Output(FILTER_ID_YEAR, "value"),
+    Input(CTRL_ID_CLEAR_YEAR, "n_clicks"),
+    prevent_initial_call=True,
+)
+def clear_year(_n_clicks):
+    return []
+
+
+@callback(
+    Output(FILTER_ID_CONTENT_TYPE, "value"),
+    Input(CTRL_ID_CLEAR_CONTENT_TYPE, "n_clicks"),
+    prevent_initial_call=True,
+)
+def clear_content_type(_n_clicks):
+    return []
+
+
+@callback(
+    Output(FILTER_ID_ORIGINAL_LANGUAGE, "value"),
+    Input(CTRL_ID_CLEAR_ORIGINAL_LANGUAGE, "n_clicks"),
+    prevent_initial_call=True,
+)
+def clear_original_language(_n_clicks):
+    return []
+
+
+@callback(
+    Output(FILTER_ID_DIALOGUE, "value"),
+    Input(CTRL_ID_CLEAR_DIALOGUE, "n_clicks"),
+    prevent_initial_call=True,
+)
+def clear_dialogue(_n_clicks):
+    return []
+
+
+@callback(
+    Output(FILTER_ID_GENRE, "value"),
+    Input(CTRL_ID_CLEAR_GENRE, "n_clicks"),
+    prevent_initial_call=True,
+)
+def clear_genre(_n_clicks):
+    return []
+
+
+@callback(
+    Output(FILTER_ID_ERROR_TYPE, "value"),
+    Input(CTRL_ID_CLEAR_ERROR_TYPE, "n_clicks"),
+    prevent_initial_call=True,
+)
+def clear_error_type(_n_clicks):
+    return []

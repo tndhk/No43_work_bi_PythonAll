@@ -103,6 +103,7 @@ def load_dataset(config: Dict, dry_run: bool = False) -> bool:
     minio_dataset_id = config["minio_dataset_id"]
     partition_column = config.get("partition_column")
     exclude_filter = config.get("exclude_filter")
+    masking = config.get("masking")
 
     print(f"\n{'='*60}")
     print(f"DataSet: {name}")
@@ -114,6 +115,10 @@ def load_dataset(config: Dict, dry_run: bool = False) -> bool:
     # 除外フィルター情報を表示
     if exclude_filter:
         print(f"Exclude Filter: {exclude_filter['column']} == '{exclude_filter['keep_value']}'")
+    if masking and masking.get("enabled"):
+        print(f"Masking: enabled ({', '.join(masking.get('columns', []))})")
+    else:
+        print("Masking: disabled")
     
     print()
 
@@ -127,6 +132,7 @@ def load_dataset(config: Dict, dry_run: bool = False) -> bool:
             dataset_id=domo_dataset_id,
             partition_column=partition_column,
             exclude_filter=exclude_filter,
+            masking=masking,
         )
 
         # Run ETL pipeline

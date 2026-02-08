@@ -1,9 +1,11 @@
 """CSV to Parquet ETL."""
+import os
 from typing import Optional
 import pandas as pd
 from src.data.csv_parser import parse_full, CsvImportOptions
 from src.data.type_inferrer import infer_schema, apply_types
 from backend.etl.base_etl import BaseETL
+from backend.etl.masking import apply_hmac_masking
 
 
 class CsvETL(BaseETL):
@@ -20,6 +22,7 @@ class CsvETL(BaseETL):
         csv_path: str,
         partition_column: Optional[str] = None,
         csv_options: Optional[CsvImportOptions] = None,
+        masking: Optional[dict] = None,
     ):
         """
         Args:
@@ -30,6 +33,7 @@ class CsvETL(BaseETL):
         self.csv_path = csv_path
         self.partition_column = partition_column
         self.csv_options = csv_options or CsvImportOptions()
+        self.masking = masking or {}
 
     def extract(self) -> pd.DataFrame:
         """Extract data from CSV file."""
@@ -40,7 +44,20 @@ class CsvETL(BaseETL):
     def transform(self, df: pd.DataFrame) -> pd.DataFrame:
         """Transform data: infer types and apply them."""
         schema = infer_schema(df)
-        return apply_types(df, schema)
+        transformed = apply_types(df, schema)
+
+        if self.masking.get("enabled"):
+            columns = self.masking.get("columns", [])
+            strict = self.masking.get("strict", True)
+            secret = os.getenv("ETL_MASKING_SECRET", "")
+            transformed = apply_hmac_masking(
+                df=transformed,
+                columns=columns,
+                secret=secret,
+                strict=strict,
+            )
+
+        return transformed
 
     def load(
         self,

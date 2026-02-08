@@ -4,7 +4,7 @@ TDD Step 1 (RED): These tests define the expected behavior of
 build_filter_layout() before implementation.
 """
 import pytest
-from dash import html, dcc
+from dash import html
 import dash_bootstrap_components as dbc
 
 from tests.helpers.dash_test_utils import find_component_by_id
@@ -72,12 +72,12 @@ class TestBuildFilterLayoutReturnType:
                 f"Expected dbc.Row, got {type(row).__name__}"
             )
 
-    def test_returns_five_rows(self):
-        """Should produce 5 rows: control, month, prc, category, additional."""
+    def test_returns_two_rows(self):
+        """Should produce 2 rows: top controls and bottom category filters."""
         from src.pages.apac_dot_due_date._filters import build_filter_layout
 
         result = build_filter_layout(_make_filter_options())
-        assert len(result) == 5
+        assert len(result) == 2
 
 
 # ===========================================================================
@@ -163,37 +163,37 @@ class TestBreakdownTabs:
 # ===========================================================================
 
 class TestMonthFilter:
-    """Second row must contain the Filter Month dropdown."""
+    """Top row must contain the Filter Month slicer."""
 
     def test_month_filter_exists(self):
         from src.pages.apac_dot_due_date._filters import build_filter_layout
 
         rows = build_filter_layout(_make_filter_options())
-        found = find_component_by_id(rows[1], "apac-dot-filter-month")
-        assert found is not None, "apac-dot-filter-month dropdown not found"
+        found = find_component_by_id(rows[0], "apac-dot-filter-month")
+        assert found is not None, "apac-dot-filter-month slicer not found"
 
-    def test_month_filter_is_multi_select(self):
+    def test_month_filter_is_multi_select_slicer(self):
         from src.pages.apac_dot_due_date._filters import build_filter_layout
 
         rows = build_filter_layout(_make_filter_options())
-        dropdown = find_component_by_id(rows[1], "apac-dot-filter-month")
-        assert dropdown.multi is True
+        slicer = find_component_by_id(rows[0], "apac-dot-filter-month")
+        assert slicer.multiple is True
 
     def test_month_filter_default_value_all_months(self):
         from src.pages.apac_dot_due_date._filters import build_filter_layout
 
         opts = _make_filter_options()
         rows = build_filter_layout(opts)
-        dropdown = find_component_by_id(rows[1], "apac-dot-filter-month")
-        assert dropdown.value == opts["months"]
+        slicer = find_component_by_id(rows[0], "apac-dot-filter-month")
+        assert sorted(slicer.value) == sorted(opts["months"])
 
     def test_month_filter_options_count(self):
         from src.pages.apac_dot_due_date._filters import build_filter_layout
 
         opts = _make_filter_options()
         rows = build_filter_layout(opts)
-        dropdown = find_component_by_id(rows[1], "apac-dot-filter-month")
-        assert len(dropdown.options) == len(opts["months"])
+        slicer = find_component_by_id(rows[0], "apac-dot-filter-month")
+        assert len(slicer.children) == len(opts["months"])
 
 
 # ===========================================================================
@@ -201,35 +201,42 @@ class TestMonthFilter:
 # ===========================================================================
 
 class TestPrcFilter:
-    """Third row must contain the PRC RadioItems filter."""
+    """Top row must contain the PRC single-select slicer."""
 
     def test_prc_filter_exists(self):
         from src.pages.apac_dot_due_date._filters import build_filter_layout
 
         rows = build_filter_layout(_make_filter_options())
-        found = find_component_by_id(rows[2], "apac-dot-filter-prc")
+        found = find_component_by_id(rows[0], "apac-dot-filter-prc")
         assert found is not None, "apac-dot-filter-prc not found"
 
     def test_prc_filter_default_value(self):
         from src.pages.apac_dot_due_date._filters import build_filter_layout
 
         rows = build_filter_layout(_make_filter_options())
-        prc = find_component_by_id(rows[2], "apac-dot-filter-prc")
+        prc = find_component_by_id(rows[0], "apac-dot-filter-prc")
         assert prc.value == "all"
+
+    def test_prc_filter_is_single_select(self):
+        from src.pages.apac_dot_due_date._filters import build_filter_layout
+
+        rows = build_filter_layout(_make_filter_options())
+        prc = find_component_by_id(rows[0], "apac-dot-filter-prc")
+        assert prc.multiple is False
 
     def test_prc_filter_has_three_options(self):
         from src.pages.apac_dot_due_date._filters import build_filter_layout
 
         rows = build_filter_layout(_make_filter_options())
-        prc = find_component_by_id(rows[2], "apac-dot-filter-prc")
-        assert len(prc.options) == 3
+        prc = find_component_by_id(rows[0], "apac-dot-filter-prc")
+        assert len(prc.children) == 3
 
     def test_prc_filter_option_values(self):
         from src.pages.apac_dot_due_date._filters import build_filter_layout
 
         rows = build_filter_layout(_make_filter_options())
-        prc = find_component_by_id(rows[2], "apac-dot-filter-prc")
-        values = [opt["value"] for opt in prc.options]
+        prc = find_component_by_id(rows[0], "apac-dot-filter-prc")
+        values = [chip.value for chip in prc.children]
         assert values == ["all", "prc_only", "prc_not_included"]
 
     def test_prc_filter_select_all_label_contains_total_count(self):
@@ -237,9 +244,9 @@ class TestPrcFilter:
 
         opts = _make_filter_options()
         rows = build_filter_layout(opts)
-        prc = find_component_by_id(rows[2], "apac-dot-filter-prc")
-        all_opt = [o for o in prc.options if o["value"] == "all"][0]
-        assert str(opts["total_count"]) in all_opt["label"]
+        prc = find_component_by_id(rows[0], "apac-dot-filter-prc")
+        all_opt = [chip for chip in prc.children if chip.value == "all"][0]
+        assert str(opts["total_count"]) in all_opt.children
 
 
 # ===========================================================================
@@ -247,27 +254,27 @@ class TestPrcFilter:
 # ===========================================================================
 
 class TestCategoryFilters:
-    """Fourth row: Area, Category, Vendor dropdowns."""
+    """Bottom row: Area, Category, Vendor slicers."""
 
     def test_area_filter_exists(self):
         from src.pages.apac_dot_due_date._filters import build_filter_layout
 
         rows = build_filter_layout(_make_filter_options())
-        found = find_component_by_id(rows[3], "apac-dot-filter-area")
+        found = find_component_by_id(rows[1], "apac-dot-filter-area")
         assert found is not None, "apac-dot-filter-area not found in category row"
 
     def test_category_filter_exists(self):
         from src.pages.apac_dot_due_date._filters import build_filter_layout
 
         rows = build_filter_layout(_make_filter_options())
-        found = find_component_by_id(rows[3], "apac-dot-filter-category")
+        found = find_component_by_id(rows[1], "apac-dot-filter-category")
         assert found is not None, "apac-dot-filter-category not found in category row"
 
     def test_vendor_filter_exists(self):
         from src.pages.apac_dot_due_date._filters import build_filter_layout
 
         rows = build_filter_layout(_make_filter_options())
-        found = find_component_by_id(rows[3], "apac-dot-filter-vendor")
+        found = find_component_by_id(rows[1], "apac-dot-filter-vendor")
         assert found is not None, "apac-dot-filter-vendor not found in category row"
 
 
@@ -276,21 +283,46 @@ class TestCategoryFilters:
 # ===========================================================================
 
 class TestAdditionalFilters:
-    """Fifth row: AMP VS AV and Order Type dropdowns."""
+    """Bottom row: AMP VS AV and Order Type slicers."""
 
     def test_amp_av_filter_exists(self):
         from src.pages.apac_dot_due_date._filters import build_filter_layout
 
         rows = build_filter_layout(_make_filter_options())
-        found = find_component_by_id(rows[4], "apac-dot-filter-amp-av")
+        found = find_component_by_id(rows[1], "apac-dot-filter-amp-av")
         assert found is not None, "apac-dot-filter-amp-av not found in additional row"
 
     def test_order_type_filter_exists(self):
         from src.pages.apac_dot_due_date._filters import build_filter_layout
 
         rows = build_filter_layout(_make_filter_options())
-        found = find_component_by_id(rows[4], "apac-dot-filter-order-type")
+        found = find_component_by_id(rows[1], "apac-dot-filter-order-type")
         assert found is not None, "apac-dot-filter-order-type not found in additional row"
+
+
+# ===========================================================================
+# Per-slicer clear button tests
+# ===========================================================================
+
+class TestPerSlicerClearButtons:
+    """Each slicer should expose its own clear button."""
+
+    def test_all_clear_buttons_exist(self):
+        from src.pages.apac_dot_due_date._filters import build_filter_layout
+
+        rows = build_filter_layout(_make_filter_options())
+        expected_ids = [
+            "apac-dot-ctrl-clear-month",
+            "apac-dot-ctrl-clear-prc",
+            "apac-dot-ctrl-clear-area",
+            "apac-dot-ctrl-clear-category",
+            "apac-dot-ctrl-clear-vendor",
+            "apac-dot-ctrl-clear-amp-av",
+            "apac-dot-ctrl-clear-order-type",
+        ]
+        for clear_id in expected_ids:
+            found = find_component_by_id(html.Div(rows), clear_id)
+            assert found is not None, f"{clear_id} clear button not found"
 
 
 # ===========================================================================
@@ -300,32 +332,30 @@ class TestAdditionalFilters:
 class TestBuildFilterLayoutEdgeCases:
     """Edge cases: empty options, zero counts."""
 
-    def test_empty_filter_options_still_returns_five_rows(self):
+    def test_empty_filter_options_still_returns_two_rows(self):
         from src.pages.apac_dot_due_date._filters import build_filter_layout
 
         result = build_filter_layout(_make_empty_filter_options())
-        assert len(result) == 5
+        assert len(result) == 2
 
-    def test_empty_months_produces_empty_dropdown_options(self):
+    def test_empty_months_produces_empty_slicer_options(self):
         from src.pages.apac_dot_due_date._filters import build_filter_layout
 
         rows = build_filter_layout(_make_empty_filter_options())
-        dropdown = find_component_by_id(rows[1], "apac-dot-filter-month")
-        assert dropdown.options == []
+        slicer = find_component_by_id(rows[0], "apac-dot-filter-month")
+        assert slicer.children == []
 
     def test_empty_months_default_value_is_empty_list(self):
         from src.pages.apac_dot_due_date._filters import build_filter_layout
 
         rows = build_filter_layout(_make_empty_filter_options())
-        dropdown = find_component_by_id(rows[1], "apac-dot-filter-month")
-        assert dropdown.value == []
+        slicer = find_component_by_id(rows[0], "apac-dot-filter-month")
+        assert slicer.value == []
 
     def test_zero_total_count_in_prc_label(self):
         from src.pages.apac_dot_due_date._filters import build_filter_layout
 
         rows = build_filter_layout(_make_empty_filter_options())
-        prc = find_component_by_id(rows[2], "apac-dot-filter-prc")
-        all_opt = [o for o in prc.options if o["value"] == "all"][0]
-        assert "0" in all_opt["label"]
-
-
+        prc = find_component_by_id(rows[0], "apac-dot-filter-prc")
+        all_opt = [chip for chip in prc.children if chip.value == "all"][0]
+        assert "0" in all_opt.children

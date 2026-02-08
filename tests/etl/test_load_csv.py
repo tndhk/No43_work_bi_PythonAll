@@ -188,6 +188,30 @@ class TestLoadDataset:
 
         assert result is False
 
+    @patch("backend.scripts.load_csv.CsvETL")
+    @patch("backend.scripts.load_csv.resolve_csv_path")
+    def test_passes_masking_config_to_etl(self, mock_resolve, mock_etl_cls):
+        """CsvETL is constructed with masking config when present."""
+        from backend.scripts.load_csv import load_dataset
+
+        mock_resolve.return_value = Path("/tmp/resolved.csv")
+        mock_etl_instance = MagicMock()
+        mock_etl_cls.return_value = mock_etl_instance
+
+        ds_config = {
+            **SAMPLE_CONFIG["datasets"][0],
+            "masking": {
+                "enabled": True,
+                "strict": True,
+                "columns": ["email"],
+            },
+        }
+
+        load_dataset(ds_config, dry_run=False)
+
+        call_kwargs = mock_etl_cls.call_args.kwargs
+        assert call_kwargs["masking"] == ds_config["masking"]
+
 
 # ---------------------------------------------------------------------------
 # 3. --dry-run: ETL must NOT be executed

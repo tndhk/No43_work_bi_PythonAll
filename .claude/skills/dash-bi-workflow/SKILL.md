@@ -295,6 +295,18 @@ def update_dashboard(start_date, end_date, category_values):
 
 ## Phase 4: デバッグ・検証
 
+### 公式ドキュメント参照ルール
+
+コンポーネント仕様に迷った場合は、まず公式ドキュメントを確認します。
+
+- Dash Core Components: `https://dash.plotly.com/dash-core-components`
+- Dropdown: `https://dash.plotly.com/dash-core-components/dropdown`
+
+運用上の優先順位は以下です。
+
+1. 公式仕様（プロパティ、挙動、制約）
+2. このスキルのプロジェクト固有ルール（Dash 4.x回避策、ID運用、Docker反映など）
+
 ### よくあるバグパターン
 
 詳細は [TROUBLESHOOTING.md](TROUBLESHOOTING.md) を参照してください。

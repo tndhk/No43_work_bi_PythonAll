@@ -72,6 +72,7 @@ def load_dataset(dataset_config: dict, dry_run: bool = False) -> bool:
     file_pattern = dataset_config["file_pattern"]
     partition_column = dataset_config.get("partition_column")
     csv_options = dataset_config.get("csv_options")
+    masking = dataset_config.get("masking")
 
     print(f"\n{'=' * 60}")
     print(f"DataSet: {name}")
@@ -79,6 +80,10 @@ def load_dataset(dataset_config: dict, dry_run: bool = False) -> bool:
     print(f"Source: {source_dir}/{file_pattern}")
     print(f"MinIO ID: {minio_dataset_id}")
     print(f"Partition Column: {partition_column or 'None'}")
+    if masking and masking.get("enabled"):
+        print(f"Masking: enabled ({', '.join(masking.get('columns', []))})")
+    else:
+        print("Masking: disabled")
     print()
 
     if dry_run:
@@ -90,6 +95,7 @@ def load_dataset(dataset_config: dict, dry_run: bool = False) -> bool:
 
         etl_kwargs = {
             "partition_column": partition_column,
+            "masking": masking,
         }
         if csv_options is not None:
             etl_kwargs["csv_options"] = csv_options

@@ -5,6 +5,7 @@ standalone, testable function.
 """
 from dash import html
 import dash_bootstrap_components as dbc
+import dash_mantine_components as dmc
 
 from src.data.parquet_reader import ParquetReader
 from src.data.data_source_registry import resolve_dataset_id
@@ -26,7 +27,8 @@ def build_layout() -> html.Div:
     Returns:
         html.Div containing:
             - H1 page title
-            - Filter panel (5 rows via build_filter_layout)
+            - Top information banner
+            - Filter panel (2 rows via build_filter_layout)
             - Chart 00: Reference Table section
             - Chart 01: DDD Change + Issue Table section
     """
@@ -42,8 +44,27 @@ def build_layout() -> html.Div:
     return html.Div([
         html.H1("APAC DOT Due Date Dashboard", className="mb-4"),
 
-        # Filter rows (control, month, prc, category, additional)
-        *filter_rows,
+        dbc.Card([
+            dbc.CardBody([
+                html.H2(
+                    "Dive Deep to check if On-Time metrics is truly 100%.",
+                    className="apac-dot-info-title",
+                ),
+                html.P(
+                    'Background : In APAC DOMO Metrics Summary, On-Time metrics show "almost 100% On-Time" every month. '
+                    "Wondering if this is truly 100% On-Time.",
+                    className="apac-dot-info-text",
+                ),
+                html.P(
+                    "How : To see the data about Due Date Change history in DOT, as Due Date Change may cause 100% On-Time.",
+                    className="apac-dot-info-text",
+                ),
+            ]),
+        ], id="apac-dot-info-banner", className="apac-dot-info-banner mb-4"),
+
+        # Filter rows (top and bottom) require MantineProvider for slicers
+        dmc.MantineProvider(filter_rows[0]),
+        dmc.MantineProvider(filter_rows[1]),
 
         # KPI Cards Section
         dbc.Row([

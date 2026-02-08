@@ -14,6 +14,7 @@ DOMO DataSetの設定を管理するファイルです。
 | `partition_column` | | パーティション分割するカラム名 | "delivery completed date" |
 | `description` | | DataSetの説明 | "APAC DOT..." |
 | `enabled` | ○ | 有効/無効フラグ | true |
+| `masking` | | マスク設定（機密カラム） | `{ enabled: true, strict: true, columns: ["email"] }` |
 
 ### DataSet ID の確認方法
 
@@ -100,6 +101,28 @@ CSVファイルからのデータロードを管理するファイルです。DO
 | `description` | | DataSetの説明 | "Cursor team usage events data" |
 | `enabled` | ○ | 有効/無効フラグ | true |
 | `csv_options` | | CSV読み込みオプション | delimiter, encoding |
+| `masking` | | マスク設定（機密カラム） | `{ enabled: true, strict: true, columns: ["email"] }` |
+
+### masking設定
+
+DOMO/CSVともに同じ形式で設定できます。
+
+```yaml
+masking:
+  enabled: true
+  strict: true
+  columns:
+    - "email"
+    - "employee_id"
+```
+
+- `enabled`: `true` のときマスク実行
+- `strict`: `true` のとき、対象カラムが存在しないとETLを失敗させる
+- `columns`: マスク対象カラム名リスト
+
+注意:
+- マスク方式は不可逆HMAC-SHA256です。
+- 実行時に `ETL_MASKING_SECRET` 環境変数が必須です（`enabled: true` のdatasetのみ）。
 
 ### DataSet追加手順
 

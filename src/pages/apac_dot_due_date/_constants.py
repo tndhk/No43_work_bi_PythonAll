@@ -20,6 +20,13 @@ ID_PREFIX: str = "apac-dot-"
 # ----- Control IDs -----
 CTRL_ID_NUM_PERCENT: str = f"{ID_PREFIX}ctrl-num-percent"
 CTRL_ID_BREAKDOWN: str = f"{ID_PREFIX}ctrl-breakdown"
+CTRL_ID_CLEAR_MONTH: str = f"{ID_PREFIX}ctrl-clear-month"
+CTRL_ID_CLEAR_PRC: str = f"{ID_PREFIX}ctrl-clear-prc"
+CTRL_ID_CLEAR_AREA: str = f"{ID_PREFIX}ctrl-clear-area"
+CTRL_ID_CLEAR_CATEGORY: str = f"{ID_PREFIX}ctrl-clear-category"
+CTRL_ID_CLEAR_VENDOR: str = f"{ID_PREFIX}ctrl-clear-vendor"
+CTRL_ID_CLEAR_AMP_AV: str = f"{ID_PREFIX}ctrl-clear-amp-av"
+CTRL_ID_CLEAR_ORDER_TYPE: str = f"{ID_PREFIX}ctrl-clear-order-type"
 
 # ----- Filter IDs -----
 FILTER_ID_MONTH: str = f"{ID_PREFIX}filter-month"

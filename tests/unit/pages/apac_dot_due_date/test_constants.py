@@ -168,6 +168,62 @@ class TestComponentIds:
 
         assert CTRL_ID_BREAKDOWN == f"{ID_PREFIX}ctrl-breakdown"
 
+    def test_ctrl_id_clear_month_exists(self):
+        from src.pages.apac_dot_due_date._constants import CTRL_ID_CLEAR_MONTH
+        assert CTRL_ID_CLEAR_MONTH is not None
+
+    def test_ctrl_id_clear_month_value(self):
+        from src.pages.apac_dot_due_date._constants import CTRL_ID_CLEAR_MONTH, ID_PREFIX
+        assert CTRL_ID_CLEAR_MONTH == f"{ID_PREFIX}ctrl-clear-month"
+
+    def test_ctrl_id_clear_prc_exists(self):
+        from src.pages.apac_dot_due_date._constants import CTRL_ID_CLEAR_PRC
+        assert CTRL_ID_CLEAR_PRC is not None
+
+    def test_ctrl_id_clear_prc_value(self):
+        from src.pages.apac_dot_due_date._constants import CTRL_ID_CLEAR_PRC, ID_PREFIX
+        assert CTRL_ID_CLEAR_PRC == f"{ID_PREFIX}ctrl-clear-prc"
+
+    def test_ctrl_id_clear_area_exists(self):
+        from src.pages.apac_dot_due_date._constants import CTRL_ID_CLEAR_AREA
+        assert CTRL_ID_CLEAR_AREA is not None
+
+    def test_ctrl_id_clear_area_value(self):
+        from src.pages.apac_dot_due_date._constants import CTRL_ID_CLEAR_AREA, ID_PREFIX
+        assert CTRL_ID_CLEAR_AREA == f"{ID_PREFIX}ctrl-clear-area"
+
+    def test_ctrl_id_clear_category_exists(self):
+        from src.pages.apac_dot_due_date._constants import CTRL_ID_CLEAR_CATEGORY
+        assert CTRL_ID_CLEAR_CATEGORY is not None
+
+    def test_ctrl_id_clear_category_value(self):
+        from src.pages.apac_dot_due_date._constants import CTRL_ID_CLEAR_CATEGORY, ID_PREFIX
+        assert CTRL_ID_CLEAR_CATEGORY == f"{ID_PREFIX}ctrl-clear-category"
+
+    def test_ctrl_id_clear_vendor_exists(self):
+        from src.pages.apac_dot_due_date._constants import CTRL_ID_CLEAR_VENDOR
+        assert CTRL_ID_CLEAR_VENDOR is not None
+
+    def test_ctrl_id_clear_vendor_value(self):
+        from src.pages.apac_dot_due_date._constants import CTRL_ID_CLEAR_VENDOR, ID_PREFIX
+        assert CTRL_ID_CLEAR_VENDOR == f"{ID_PREFIX}ctrl-clear-vendor"
+
+    def test_ctrl_id_clear_amp_av_exists(self):
+        from src.pages.apac_dot_due_date._constants import CTRL_ID_CLEAR_AMP_AV
+        assert CTRL_ID_CLEAR_AMP_AV is not None
+
+    def test_ctrl_id_clear_amp_av_value(self):
+        from src.pages.apac_dot_due_date._constants import CTRL_ID_CLEAR_AMP_AV, ID_PREFIX
+        assert CTRL_ID_CLEAR_AMP_AV == f"{ID_PREFIX}ctrl-clear-amp-av"
+
+    def test_ctrl_id_clear_order_type_exists(self):
+        from src.pages.apac_dot_due_date._constants import CTRL_ID_CLEAR_ORDER_TYPE
+        assert CTRL_ID_CLEAR_ORDER_TYPE is not None
+
+    def test_ctrl_id_clear_order_type_value(self):
+        from src.pages.apac_dot_due_date._constants import CTRL_ID_CLEAR_ORDER_TYPE, ID_PREFIX
+        assert CTRL_ID_CLEAR_ORDER_TYPE == f"{ID_PREFIX}ctrl-clear-order-type"
+
     # --- Filter IDs ---
 
     def test_filter_id_month_exists(self):
@@ -262,6 +318,13 @@ class TestComponentIds:
             ID_PREFIX,
             CTRL_ID_NUM_PERCENT,
             CTRL_ID_BREAKDOWN,
+            CTRL_ID_CLEAR_MONTH,
+            CTRL_ID_CLEAR_PRC,
+            CTRL_ID_CLEAR_AREA,
+            CTRL_ID_CLEAR_CATEGORY,
+            CTRL_ID_CLEAR_VENDOR,
+            CTRL_ID_CLEAR_AMP_AV,
+            CTRL_ID_CLEAR_ORDER_TYPE,
             FILTER_ID_MONTH,
             FILTER_ID_PRC,
             FILTER_ID_AREA,
@@ -278,6 +341,13 @@ class TestComponentIds:
         all_ids = [
             CTRL_ID_NUM_PERCENT,
             CTRL_ID_BREAKDOWN,
+            CTRL_ID_CLEAR_MONTH,
+            CTRL_ID_CLEAR_PRC,
+            CTRL_ID_CLEAR_AREA,
+            CTRL_ID_CLEAR_CATEGORY,
+            CTRL_ID_CLEAR_VENDOR,
+            CTRL_ID_CLEAR_AMP_AV,
+            CTRL_ID_CLEAR_ORDER_TYPE,
             FILTER_ID_MONTH,
             FILTER_ID_PRC,
             FILTER_ID_AREA,
@@ -299,6 +369,13 @@ class TestComponentIds:
         from src.pages.apac_dot_due_date._constants import (
             CTRL_ID_NUM_PERCENT,
             CTRL_ID_BREAKDOWN,
+            CTRL_ID_CLEAR_MONTH,
+            CTRL_ID_CLEAR_PRC,
+            CTRL_ID_CLEAR_AREA,
+            CTRL_ID_CLEAR_CATEGORY,
+            CTRL_ID_CLEAR_VENDOR,
+            CTRL_ID_CLEAR_AMP_AV,
+            CTRL_ID_CLEAR_ORDER_TYPE,
             FILTER_ID_MONTH,
             FILTER_ID_PRC,
             FILTER_ID_AREA,
@@ -312,6 +389,13 @@ class TestComponentIds:
         all_ids = [
             CTRL_ID_NUM_PERCENT,
             CTRL_ID_BREAKDOWN,
+            CTRL_ID_CLEAR_MONTH,
+            CTRL_ID_CLEAR_PRC,
+            CTRL_ID_CLEAR_AREA,
+            CTRL_ID_CLEAR_CATEGORY,
+            CTRL_ID_CLEAR_VENDOR,
+            CTRL_ID_CLEAR_AMP_AV,
+            CTRL_ID_CLEAR_ORDER_TYPE,
             FILTER_ID_MONTH,
             FILTER_ID_PRC,
             FILTER_ID_AREA,
@@ -391,5 +475,3 @@ class TestChartId01:
         from src.pages.apac_dot_due_date._constants import CHART_ID_CHANGE_ISSUE_TABLE_TITLE
 
         assert isinstance(CHART_ID_CHANGE_ISSUE_TABLE_TITLE, str)
-
-

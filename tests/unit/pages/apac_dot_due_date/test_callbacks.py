@@ -116,6 +116,25 @@ class TestModuleExists:
         from src.pages.apac_dot_due_date._callbacks import update_all_charts
         assert callable(update_all_charts)
 
+    def test_per_slicer_clear_callbacks_are_callable(self):
+        """Per-slicer clear callbacks must be callable."""
+        from src.pages.apac_dot_due_date._callbacks import (
+            clear_month,
+            clear_prc,
+            clear_area,
+            clear_category,
+            clear_vendor,
+            clear_amp_av,
+            clear_order_type,
+        )
+        assert callable(clear_month)
+        assert callable(clear_prc)
+        assert callable(clear_area)
+        assert callable(clear_category)
+        assert callable(clear_vendor)
+        assert callable(clear_amp_av)
+        assert callable(clear_order_type)
+
 
 # ===========================================================================
 # update_all_charts return value tests
@@ -433,6 +452,25 @@ class TestCallbackRegistration:
         from src.pages.apac_dot_due_date._callbacks import update_all_charts
         assert callable(update_all_charts)
 
+    def test_per_slicer_clear_callbacks_have_callback_attributes(self):
+        """Per-slicer clear callbacks should have callback metadata if registered."""
+        from src.pages.apac_dot_due_date._callbacks import (
+            clear_month,
+            clear_prc,
+            clear_area,
+            clear_category,
+            clear_vendor,
+            clear_amp_av,
+            clear_order_type,
+        )
+        assert callable(clear_month)
+        assert callable(clear_prc)
+        assert callable(clear_area)
+        assert callable(clear_category)
+        assert callable(clear_vendor)
+        assert callable(clear_amp_av)
+        assert callable(clear_order_type)
+
 
 # ===========================================================================
 # Integration: __init__.py imports _callbacks
@@ -444,3 +482,35 @@ class TestInitImportsCallbacks:
     def test_init_module_has_callbacks_import(self):
         """The __init__.py should trigger _callbacks import."""
         from src.pages.apac_dot_due_date import _callbacks  # noqa: F401
+
+
+class TestPerSlicerClear:
+    """Per-slicer clear callbacks should reset only their target value."""
+
+    def test_clear_month(self):
+        from src.pages.apac_dot_due_date._callbacks import clear_month
+        assert clear_month(1) == []
+
+    def test_clear_prc(self):
+        from src.pages.apac_dot_due_date._callbacks import clear_prc
+        assert clear_prc(1) is None
+
+    def test_clear_area(self):
+        from src.pages.apac_dot_due_date._callbacks import clear_area
+        assert clear_area(1) == []
+
+    def test_clear_category(self):
+        from src.pages.apac_dot_due_date._callbacks import clear_category
+        assert clear_category(1) == []
+
+    def test_clear_vendor(self):
+        from src.pages.apac_dot_due_date._callbacks import clear_vendor
+        assert clear_vendor(1) == []
+
+    def test_clear_amp_av(self):
+        from src.pages.apac_dot_due_date._callbacks import clear_amp_av
+        assert clear_amp_av(1) == []
+
+    def test_clear_order_type(self):
+        from src.pages.apac_dot_due_date._callbacks import clear_order_type
+        assert clear_order_type(1) == []

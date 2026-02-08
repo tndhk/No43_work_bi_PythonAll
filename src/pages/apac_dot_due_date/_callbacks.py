@@ -14,6 +14,13 @@ from ._constants import (
     DATASETS,
     CTRL_ID_NUM_PERCENT,
     CTRL_ID_BREAKDOWN,
+    CTRL_ID_CLEAR_MONTH,
+    CTRL_ID_CLEAR_PRC,
+    CTRL_ID_CLEAR_AREA,
+    CTRL_ID_CLEAR_CATEGORY,
+    CTRL_ID_CLEAR_VENDOR,
+    CTRL_ID_CLEAR_AMP_AV,
+    CTRL_ID_CLEAR_ORDER_TYPE,
     FILTER_ID_MONTH,
     FILTER_ID_PRC,
     FILTER_ID_AREA,
@@ -25,6 +32,15 @@ from ._constants import (
 from ._data_loader import load_and_filter_data
 from .charts._pivot_table_builder import build_pivot_table
 from .charts._table_specs import TABLE_SPECS
+
+
+def _coerce_single_value(value, default: str) -> str:
+    """Normalize potentially list-like UI values to a single string."""
+    if isinstance(value, list):
+        return value[0] if value else default
+    if value is None:
+        return default
+    return value
 
 
 @callback(
@@ -64,6 +80,7 @@ def update_all_charts(
     then builds pivot tables using the shared build_pivot_table function.
     """
     reader = ParquetReader()
+    prc_filter_value = _coerce_single_value(prc_filter_value, "all")
 
     try:
         chart_results = []
@@ -128,3 +145,66 @@ def update_all_charts(
             TABLE_SPECS[change_config.table_spec_key].title,
             html.Div([html.P(msg, className="text-danger")]),
         )
+
+
+@callback(
+    Output(FILTER_ID_MONTH, "value"),
+    Input(CTRL_ID_CLEAR_MONTH, "n_clicks"),
+    prevent_initial_call=True,
+)
+def clear_month(_n_clicks):
+    return []
+
+
+@callback(
+    Output(FILTER_ID_PRC, "value"),
+    Input(CTRL_ID_CLEAR_PRC, "n_clicks"),
+    prevent_initial_call=True,
+)
+def clear_prc(_n_clicks):
+    return None
+
+
+@callback(
+    Output(FILTER_ID_AREA, "value"),
+    Input(CTRL_ID_CLEAR_AREA, "n_clicks"),
+    prevent_initial_call=True,
+)
+def clear_area(_n_clicks):
+    return []
+
+
+@callback(
+    Output(FILTER_ID_CATEGORY, "value"),
+    Input(CTRL_ID_CLEAR_CATEGORY, "n_clicks"),
+    prevent_initial_call=True,
+)
+def clear_category(_n_clicks):
+    return []
+
+
+@callback(
+    Output(FILTER_ID_VENDOR, "value"),
+    Input(CTRL_ID_CLEAR_VENDOR, "n_clicks"),
+    prevent_initial_call=True,
+)
+def clear_vendor(_n_clicks):
+    return []
+
+
+@callback(
+    Output(FILTER_ID_AMP_AV, "value"),
+    Input(CTRL_ID_CLEAR_AMP_AV, "n_clicks"),
+    prevent_initial_call=True,
+)
+def clear_amp_av(_n_clicks):
+    return []
+
+
+@callback(
+    Output(FILTER_ID_ORDER_TYPE, "value"),
+    Input(CTRL_ID_CLEAR_ORDER_TYPE, "n_clicks"),
+    prevent_initial_call=True,
+)
+def clear_order_type(_n_clicks):
+    return []

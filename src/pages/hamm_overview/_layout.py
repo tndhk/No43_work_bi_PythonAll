@@ -11,8 +11,6 @@ from ._constants import (
     CHART_ID_VOLUME_TABLE,
     CHART_ID_VOLUME_CHART,
     CHART_ID_TASK_TABLE,
-    CHART_ID_KPI_TOTAL_TASKS,
-    CHART_ID_KPI_AVG_VIDEO_DURATION,
     FILTER_ID_REGION,
     FILTER_ID_YEAR,
     FILTER_ID_MONTH,
@@ -24,6 +22,13 @@ from ._constants import (
     FILTER_ID_ERROR_CODE,
     FILTER_ID_ERROR_TYPE,
     FILTER_ID_CADENCE,
+    CTRL_ID_CLEAR_REGION,
+    CTRL_ID_CLEAR_YEAR,
+    CTRL_ID_CLEAR_CONTENT_TYPE,
+    CTRL_ID_CLEAR_ORIGINAL_LANGUAGE,
+    CTRL_ID_CLEAR_DIALOGUE,
+    CTRL_ID_CLEAR_GENRE,
+    CTRL_ID_CLEAR_ERROR_TYPE,
 )
 from ._data_loader import load_filter_options
 
@@ -37,13 +42,16 @@ def _build_cadence_filter() -> dbc.Card:
     return dbc.Card([
         dbc.CardHeader("Cadence", className="filter-header"),
         dbc.CardBody([
-            dmc.ChipGroup(
-                id=FILTER_ID_CADENCE,
-                children=chips,
-                value="weekly",
-                multiple=False,
+            html.Div(
+                dmc.ChipGroup(
+                    id=FILTER_ID_CADENCE,
+                    children=chips,
+                    value="weekly",
+                    multiple=False,
+                ),
+                style={"display": "grid", "gridTemplateColumns": "1fr 1fr", "gap": "6px"},
             ),
-        ]),
+        ], className="cadence-chip-body"),
     ], className="filter-card mb-3")
 
 
@@ -52,11 +60,15 @@ def build_layout() -> html.Div:
     dataset_id = resolve_dataset_id(DASHBOARD_ID, CHART_ID_VOLUME_TABLE)
     opts = load_filter_options(reader, dataset_id)
 
-    title_style = {
+    _SECTION_BASE = {
         "backgroundColor": "#2f5f8f",
         "color": "white",
-        "padding": "24px",
         "borderRadius": "8px",
+    }
+
+    title_style = {
+        **_SECTION_BASE,
+        "padding": "24px",
         "fontSize": "32px",
         "fontWeight": "600",
         "height": "100%",
@@ -64,113 +76,90 @@ def build_layout() -> html.Div:
         "alignItems": "center",
     }
 
-    section_style = {
-        "backgroundColor": "#2f5f8f",
-        "color": "white",
-        "padding": "18px",
-        "borderRadius": "8px",
-    }
+    section_style = {**_SECTION_BASE, "padding": "12px"}
 
     return html.Div([
         dmc.MantineProvider([
-            dbc.Row([
-                dbc.Col([
-                    html.Div("HAMM Overview 🐷", style=title_style),
-                ], md=6),
-                dbc.Col([
-                    create_slicer_filter(
-                        filter_id=FILTER_ID_REGION,
-                        column_name="Region",
-                        options=opts["regions"],
-                        multi=True,
-                    ),
-                ], md=2),
-                dbc.Col([
-                    create_slicer_filter(
-                        filter_id=FILTER_ID_YEAR,
-                        column_name="Year",
-                        options=opts["years"],
-                        multi=True,
-                    ),
-                ], md=2),
-                dbc.Col([
-                    create_category_filter(
-                        filter_id=FILTER_ID_MONTH,
-                        column_name="Month",
-                        options=opts["months"],
-                        multi=True,
-                    ),
-                ], md=2),
-            ], className="mb-3 filter-row"),
+            html.Div([
+                html.Div("HAMM Overview 🐷", style=title_style),
+                create_slicer_filter(
+                    filter_id=FILTER_ID_REGION,
+                    column_name="Region",
+                    options=opts["regions"],
+                    clear_button_id=CTRL_ID_CLEAR_REGION,
+                ),
+                create_slicer_filter(
+                    filter_id=FILTER_ID_YEAR,
+                    column_name="Year",
+                    options=opts["years"],
+                    clear_button_id=CTRL_ID_CLEAR_YEAR,
+                ),
+                create_category_filter(
+                    filter_id=FILTER_ID_MONTH,
+                    column_name="Month",
+                    options=opts["months"],
+                ),
+            ], className="mb-3 filter-row-title-3filters"),
 
             html.Div([
                 create_category_filter(
                     filter_id=FILTER_ID_TASK_ID,
                     column_name="Task ID",
                     options=opts["task_ids"],
-                    multi=False,
+                    multi=True,
                 ),
                 create_slicer_filter(
                     filter_id=FILTER_ID_CONTENT_TYPE,
                     column_name="Content Type",
                     options=opts["content_types"],
-                    multi=True,
+                    clear_button_id=CTRL_ID_CLEAR_CONTENT_TYPE,
                 ),
                 create_slicer_filter(
                     filter_id=FILTER_ID_ORIGINAL_LANGUAGE,
                     column_name="Original Language",
                     options=opts["original_languages"],
-                    multi=True,
+                    clear_button_id=CTRL_ID_CLEAR_ORIGINAL_LANGUAGE,
                 ),
                 create_slicer_filter(
                     filter_id=FILTER_ID_DIALOGUE,
                     column_name="Was Dialogue Provided?",
                     options=opts["dialogue_options"],
-                    multi=True,
+                    clear_button_id=CTRL_ID_CLEAR_DIALOGUE,
                 ),
                 create_slicer_filter(
                     filter_id=FILTER_ID_GENRE,
                     column_name="Genre",
                     options=opts["genres"],
-                    multi=True,
+                    clear_button_id=CTRL_ID_CLEAR_GENRE,
                 ),
                 create_category_filter(
                     filter_id=FILTER_ID_ERROR_CODE,
                     column_name="Error Code",
                     options=opts["error_codes"],
-                    multi=True,
                 ),
                 create_slicer_filter(
                     filter_id=FILTER_ID_ERROR_TYPE,
                     column_name="Error Type",
                     options=opts["error_types"],
-                    multi=True,
+                    clear_button_id=CTRL_ID_CLEAR_ERROR_TYPE,
                 ),
             ], className="mb-3 filter-row-7col"),
 
             dbc.Row([
                 dbc.Col([
-                    html.Div(id=CHART_ID_KPI_TOTAL_TASKS),
-                ], md=3),
-                dbc.Col([
-                    html.Div(id=CHART_ID_KPI_AVG_VIDEO_DURATION),
-                ], md=3),
-            ], className="mb-3"),
-
-            dbc.Row([
-                dbc.Col([
                     html.Div([
-                        html.H3("Volume", className="mb-2"),
+                        html.H3("Volume", className="mb-2", style={"color": "white"}),
                         html.P(
                             "Please use the filter to select the desired calendar interval and metrics for viewing volume.",
                             className="mb-0",
+                            style={"color": "rgba(255,255,255,0.85)"},
                         ),
-                    ], style=section_style),
-                ], md=9),
+                    ], style={**section_style, "height": "100%"}),
+                ], md=7, className="d-flex"),
                 dbc.Col([
                     _build_cadence_filter(),
-                ], md=3),
-            ], className="mb-3"),
+                ], md=5, className="d-flex"),
+            ], className="mb-3 align-items-stretch"),
 
             dbc.Row([
                 dbc.Col([

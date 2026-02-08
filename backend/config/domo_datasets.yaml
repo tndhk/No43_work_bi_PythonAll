@@ -11,6 +11,11 @@ datasets:
     exclude_filter:
       column: "exclude_flg"
       keep_value: "Not Exclude"
+    # masking:
+    #   enabled: true
+    #   strict: true
+    #   columns:
+    #     - "employee_id"
 
   - name: "APAC DOT DDD Change + Issue(SQL)"
     domo_dataset_id: "2aff337e-b2f1-45c9-b363-3b5b522a1245"
@@ -27,6 +32,11 @@ datasets:
     partition_column: null
     description: "Hamm dashboard source data from DOMO"
     enabled: true
+    # masking:
+    #   enabled: true
+    #   strict: true
+    #   columns:
+    #     - "email"
 
   # Add more datasets here following the same structure:
   # - name: "DataSet Name"
@@ -35,3 +45,8 @@ datasets:
   #   partition_column: "date_column_name"  # or null for no partitioning
   #   description: "DataSet description"
   #   enabled: true
+  #   masking:
+  #     enabled: true
+  #     strict: true
+  #     columns:
+  #       - "email"

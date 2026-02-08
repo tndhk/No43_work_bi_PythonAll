@@ -6,10 +6,17 @@ standalone, testable function.
 from dash import dcc
 import dash_bootstrap_components as dbc
 
-from src.components.filters import create_category_filter
+from src.components.filters import create_slicer_filter
 from ._constants import (
     CTRL_ID_NUM_PERCENT,
     CTRL_ID_BREAKDOWN,
+    CTRL_ID_CLEAR_MONTH,
+    CTRL_ID_CLEAR_PRC,
+    CTRL_ID_CLEAR_AREA,
+    CTRL_ID_CLEAR_CATEGORY,
+    CTRL_ID_CLEAR_VENDOR,
+    CTRL_ID_CLEAR_AMP_AV,
+    CTRL_ID_CLEAR_ORDER_TYPE,
     FILTER_ID_MONTH,
     FILTER_ID_PRC,
     FILTER_ID_AREA,
@@ -19,11 +26,7 @@ from ._constants import (
     FILTER_ID_ORDER_TYPE,
 )
 
-# Expected number of months when all data is available (used for placeholder text)
-EXPECTED_MONTH_COUNT = 26
-
-
-def build_filter_layout(filter_options: dict) -> list[dbc.Row]:
+def build_filter_layout(filter_options: dict) -> list:
     """Build the filter section of the APAC DOT Due Date layout.
 
     Args:
@@ -32,12 +35,9 @@ def build_filter_layout(filter_options: dict) -> list[dbc.Row]:
             total_count, prc_count, non_prc_count.
 
     Returns:
-        List of 5 dbc.Row components:
-            [0] Control row (Num/% toggle + Break Down tabs)
-            [1] Month filter row
-            [2] PRC filter row
-            [3] Category filters row (Area, Category, Vendor)
-            [4] Additional filters row (AMP VS AV, Order Type)
+        List of 2 dbc.Row components:
+            [0] Top row (Num/% + Break Down + Filter Month + PRC)
+            [1] Bottom row (Area + Category + Vendor + AMP VS AV + Order Type)
     """
     months = filter_options["months"]
     areas = filter_options["areas"]
@@ -47,8 +47,8 @@ def build_filter_layout(filter_options: dict) -> list[dbc.Row]:
     order_types = filter_options["order_types"]
     total_count = filter_options["total_count"]
 
-    # Row 0: Control Row - Num/% and Break Down
-    control_row = dbc.Row([
+    # Row 0: Top controls
+    top_row = dbc.Row([
         dbc.Col([
             dbc.Card([
                 dbc.CardHeader("Num or %", className="filter-header"),
@@ -64,7 +64,7 @@ def build_filter_layout(filter_options: dict) -> list[dbc.Row]:
                     ),
                 ]),
             ], className="filter-card mb-3"),
-        ], md=3),
+        ], md=2),
         dbc.Col([
             dbc.Card([
                 dbc.CardHeader("Break Down", className="filter-header"),
@@ -80,98 +80,85 @@ def build_filter_layout(filter_options: dict) -> list[dbc.Row]:
                     ),
                 ]),
             ], className="filter-card mb-3"),
-        ], md=9),
-    ])
-
-    # Row 1: Filter Month
-    month_row = dbc.Row([
+        ], md=2),
         dbc.Col([
-            dbc.Card([
-                dbc.CardHeader("Filter Month", className="filter-header"),
-                dbc.CardBody([
-                    dcc.Dropdown(
-                        id=FILTER_ID_MONTH,
-                        options=[{"label": m, "value": m} for m in months],
-                        value=months,
-                        multi=True,
-                        placeholder=(
-                            f"Select all ({len(months)})"
-                            if len(months) == EXPECTED_MONTH_COUNT
-                            else "Select months..."
-                        ),
-                    ),
-                ]),
-            ], className="filter-card mb-3"),
-        ], md=12),
-    ])
-
-    # Row 2: PRC Filter
-    prc_row = dbc.Row([
+            create_slicer_filter(
+                filter_id=FILTER_ID_MONTH,
+                column_name="Filter Month",
+                options=months,
+                multi=True,
+                default_value=months,
+                clear_button_id=CTRL_ID_CLEAR_MONTH,
+            ),
+        ], md=5),
         dbc.Col([
-            dbc.Card([
-                dbc.CardHeader("PRC", className="filter-header"),
-                dbc.CardBody([
-                    dcc.RadioItems(
-                        id=FILTER_ID_PRC,
-                        options=[
-                            {"label": f" Select all ({total_count})", "value": "all"},
-                            {"label": " PRC Only", "value": "prc_only"},
-                            {"label": " PRC not Included", "value": "prc_not_included"},
-                        ],
-                        value="all",
-                        inline=False,
-                    ),
-                ]),
-            ], className="filter-card mb-3"),
-        ], md=12),
-    ])
+            create_slicer_filter(
+                filter_id=FILTER_ID_PRC,
+                column_name="PRC",
+                options=[
+                    {"label": f"Select all ({total_count})", "value": "all"},
+                    {"label": "PRC Only", "value": "prc_only"},
+                    {"label": "PRC not Included", "value": "prc_not_included"},
+                ],
+                multi=False,
+                default_value="all",
+                clear_button_id=CTRL_ID_CLEAR_PRC,
+            ),
+        ], md=3),
+    ], className="apac-dot-filter-row-top")
 
-    # Row 3: Category Filters (Area, Category, Vendor)
-    category_row = dbc.Row([
+    # Row 1: Bottom category filters
+    bottom_row = dbc.Row([
         dbc.Col([
-            create_category_filter(
+            create_slicer_filter(
                 filter_id=FILTER_ID_AREA,
                 column_name="Area",
                 options=areas,
                 multi=True,
+                default_value=areas,
+                clear_button_id=CTRL_ID_CLEAR_AREA,
             ),
-        ], md=3),
+        ], md=2),
         dbc.Col([
-            create_category_filter(
+            create_slicer_filter(
                 filter_id=FILTER_ID_CATEGORY,
                 column_name="Category",
                 options=workstreams,
                 multi=True,
+                default_value=workstreams,
+                clear_button_id=CTRL_ID_CLEAR_CATEGORY,
             ),
-        ], md=3),
+        ], md=2),
         dbc.Col([
-            create_category_filter(
+            create_slicer_filter(
                 filter_id=FILTER_ID_VENDOR,
                 column_name="Vendor",
                 options=vendors,
                 multi=True,
+                default_value=vendors,
+                clear_button_id=CTRL_ID_CLEAR_VENDOR,
             ),
         ], md=3),
-    ])
-
-    # Row 4: Additional Filters (AMP VS AV, Order Type)
-    additional_row = dbc.Row([
         dbc.Col([
-            create_category_filter(
+            create_slicer_filter(
                 filter_id=FILTER_ID_AMP_AV,
                 column_name="AMP VS AV",
                 options=amp_vs_av,
                 multi=True,
+                default_value=amp_vs_av,
+                clear_button_id=CTRL_ID_CLEAR_AMP_AV,
             ),
-        ], md=3),
+        ], md=2),
         dbc.Col([
-            create_category_filter(
+            create_slicer_filter(
                 filter_id=FILTER_ID_ORDER_TYPE,
                 column_name="Order Type",
                 options=order_types,
                 multi=True,
+                default_value=order_types,
+                clear_button_id=CTRL_ID_CLEAR_ORDER_TYPE,
             ),
         ], md=3),
-    ])
+    ], className="apac-dot-filter-row-bottom")
 
-    return [control_row, month_row, prc_row, category_row, additional_row]
+    return [top_row, bottom_row]

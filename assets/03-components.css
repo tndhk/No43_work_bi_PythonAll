@@ -7,13 +7,12 @@
   border: 1px solid var(--border-subtle);
   border-radius: 8px;
   padding: var(--spacing-lg);
-  transition: all 0.3s ease;
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
   box-shadow: var(--shadow-sm);
 }
 
 .card:hover,
 .dash-card:hover {
-  transform: translateY(-2px);
   box-shadow: var(--shadow-md);
   border-color: var(--border-accent);
 }
@@ -132,6 +131,24 @@
   width: 100%;
 }
 
+/* Filter row with title (4 columns) + 3 filters (1 column each) */
+.filter-row-title-3filters {
+  display: grid !important;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.filter-row-title-3filters > :first-child {
+  grid-column: span 4;
+}
+
+.filter-row-title-3filters > :nth-child(2),
+.filter-row-title-3filters > :nth-child(3),
+.filter-row-title-3filters > :nth-child(4) {
+  grid-column: span 1;
+}
+
 /* Filter row with 7 equal columns using CSS Grid */
 .filter-row-7col {
   display: grid !important;
@@ -148,15 +165,13 @@
   text-overflow: ellipsis;
 }
 
-/* グリッドセル内でカードを高さ100%に */
+/* 7列グリッド内のフィルタカード */
 .filter-row-7col > .filter-card {
   height: 100%;
   margin-bottom: 0;
-}
-
-/* 7列グリッド内のフィルタカード: パディング縮小 */
-.filter-row-7col .filter-card {
   padding: 0.5rem !important;
+  position: relative;
+  overflow: visible;
 }
 
 .filter-row-7col .filter-card .card-header {
@@ -175,6 +190,65 @@
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: var(--spacing-md);
+}
+
+/* APAC DOT Due Date: info banner */
+.apac-dot-info-banner {
+  background-color: #386da0;
+  border-color: #386da0;
+}
+
+.apac-dot-info-banner .card-body {
+  color: #ffffff;
+}
+
+.apac-dot-info-title {
+  color: #ffffff;
+  font-size: 3rem;
+  margin-bottom: 0.75rem;
+}
+
+.apac-dot-info-text {
+  color: #ffffff;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+/* APAC DOT Due Date: top/bottom filter rows */
+.apac-dot-filter-row-top,
+.apac-dot-filter-row-bottom {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.apac-dot-filter-row-top > [class*="col"],
+.apac-dot-filter-row-bottom > [class*="col"] {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+.apac-dot-filter-row-top .filter-card,
+.apac-dot-filter-row-bottom .filter-card {
+  height: 100%;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem !important;
+  position: relative;
+  overflow: visible;
+}
+
+.apac-dot-filter-row-top .filter-card .card-header,
+.apac-dot-filter-row-bottom .filter-card .card-header {
+  padding: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+  font-size: 0.85rem !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.apac-dot-filter-row-top .filter-card .card-body,
+.apac-dot-filter-row-bottom .filter-card .card-body {
+  padding: 0.5rem !important;
 }
 
 /* Dropdowns */
@@ -208,29 +282,56 @@
 }
 
 .Select-option:hover,
-.Select-option.is-focused {
-  background-color: var(--bg-card) !important;
-  color: var(--accent-primary) !important;
-}
-
+.Select-option.is-focused,
 .Select-option.is-selected {
   background-color: var(--bg-card) !important;
   color: var(--accent-primary) !important;
 }
 
-/* Dash 4.x (radix) dropdown/datepicker content */
-.dash-dropdown-content,
-.dash-options-list,
-.dash-dropdown-options,
-.dash-datepicker-content,
-.dash-datepicker-popover,
-.dash-datepicker-overlay,
+/* Dash 4.x (radix) -- let Radix handle positioning, only set z-index */
 [data-radix-popper-content-wrapper] {
-  position: relative !important;
   z-index: 9999 !important;
 }
 
-[data-radix-popper-content-wrapper] > * {
+/* Dropdown popup panel */
+.dash-dropdown-content {
+  background-color: var(--bg-card) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Options list container */
+.dash-dropdown-options {
+  background-color: var(--bg-card) !important;
+}
+
+/* Individual option items */
+.dash-dropdown-option {
+  background-color: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+  cursor: pointer !important;
+}
+
+.dash-dropdown-option:hover {
+  background-color: var(--bg-elevated) !important;
+  color: var(--accent-primary) !important;
+}
+
+/* Search input inside dropdown */
+.dash-dropdown-search-container {
+  background-color: var(--bg-card) !important;
+}
+
+/* Select All / Deselect All action buttons */
+.dash-dropdown-actions {
+  background-color: var(--bg-card) !important;
+}
+
+/* DatePicker popups */
+.dash-datepicker-content,
+.dash-datepicker-popover,
+.dash-datepicker-overlay {
   z-index: 9999 !important;
 }
 
@@ -361,6 +462,19 @@ tbody tr:hover {
   gap: var(--spacing-sm);
 }
 
+.slicer-clear-btn.btn.btn-link {
+  font-size: 0.72rem !important;
+  line-height: 1 !important;
+  color: var(--text-muted) !important;
+  text-decoration: none !important;
+}
+
+.slicer-clear-btn.btn.btn-link:hover,
+.slicer-clear-btn.btn.btn-link:focus {
+  color: var(--accent-primary) !important;
+  text-decoration: underline !important;
+}
+
 /* Mantine Chip styling */
 .mantine-Chip-root {
   margin: 2px !important;
@@ -418,4 +532,16 @@ tbody tr:hover {
   display: flex !important;
   flex-wrap: wrap !important;
   gap: 4px !important;
+}
+
+/* Cadence filter: 2x2 grid layout for chips */
+.cadence-chip-body {
+  display: block !important;
+}
+
+.cadence-chip-body > * {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 6px !important;
+  flex-wrap: unset !important;
 }

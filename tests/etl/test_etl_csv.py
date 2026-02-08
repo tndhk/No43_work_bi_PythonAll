@@ -1,10 +1,9 @@
 """Tests for CsvETL."""
 import pytest
 import pandas as pd
-import tempfile
-import os
+import io
+import pyarrow.parquet as pq
 from backend.etl.etl_csv import CsvETL
-from tests.conftest import upload_parquet_to_s3
 
 
 @pytest.fixture
@@ -77,3 +76,37 @@ def test_csv_etl_run_with_partition(mock_s3, csv_file):
     s3_key = f"datasets/{dataset_id}/partitions/date=2024-01-01/part-0000.parquet"
     response = mock_s3.head_object(Bucket="bi-datasets", Key=s3_key)
     assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+
+def test_csv_etl_run_with_masking(monkeypatch, mock_s3, csv_file):
+    """Test: CsvETL run masks configured columns before saving."""
+    monkeypatch.setenv("ETL_MASKING_SECRET", "test-secret")
+    etl = CsvETL(
+        csv_file,
+        masking={
+            "enabled": True,
+            "strict": True,
+            "columns": ["name"],
+        },
+    )
+    dataset_id = "masked_dataset"
+
+    etl.run(dataset_id)
+
+    s3_key = f"datasets/{dataset_id}/data/part-0000.parquet"
+    response = mock_s3.get_object(Bucket="bi-datasets", Key=s3_key)
+    parquet_bytes = response["Body"].read()
+    loaded_df = pq.read_table(io.BytesIO(parquet_bytes)).to_pandas()
+
+    assert all(isinstance(v, str) and len(v) == 64 for v in loaded_df["name"])
+    assert "Alice" not in loaded_df["name"].tolist()
+
+
+def test_csv_etl_transform_without_masking_keeps_original_value(csv_file):
+    """Test: CsvETL keeps data unchanged when masking is not configured."""
+    etl = CsvETL(csv_file)
+
+    df_extracted = etl.extract()
+    df_transformed = etl.transform(df_extracted)
+
+    assert "Alice" in df_transformed["name"].tolist()

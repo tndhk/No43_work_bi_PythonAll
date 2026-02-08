@@ -58,3 +58,16 @@ class TestChartIds:
         assert const.CHART_ID_VOLUME_TABLE == "hamm-volume-table"
         assert const.CHART_ID_VOLUME_CHART == "hamm-volume-chart"
         assert const.CHART_ID_TASK_TABLE == "hamm-task-table"
+
+
+class TestClearControlIds:
+    def test_clear_control_ids_values(self):
+        from src.pages.hamm_overview import _constants as const
+
+        assert const.CTRL_ID_CLEAR_REGION == "hamm-ctrl-clear-region"
+        assert const.CTRL_ID_CLEAR_YEAR == "hamm-ctrl-clear-year"
+        assert const.CTRL_ID_CLEAR_CONTENT_TYPE == "hamm-ctrl-clear-content-type"
+        assert const.CTRL_ID_CLEAR_ORIGINAL_LANGUAGE == "hamm-ctrl-clear-original-language"
+        assert const.CTRL_ID_CLEAR_DIALOGUE == "hamm-ctrl-clear-dialogue"
+        assert const.CTRL_ID_CLEAR_GENRE == "hamm-ctrl-clear-genre"
+        assert const.CTRL_ID_CLEAR_ERROR_TYPE == "hamm-ctrl-clear-error-type"

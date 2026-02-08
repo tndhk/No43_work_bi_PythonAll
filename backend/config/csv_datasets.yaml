@@ -9,6 +9,12 @@ datasets:
     partition_column: "Date"
     enabled: true
     description: "Cursor team usage events data"
+    # masking:
+    #   enabled: true
+    #   strict: true
+    #   columns:
+    #     - "email"
+    #     - "employee_id"
     # csv_options:            # 省略可（デフォルト: UTF-8, カンマ区切り）
     #   delimiter: ","
     #   encoding: null
@@ -21,6 +27,11 @@ datasets:
   #   partition_column: "date_column_name"  # or null for no partitioning
   #   description: "DataSet description"
   #   enabled: true
+  #   masking:
+  #     enabled: true
+  #     strict: true
+  #     columns:
+  #       - "email"
   #   csv_options:
   #     delimiter: ","
   #     encoding: "utf-8"

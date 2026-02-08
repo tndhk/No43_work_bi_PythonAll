@@ -42,6 +42,24 @@ def _make_empty_df() -> pd.DataFrame:
     })
 
 
+def _make_datetime_month_df() -> pd.DataFrame:
+    """Create sample DataFrame with datetime-like month values."""
+    return pd.DataFrame({
+        "Delivery Completed Month": [
+            "2023-12-15 00:00:00+00:00",
+            "2024-01-01 00:00:00+00:00",
+            "2024-02-01 09:30:00+00:00",
+        ],
+        "business area": ["APAC", "APAC", "EMEA"],
+        "Metric Workstream": ["WS-A", "WS-B", "WS-C"],
+        "Vendor: Account Name": ["Vendor1", "Vendor2", "Vendor3"],
+        "AMP VS AV Scope": ["AMP", "AV", "AMP"],
+        "order tags": ["TypeA", "TypeB", "TypeC"],
+        "job name": ["PRC-1", "Normal-2", "Normal-3"],
+        "work order id": ["WO-001", "WO-002", "WO-003"],
+    })
+
+
 # ===========================================================================
 # load_filter_options tests
 # ===========================================================================
@@ -137,6 +155,16 @@ class TestLoadFilterOptionsValues:
 
         result = load_filter_options(reader, "apac-dot-due-date")
         assert result["order_types"] == ["TypeA", "TypeB", "TypeC"]
+
+    @patch("src.pages.apac_dot_due_date._data_loader.get_cached_dataset")
+    def test_months_normalized_to_year_month(self, mock_cache):
+        from src.pages.apac_dot_due_date._data_loader import load_filter_options
+
+        mock_cache.return_value = _make_datetime_month_df()
+        reader = MagicMock()
+
+        result = load_filter_options(reader, "apac-dot-due-date")
+        assert result["months"] == ["2024-01", "2024-02"]
 
 
 class TestLoadFilterOptionsCounts:
@@ -423,6 +451,48 @@ class TestLoadAndFilterDataCategoryFilters:
         )
         assert len(result) == 2
         assert all(result["Delivery Completed Month"] == "2024-01")
+
+    @patch("src.pages.apac_dot_due_date._data_loader.get_cached_dataset")
+    def test_month_filter_accepts_datetime_like_selected_values(self, mock_cache):
+        from src.pages.apac_dot_due_date._data_loader import load_and_filter_data
+
+        mock_cache.return_value = _make_datetime_month_df()
+        reader = MagicMock()
+
+        column_map = DATASETS["reference"].column_map
+        result = load_and_filter_data(
+            reader, "apac-dot-due-date", column_map,
+            selected_months=["2024-02-01 00:00:00+00:00"],
+            prc_filter_value="all",
+            area_values=None,
+            category_values=None,
+            vendor_values=None,
+            amp_av_values=None,
+            order_type_values=None,
+        )
+        assert len(result) == 1
+        assert all(result["Delivery Completed Month"] == "2024-02")
+
+    @patch("src.pages.apac_dot_due_date._data_loader.get_cached_dataset")
+    def test_rows_before_2024_are_excluded(self, mock_cache):
+        from src.pages.apac_dot_due_date._data_loader import load_and_filter_data
+
+        mock_cache.return_value = _make_datetime_month_df()
+        reader = MagicMock()
+
+        column_map = DATASETS["reference"].column_map
+        result = load_and_filter_data(
+            reader, "apac-dot-due-date", column_map,
+            selected_months=None,
+            prc_filter_value="all",
+            area_values=None,
+            category_values=None,
+            vendor_values=None,
+            amp_av_values=None,
+            order_type_values=None,
+        )
+        assert len(result) == 2
+        assert set(result["Delivery Completed Month"].tolist()) == {"2024-01", "2024-02"}
 
     @patch("src.pages.apac_dot_due_date._data_loader.get_cached_dataset")
     def test_area_filter(self, mock_cache):
