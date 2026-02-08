@@ -1,8 +1,8 @@
 # Data Layer Codemap
 
-Last Updated: 2026-02-07
-Freshness: 2026-02-07T03:05:43Z
-Directory: `src/data/`, `src/core/`, `src/exceptions.py`
+Last Updated: 2026-02-08
+Freshness: 2026-02-08T15:30:00Z
+Directory: `src/data/`, `src/core/`, `src/utils/`, `src/exceptions.py`
 
 ## Module Dependency Graph
 
@@ -40,12 +40,12 @@ src/data/dataset_summarizer.py
 
 src/data/filter_engine.py
   Imports: pandas, datetime
-  Exports: CategoryFilter, DateRangeFilter, FilterSet (frozen dataclasses),
-           apply_filters()
+  Exports: CategoryFilter, DateRangeFilter, FilterSet (dataclasses),
+           apply_filters(), extract_unique_values()
 
 src/data/data_source_registry.py
   Imports: yaml, pathlib.Path, functools.lru_cache
-  Exports: load_dashboard_config(), get_dataset_id()
+  Exports: load_dashboard_config(), get_dataset_id(), resolve_dataset_id()
 
 src/data/data_loader.py
   Imports: pandas, core.cache.get_cached_dataset,
@@ -59,6 +59,15 @@ src/core/cache.py
 src/core/logging.py
   Imports: structlog
   Exports: setup_logging()
+
+src/utils/data_helpers.py
+  Imports: parquet_reader, cache, filter_engine, data_source_registry
+  Exports: safe_load_filter_options(), strip_timezone(),
+           resolve_single_dataset_id()
+
+src/utils/filter_helpers.py
+  Imports: filter_engine (FilterSet, CategoryFilter, DateRangeFilter)
+  Exports: build_filter_set_from_map()
 
 src/exceptions.py
   Exports: DatasetFileNotFoundError(RuntimeError)
@@ -91,10 +100,13 @@ settings = Settings()  # Global singleton
 ```python
 def load_dashboard_config(dashboard_id: str) -> dict
     # Reads src/pages/{dashboard_id}/data_sources.yml
-    # Validates "charts" mapping
+    # Validates "charts" mapping; lru_cache(128)
 
 def get_dataset_id(dashboard_id: str, chart_id: str) -> Optional[str]
     # Returns dataset_id for chart_id, or None if not found
+
+def resolve_dataset_id(dashboard_id, chart_id, fallback=None) -> str
+    # Like get_dataset_id but raises ValueError when not found (unless fallback)
 ```
 
 ### Common Loader (data_loader.py)
@@ -183,16 +195,42 @@ class DateRangeFilter:
     start_date: str  # ISO 8601
     end_date: str    # ISO 8601
 
-@dataclass(frozen=True)
+@dataclass
 class FilterSet:
-    category_filters: list[CategoryFilter] = []
-    date_filters: list[DateRangeFilter] = []
+    category_filters: list[CategoryFilter] = field(default_factory=list)
+    date_filters: list[DateRangeFilter] = field(default_factory=list)
 
 def apply_filters(df, filter_set) -> pd.DataFrame
     # Category: isin(values), optional include_null
     # Date: start_date <= col <= end_date (23:59:59 inclusive)
     # Multiple filters: AND combination
     # Returns copy (original not modified)
+
+def extract_unique_values(df, column) -> list
+    # Sorted unique values excluding NaN/None
+    # Returns [] if column missing
+```
+
+Note: FilterSet changed from `frozen=True` to mutable `@dataclass` to support
+`build_filter_set_from_map()` which appends filters to lists.
+
+### Shared Helpers (src/utils/)
+
+```python
+# data_helpers.py
+def safe_load_filter_options(reader, dataset_id, extract_columns, prepare_fn=None) -> dict
+    # Load unique values from specified columns, with empty-list defaults on error
+
+def strip_timezone(df, column) -> pd.DataFrame
+    # Convert UTC-aware datetime column to timezone-naive (Parquet compatibility)
+
+def resolve_single_dataset_id(dashboard_id, chart_ids) -> str
+    # Validate all charts use same dataset; raise ValueError if mismatch
+
+# filter_helpers.py
+def build_filter_set_from_map(column_map, filter_pairs, date_range=None) -> FilterSet
+    # Build FilterSet from column_map keys + (key, values) pairs
+    # Reduces boilerplate in page _data_loader modules
 ```
 
 ### DatasetSummarizer (dataset_summarizer.py)
@@ -200,21 +238,12 @@ def apply_filters(df, filter_set) -> pd.DataFrame
 ```python
 @dataclass
 class DatasetSummary:
-    name: str
-    schema: list[dict]
-    row_count: int
-    column_count: int
-    sample_rows: list[dict]
-    statistics: dict
+    name, schema, row_count, column_count, sample_rows, statistics
 
 class DatasetSummarizer:
     __init__(parquet_reader: ParquetReader)
-
     summarize(dataset_id, name, max_sample_rows=5) -> DatasetSummary
-        # Schema + sample rows + per-column stats (numeric/categorical)
-
     generate_summary(dataset_id) -> dict
-        # Lighter version: schema + statistics + counts (max 1000 rows)
 ```
 
 ### Cache (core/cache.py)
@@ -243,7 +272,7 @@ class DatasetFileNotFoundError(RuntimeError):
 ```
 Page callback
   |
-  data_source_registry.get_dataset_id(dashboard_id, chart_id)
+  data_source_registry.resolve_dataset_id(dashboard_id, chart_id)
   |
   get_cached_dataset(reader, dataset_id)
   |
@@ -258,6 +287,10 @@ Page callback
   |
   pd.DataFrame
   |
+  [Page-specific prep: tz strip, derived columns, month normalization]
+  |
+  build_filter_set_from_map(column_map, filter_pairs) -> FilterSet
+  |
   apply_filters(df, FilterSet)
   |
   Filtered DataFrame -> Charts / Tables / KPIs
@@ -271,6 +304,7 @@ ETL script
   BaseETL.extract() -> raw DataFrame
   |
   BaseETL.transform() -> clean DataFrame
+  |  (type inference + exclude filter + optional HMAC masking)
   |
   BaseETL.load(df, dataset_id, partition_column)
   |
@@ -297,6 +331,15 @@ s3://{bucket}/
           part-0000.parquet
 ```
 
+## Active Datasets
+
+| Dataset ID | Source | Partition | Used By |
+|------------|--------|-----------|---------|
+| cursor-usage | CSV (local) | Date | Cursor Usage page |
+| apac-dot-due-date | DOMO API | delivery completed date | APAC DOT page (reference) |
+| apac-dot-ddd-change-issue-sql | DOMO API | edit month | APAC DOT page (change+issue) |
+| hamm-dashboard | DOMO API | (none) | Hamm Overview page |
+
 ## Testing
 
 ```
@@ -315,8 +358,13 @@ tests/unit/core/
   test_cache.py                  # Cache hit/miss behavior
   test_logging.py                # structlog configuration
 
+tests/unit/utils/
+  test_data_helpers.py           # safe_load_filter_options, strip_timezone, resolve_single_dataset_id
+  test_filter_helpers.py         # build_filter_set_from_map
+
 tests/unit/
   test_exceptions.py             # DatasetFileNotFoundError
+  test_layout.py                 # create_layout
 ```
 
 ## Related Codemaps
