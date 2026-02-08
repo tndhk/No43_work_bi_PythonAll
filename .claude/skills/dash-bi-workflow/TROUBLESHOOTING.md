@@ -291,6 +291,321 @@ services:
 
 ---
 
+## Bug Pattern 5: data_sources.ymlのchart_idが見つからない
+
+### 完全なエラーメッセージ
+
+```
+KeyError: 'chart_id_name'
+```
+
+または
+
+```
+ValueError: No dataset mapping found for chart_id: ...
+```
+
+### 発生箇所
+
+- `resolve_dataset_id()` 関数を呼び出している場合
+- 新しいダッシュボードページを追加した場合
+- DASHBOARD_IDやCHART_IDが間違っている場合
+
+### 原因の詳細
+
+`backend/config/data_sources.yml` に該当のchart_idが定義されていない、またはDASHBOARD_IDが間違っているため、データセットIDを解決できません。
+
+### 解決方法
+
+#### Step 1: data_sources.ymlにマッピングを追加
+
+`backend/config/data_sources.yml` を開き、該当のdashboard_id配下にchart_idを追加：
+
+```yaml
+<dashboard_id>:
+  <chart_id>: "<dataset_id>"
+```
+
+例：
+```yaml
+hamm_overview:
+  hamm-kpi-total-machines: "domo_hamm_kpi_data"
+  hamm-chart-status-trend: "domo_hamm_status_trend"
+```
+
+#### Step 2: DASHBOARD_IDとCHART_IDの確認
+
+`_constants.py` で定義されている値が正しいか確認：
+
+```python
+DASHBOARD_ID = "hamm_overview"  # data_sources.ymlのキーと一致しているか
+ID_PREFIX = "hamm-"  # 一貫性があるか
+
+# CHART_IDはID_PREFIXを含む完全なID
+CHART_ID = f"{ID_PREFIX}kpi-total-machines"
+```
+
+### デバッグ手順
+
+1. **resolve_dataset_id()の戻り値を確認**
+   ```python
+   from backend.etl.resolve_dataset import resolve_dataset_id
+   dataset_id = resolve_dataset_id(DASHBOARD_ID, CHART_ID)
+   print(f"Resolved dataset_id: {dataset_id}")
+   ```
+
+2. **data_sources.ymlの内容を確認**
+   - 該当のDASHBOARD_IDが存在するか
+   - CHART_IDが正しく定義されているか
+   - インデントが正しいか（YAMLの構文エラー）
+
+3. **CHART_IDの形式を確認**
+   - ID_PREFIXを含む完全なIDになっているか
+   - 例：`"hamm-kpi-total-machines"` （正）vs `"kpi-total-machines"` （誤）
+
+### 予防策
+
+- 新しいダッシュボードページを追加する際は、最初に `data_sources.yml` にマッピングを追加
+- `_constants.py` で定義する際は、DASHBOARD_IDとID_PREFIXの一貫性を確認
+- テストで `resolve_dataset_id()` の戻り値を検証
+
+---
+
+## Bug Pattern 6: パッケージページがapp.pyでインポートされていない
+
+### 症状の詳細
+
+- ダッシュボードページにアクセスすると404エラー
+- Dashのページ一覧（`/`）に表示されない
+- コンソールに「Page not found」エラー
+
+### 発生条件
+
+- パッケージ形式のページ（`src/pages/<page_name>/`）を新規追加した場合
+- `app.py` に明示的importが追加されていない場合
+
+### 原因の詳細
+
+パッケージ形式のページは、Dashのページ自動検出機能が `__init__.py` を `_` 始まりとしてスキップするため、明示的に `app.py` でインポートする必要があります。単一ファイルページ（例：`cursor_usage.py`）とは異なり、自動検出されません。
+
+### 解決方法
+
+#### Step 1: app.pyに明示的importを追加
+
+`app.py` の適切な位置に以下を追加：
+
+```python
+# Pages (package-style pages must be imported explicitly)
+import src.pages.cursor_usage  # noqa: F401
+import src.pages.apac_dot_due_date  # noqa: F401
+import src.pages.hamm_overview  # noqa: F401
+import src.pages.<new_page_name>  # noqa: F401  ← 追加
+```
+
+#### Step 2: __init__.pyでregister_pageを確認
+
+パッケージの `__init__.py` で `dash.register_page()` が正しく呼ばれているか確認：
+
+```python
+import dash
+
+from ._layout import build_layout
+
+dash.register_page(
+    __name__,
+    path="/<page_name>",
+    title="Page Title",
+    name="Page Name",
+    layout=build_layout,  # 関数オブジェクトを渡す
+)
+
+# コールバックをインポート（register_pageの後）
+from . import _callbacks  # noqa: F401, E402
+```
+
+### デバッグ手順
+
+1. **app.pyでimportが存在するか確認**
+   ```bash
+   grep "import src.pages.<page_name>" app.py
+   ```
+   - 存在しない場合は追加
+
+2. **Dashアプリ起動ログを確認**
+   ```
+   docker-compose logs dash | grep "Registered page"
+   ```
+   - 該当ページが登録されているか確認
+
+3. **ブラウザで直接URLにアクセス**
+   - `http://localhost:8050/<page_name>` にアクセス
+   - 404エラーの場合はimport追加が必要
+
+4. **__init__.pyの内容を確認**
+   - `dash.register_page(__name__, ...)` が呼ばれているか
+   - `layout` パラメータが正しく設定されているか
+
+### 予防策
+
+- 新しいパッケージページを追加する際は、必ず `app.py` にimportを追加
+- テンプレートを作成して再利用する
+- チェックリストに「app.pyへのimport追加」を含める
+
+---
+
+## Bug Pattern 7: register_clear_callbacks のdefault_value不一致
+
+### 症状の詳細
+
+- クリアボタンを押してもフィルタがクリアされない
+- クリアボタンを押すと予期しない値になる
+- クリアボタンを押すとエラーが発生する
+
+### 発生条件
+
+- `register_clear_callbacks()` を使用している場合
+- フィルタの初期値とdefault_valueが一致していない場合
+
+### 原因の詳細
+
+`register_clear_callbacks()` の `default_value` パラメータは、クリアボタンを押した際にフィルタを何にリセットするかを指定します。このdefault_valueが、フィルタコンポーネントの初期値（`value`プロパティ）と一致していない場合、期待通りに動作しません。
+
+### 解決方法
+
+#### Step 1: フィルタの型に合わせてdefault_valueを設定
+
+通常、`register_clear_callbacks()` はフィルタの型を自動判定してデフォルト値を設定するため、明示的な指定は不要です。カスタムフィルタの場合のみ、以下のように設定：
+
+```python
+from src.utils.callback_helpers import register_clear_callbacks
+
+# CLEAR_PAIRS定義（_constants.py）
+CLEAR_PAIRS = [
+    (f"{ID_PREFIX}btn-clear-date", f"{ID_PREFIX}filter-date"),
+    (f"{ID_PREFIX}btn-clear-category", f"{ID_PREFIX}filter-category"),
+]
+
+# コールバック登録（_callbacks.py）
+register_clear_callbacks(CLEAR_PAIRS)
+```
+
+#### Step 2: カスタムdefault_valueが必要な場合
+
+特殊なケースで明示的に指定する場合：
+
+- ドロップダウン（単一選択）: `default_value=None`
+- ドロップダウン（複数選択）: `default_value=[]`
+- DatePickerRange: `default_value=(None, None)`
+- Chips（スライサーフィルタ）: `default_value=None`
+
+### デバッグ手順
+
+1. **_callbacks.pyでregister_clear_callbacks呼出を確認**
+   ```python
+   # ファイルの末尾に配置
+   register_clear_callbacks(CLEAR_PAIRS)
+   ```
+
+2. **フィルタの初期値を確認**
+   ```python
+   # _layout.pyでフィルタの初期値を確認
+   dcc.Dropdown(
+       id=f"{ID_PREFIX}filter-category",
+       value=None,  # または [] など
+       ...
+   )
+   ```
+
+3. **ブラウザのDevToolsで確認**
+   - クリアボタンをクリック
+   - Consoleタブでエラーが出ていないか確認
+   - Networkタブでコールバックが正常に実行されているか確認
+
+### 予防策
+
+- 基本的には `register_clear_callbacks(CLEAR_PAIRS)` のみで対応
+- カスタムフィルタの場合は、フィルタの初期値と同じ型・値を使用
+- テストでクリアボタンの動作を検証
+
+---
+
+## Bug Pattern 8: build_table で page_size=0 が無視される
+
+### 症状の詳細
+
+- `TableSpec(page_size=0)` を指定しても、テーブルにページネーションが表示される
+- デフォルトで20行ごとにページが分割される
+- 全行を一度に表示したいが、できない
+
+### 発生条件
+
+- `build_table()` 関数で `TableSpec` を使用している場合
+- `page_size=0` を指定して全行表示を期待している場合
+
+### 原因の詳細
+
+Dash DataTableの仕様上、`page_size=0` は無効値として扱われ、デフォルト値（20）に自動的に置換されます。これはDashの内部実装によるもので、`build_table()` の問題ではありません。
+
+### 解決方法
+
+#### 方法1: 大きなpage_sizeを指定（推奨）
+
+実質的に全行を表示する場合は、大きな値を指定：
+
+```python
+from src.charts.specs import TableSpec
+
+TABLE_SPECS = {
+    "all-data": TableSpec(
+        page_size=10000,  # 実質的に全行表示
+        sort_column="Date",
+        sort_ascending=False,
+    ),
+}
+```
+
+#### 方法2: ページネーションを無効化
+
+ページネーション自体を無効にする場合：
+
+```python
+TABLE_SPECS = {
+    "all-data": TableSpec(
+        page_action='none',  # ページネーション無効
+        sort_column="Date",
+        sort_ascending=False,
+    ),
+}
+```
+
+### デバッグ手順
+
+1. **TableSpecの定義を確認**
+   ```python
+   # _constants.py
+   print(TABLE_SPECS["all-data"].page_size)
+   # 0の場合は大きな値に変更
+   ```
+
+2. **build_table()の戻り値を確認**
+   ```python
+   table = build_table(df, TABLE_SPECS["all-data"])
+   print(table.page_size)  # 20になっている場合は対処が必要
+   ```
+
+3. **ブラウザでテーブルを確認**
+   - ページネーションが表示されているか
+   - 全行が表示されているか
+
+### 予防策
+
+- `page_size=0` は使用しない
+- 全行表示が必要な場合は `page_size=10000` など大きな値を指定
+- ページネーション不要な場合は `page_action='none'` を使用
+- データ量が多い場合は、パフォーマンスを考慮してページネーションを維持
+
+---
+
 ## その他のよくある問題
 
 ### 問題: データが表示されない

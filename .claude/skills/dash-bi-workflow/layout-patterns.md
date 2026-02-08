@@ -15,6 +15,86 @@
 | Bootstrap Grid | フィルタ6個以下<br>非対称幅が必要 | `dbc.Row` + `dbc.Col` with `md` | 柔軟な幅調整<br>高さ揃えが容易 | 多列時にコード冗長 |
 | CSS Grid | フィルタ7個以上<br>均等幅で1行配置 | `html.Div` + `.filter-row-Ncol` | コード簡潔<br>均等配置が容易 | 非対称幅には不向き |
 
+### フィルタ5個以上の場合: _filters.py への委譲
+
+フィルタが5個以上ある場合は、`_filters.py` にフィルタレイアウト構築を分離します。
+
+```python
+# _filters.py
+from dash import html
+from src.components.filters import create_slicer_filter, create_category_filter
+from ._constants import (
+    FILTER_ID_REGION,
+    FILTER_ID_YEAR,
+    CTRL_ID_CLEAR_REGION,
+    CTRL_ID_CLEAR_YEAR,
+    # ... その他のID定義
+)
+
+def build_filter_layout(opts: dict, title_element=None) -> list:
+    """フィルタ行を構築して返す。
+
+    Args:
+        opts: load_filter_options()が返すフィルタオプション辞書
+        title_element: 任意で第1行に追加するタイトル要素
+
+    Returns:
+        html.Div要素のリスト（複数のフィルタ行）
+    """
+    # タイトル + 主要フィルタ3個（Bootstrap Grid or CSS Grid）
+    filters_row1 = [
+        create_slicer_filter(
+            filter_id=FILTER_ID_REGION,
+            column_name="Region",
+            options=opts["regions"],
+            clear_button_id=CTRL_ID_CLEAR_REGION,  # クリアボタンID
+        ),
+        create_slicer_filter(
+            filter_id=FILTER_ID_YEAR,
+            column_name="Year",
+            options=opts["years"],
+            clear_button_id=CTRL_ID_CLEAR_YEAR,
+        ),
+        # ... その他のフィルタ
+    ]
+
+    if title_element is not None:
+        filters_row1 = [title_element] + filters_row1
+
+    title_row = html.Div(filters_row1, className="mb-3 filter-row-title-3filters")
+
+    # 詳細フィルタ7個（CSS Grid）
+    detail_row = html.Div([
+        create_category_filter(...),
+        create_slicer_filter(...),
+        # ... 計7個
+    ], className="mb-3 filter-row-7col")
+
+    return [title_row, detail_row]
+
+
+# _layout.py
+from ._filters import build_filter_layout
+
+def build_layout() -> html.Div:
+    # データ読み込み
+    opts = load_filter_options(...)
+
+    # タイトル要素の定義
+    title_element = html.Div("Dashboard Title", style=title_style)
+
+    # フィルタ行を委譲
+    filter_rows = build_filter_layout(opts, title_element=title_element)
+
+    return html.Div([
+        dmc.MantineProvider([
+            filter_rows[0],  # タイトル行 + 主要フィルタ
+            filter_rows[1],  # 詳細フィルタ行
+            # KPI, チャート, テーブル...
+        ]),
+    ], className="page-container")
+```
+
 ---
 
 ## Bootstrap Grid パターン
@@ -32,6 +112,7 @@ dbc.Row([
             filter_id="filter-1",
             column_name="Filter 1",
             options=options1,
+            clear_button_id="clear-filter-1",  # クリアボタンID（任意）
         ),
     ], md=2),  # 16.7%幅
     dbc.Col([
@@ -39,6 +120,7 @@ dbc.Row([
             filter_id="filter-2",
             column_name="Filter 2",
             options=options2,
+            clear_button_id="clear-filter-2",
         ),
     ], md=2),
     dbc.Col([
@@ -49,6 +131,40 @@ dbc.Row([
         ),
     ], md=2),
 ], className="mb-3 filter-row")
+```
+
+### clear_button_id パラメータ
+
+`create_slicer_filter()` および `create_category_filter()` は `clear_button_id` パラメータをサポートします。これにより、フィルタ内にクリアボタンを追加でき、ユーザーが選択をリセットできます。
+
+```python
+from src.components.filters import create_slicer_filter
+from ._constants import FILTER_ID_REGION, CTRL_ID_CLEAR_REGION
+
+create_slicer_filter(
+    filter_id=FILTER_ID_REGION,
+    column_name="Region",
+    options=options,
+    multi=True,
+    clear_button_id=CTRL_ID_CLEAR_REGION,  # クリアボタンIDを指定
+)
+```
+
+コールバック登録（`_callbacks.py`）:
+
+```python
+from src.utils.callback_helpers import register_clear_callbacks
+from ._constants import CLEAR_PAIRS
+
+# CLEAR_PAIRS は _constants.py で定義
+# CLEAR_PAIRS = [
+#     (CTRL_ID_CLEAR_REGION, FILTER_ID_REGION),
+#     (CTRL_ID_CLEAR_YEAR, FILTER_ID_YEAR),
+#     # ...
+# ]
+
+# コールバック関数定義の最後に追加
+register_clear_callbacks(CLEAR_PAIRS)
 ```
 
 ### タイトルカードのスタイル（高さ揃え）
@@ -228,11 +344,69 @@ Mantine Chipを使用するスライサーフィルタで、テキストが長�
 
 ---
 
-## 実装例: HAMM Overviewレイアウト
+## dmc.MantineProvider のラップスコープ
 
-### 完全なレイアウトコード
+`dmc.MantineProvider` は Mantine コンポーネント（Chip, ChipGroup など）を使用する際に必要です。ラップするスコープには2つのパターンがあります。
+
+### パターンA: ページ全体をラップ
 
 ```python
+def build_layout() -> html.Div:
+    return html.Div([
+        dmc.MantineProvider([
+            # フィルタ行
+            html.Div([...], className="filter-row-7col"),
+            # KPI行
+            dbc.Row([...]),
+            # チャート行
+            dbc.Row([...]),
+        ]),
+    ], className="page-container")
+```
+
+利点: 全体で一貫したMantineテーマを適用可能
+欠点: 不要な箇所までMantineプロバイダに依存
+
+### パターンB: フィルタ行のみをラップ（hamm_overview）
+
+```python
+def build_layout() -> html.Div:
+    filter_rows = build_filter_layout(opts, title_element=title_element)
+
+    return html.Div([
+        dmc.MantineProvider([
+            filter_rows[0],  # タイトル行 + 主要フィルタ
+            filter_rows[1],  # 詳細フィルタ行
+        ]),  # MantineProviderはフィルタ行のみ
+        # KPI行（Mantineプロバイダ外）
+        dbc.Row([...]),
+        # チャート行（Mantineプロバイダ外）
+        dbc.Row([...]),
+    ], className="page-container")
+```
+
+利点: 必要な範囲にのみMantine依存を限定
+欠点: Mantineコンポーネントをフィルタ外で使う場合は別途ラップが必要
+
+どちらのパターンも有効です。Mantineコンポーネントを使用する範囲に応じて選択してください。
+
+---
+
+## 実装例: HAMM Overviewレイアウト
+
+### 完全なレイアウトコード（_layout.py）
+
+```python
+from dash import html, dcc
+import dash_bootstrap_components as dbc
+import dash_mantine_components as dmc
+
+from src.data.parquet_reader import ParquetReader
+from src.data.data_source_registry import resolve_dataset_id
+from ._constants import DASHBOARD_ID, CHART_ID_VOLUME_TABLE, CHART_ID_VOLUME_CHART
+from ._data_loader import load_filter_options
+from ._filters import build_filter_layout
+
 def build_layout() -> html.Div:
     # データ読み込みとフィルタオプション取得
     reader = ParquetReader()
@@ -252,88 +426,92 @@ def build_layout() -> html.Div:
         "alignItems": "center",
     }
 
+    # タイトル要素を作成
+    title_element = html.Div("HAMM Overview \U0001f437", style=title_style)
+
+    # フィルタ行を委譲（_filters.py）
+    filter_rows = build_filter_layout(opts, title_element=title_element)
+
     return html.Div([
         dmc.MantineProvider([
-            # Row 1: タイトル50% + フィルタ3個（Bootstrap Grid）
-            dbc.Row([
-                dbc.Col([
-                    html.Div("HAMM Overview 🐷", style=title_style),
-                ], md=6),
-                dbc.Col([
-                    create_slicer_filter(
-                        filter_id=FILTER_ID_REGION,
-                        column_name="Region",
-                        options=opts["regions"],
-                        multi=True,
-                    ),
-                ], md=2),
-                dbc.Col([
-                    create_slicer_filter(
-                        filter_id=FILTER_ID_YEAR,
-                        column_name="Year",
-                        options=opts["years"],
-                        multi=True,
-                    ),
-                ], md=2),
-                dbc.Col([
-                    create_category_filter(
-                        filter_id=FILTER_ID_MONTH,
-                        column_name="Month",
-                        options=opts["months"],
-                        multi=True,
-                    ),
-                ], md=2),
-            ], className="mb-3 filter-row"),
+            filter_rows[0],  # タイトル行 + 主要フィルタ3個
+            filter_rows[1],  # 詳細フィルタ7個
+        ]),  # MantineProviderはフィルタ行のみ（パターンB）
 
-            # Row 2: 7フィルタ均等配置（CSS Grid）
-            html.Div([
-                create_category_filter(
-                    filter_id=FILTER_ID_TASK_ID,
-                    column_name="Task ID",
-                    options=opts["task_ids"],
-                    multi=False,
-                ),
-                create_slicer_filter(
-                    filter_id=FILTER_ID_CONTENT_TYPE,
-                    column_name="Content Type",
-                    options=opts["content_types"],
-                    multi=True,
-                ),
-                create_slicer_filter(
-                    filter_id=FILTER_ID_ORIGINAL_LANGUAGE,
-                    column_name="Original Language",
-                    options=opts["original_languages"],
-                    multi=True,
-                ),
-                create_slicer_filter(
-                    filter_id=FILTER_ID_DIALOGUE,
-                    column_name="Was Dialogue Provided?",
-                    options=opts["dialogue_options"],
-                    multi=True,
-                ),
-                create_slicer_filter(
-                    filter_id=FILTER_ID_GENRE,
-                    column_name="Genre",
-                    options=opts["genres"],
-                    multi=True,
-                ),
-                create_category_filter(
-                    filter_id=FILTER_ID_ERROR_CODE,
-                    column_name="Error Code",
-                    options=opts["error_codes"],
-                    multi=True,
-                ),
-                create_slicer_filter(
-                    filter_id=FILTER_ID_ERROR_TYPE,
-                    column_name="Error Type",
-                    options=opts["error_types"],
-                    multi=True,
-                ),
-            ], className="mb-3 filter-row-7col"),
-
-            # KPIカード、チャート、テーブルなど...
-        ]),
+        # KPI行、チャート行など（Mantineプロバイダ外）
+        dbc.Row([
+            dbc.Col([
+                html.H4("Volume Chart", className="mb-2"),
+                dcc.Graph(id=CHART_ID_VOLUME_CHART),
+            ], md=12),
+        ], className="mb-4"),
     ], className="page-container")
+```
+
+### フィルタレイアウトコード（_filters.py）
+
+```python
+from dash import html
+from src.components.filters import create_category_filter, create_slicer_filter
+from ._constants import (
+    FILTER_ID_REGION,
+    FILTER_ID_YEAR,
+    FILTER_ID_MONTH,
+    FILTER_ID_TASK_ID,
+    # ... その他のID
+    CTRL_ID_CLEAR_REGION,
+    CTRL_ID_CLEAR_YEAR,
+    # ... その他のクリアボタンID
+)
+
+def build_filter_layout(opts: dict, title_element=None) -> list:
+    """フィルタ行を構築して返す。
+
+    Args:
+        opts: load_filter_options()が返すフィルタオプション辞書
+        title_element: 任意で第1行に追加するタイトル要素
+
+    Returns:
+        html.Div要素のリスト（2行分）
+    """
+    # タイトル + 主要フィルタ3個
+    filters_row1 = [
+        create_slicer_filter(
+            filter_id=FILTER_ID_REGION,
+            column_name="Region",
+            options=opts["regions"],
+            clear_button_id=CTRL_ID_CLEAR_REGION,
+        ),
+        create_slicer_filter(
+            filter_id=FILTER_ID_YEAR,
+            column_name="Year",
+            options=opts["years"],
+            clear_button_id=CTRL_ID_CLEAR_YEAR,
+        ),
+        create_category_filter(
+            filter_id=FILTER_ID_MONTH,
+            column_name="Month",
+            options=opts["months"],
+        ),
+    ]
+
+    if title_element is not None:
+        filters_row1 = [title_element] + filters_row1
+
+    title_row = html.Div(filters_row1, className="mb-3 filter-row-title-3filters")
+
+    # 詳細フィルタ7個（CSS Grid）
+    detail_row = html.Div([
+        create_category_filter(
+            filter_id=FILTER_ID_TASK_ID,
+            column_name="Task ID",
+            options=opts["task_ids"],
+            multi=True,
+        ),
+        # ... 残り6個のフィルタ（clear_button_id付き）
+    ], className="mb-3 filter-row-7col")
+
+    return [title_row, detail_row]
 ```
 
 ### 完全なCSS（`assets/03-components.css`）

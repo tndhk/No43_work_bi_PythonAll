@@ -2,56 +2,247 @@
 
 このドキュメントでは、実際のプロジェクトで使用されているダッシュボード作成のコード例を提供します。
 
-**注意**: データ取得・ETL処理の例は `etl-workflow` スキルを参照してください。
+注意: データ取得・ETL処理の例は `etl-workflow` スキルを参照してください。
 
 ---
 
-## ダッシュボードページ例
+## ダッシュボードページ例（パッケージ形式）
 
-### 完全なダッシュボードページ
+このプロジェクトでは、パッケージ形式のダッシュボードが標準です。以下の例は `src/pages/cursor_usage/` を簡略化したものです。
 
-`src/pages/cursor_usage.py` の実装例：
+### ディレクトリ構造
+
+```
+src/pages/cursor_usage/
+├── __init__.py          # Dash登録 + layout参照 + コールバックインポート
+├── _constants.py        # 定数・Spec定義
+├── _data_loader.py      # データ読込・フィルタリング
+├── _layout.py           # レイアウト構築
+├── _callbacks.py        # コールバック（薄いオーケストレータ）
+└── SPEC.md              # ユーザー向け設計書
+```
+
+---
+
+### 1. `_constants.py` - 定数・Spec定義
 
 ```python
-"""Cursor Usage Dashboard page."""
-import dash
-from dash import html, dcc, callback, Input, Output, dash_table
-import dash_bootstrap_components as dbc
+"""Constants for the Cursor Usage Dashboard page.
+
+Centralizes dataset identifiers, column name mappings, ID prefixes,
+and declarative ChartSpec / TableSpec definitions.
+"""
+
+from src.charts.specs import ChartSpec, TableSpec
+
+# Dashboard identifier (used for config lookup)
+DASHBOARD_ID: str = "cursor_usage"
+
+# S3/Parquet dataset identifier (legacy fallback)
+DATASET_ID: str = "cursor-usage"
+
+# Component ID namespace prefix (for avoiding collisions with other pages)
+ID_PREFIX: str = "cu-"
+
+# Chart IDs used in this dashboard
+CHART_ID_KPI_TOTAL_COST: str = f"{ID_PREFIX}kpi-total-cost"
+CHART_ID_KPI_TOTAL_TOKENS: str = f"{ID_PREFIX}kpi-total-tokens"
+CHART_ID_COST_TREND: str = f"{ID_PREFIX}chart-cost-trend"
+CHART_ID_DATA_TABLE: str = f"{ID_PREFIX}data-table"
+
+# Mapping from logical filter/column key to the actual DataFrame column name
+COLUMN_MAP: dict[str, str] = {
+    "date": "Date",
+    "model": "Model",
+    "cost": "Cost",
+    "total_tokens": "Total Tokens",
+    "user": "User",
+    "kind": "Kind",
+}
+
+# ---------------------------------------------------------------------------
+# Chart / Table Specs (declarative definitions)
+# ---------------------------------------------------------------------------
+
+COST_TREND_SPEC: ChartSpec = ChartSpec(
+    title="Daily Cost Trend",
+    chart_type="line",
+    x_column=COLUMN_MAP["date"],
+    y_columns=[COLUMN_MAP["cost"]],
+    show_legend=False,
+)
+
+DETAIL_TABLE_SPEC: TableSpec = TableSpec(
+    title="Detailed Data",
+    style_table={"overflowX": "auto"},
+    style_cell={"textAlign": "left", "padding": "8px"},
+    style_header={"fontWeight": "bold"},
+    style_data_conditional=[],
+    page_size=20,
+    column_order=[
+        COLUMN_MAP["date"],
+        COLUMN_MAP["user"],
+        COLUMN_MAP["model"],
+        COLUMN_MAP["cost"],
+    ],
+)
+```
+
+---
+
+### 2. `backend/config/domo_datasets.yaml` - データソース設定
+
+```yaml
+# DOMO DataSet Configuration
+datasets:
+  - name: "Cursor Usage Data"
+    domo_dataset_id: "abc123-uuid-from-domo"
+    minio_dataset_id: "cursor-usage"
+    partition_column: "Date"
+    enabled: true
+    description: "Cursor API usage tracking data"
+```
+
+---
+
+### 3. `_data_loader.py` - データ読込・フィルタリング
+
+```python
+"""Data loading and filtering logic for Cursor Usage Dashboard."""
 import pandas as pd
-import plotly.graph_objects as go
 
 from src.data.parquet_reader import ParquetReader
 from src.core.cache import get_cached_dataset
-from src.data.filter_engine import FilterSet, CategoryFilter, DateRangeFilter, apply_filters
-from src.components.filters import create_date_range_filter, create_category_filter
-from src.components.cards import create_kpi_card
-from src.charts.templates import render_line_chart, render_bar_chart, render_pie_chart
-
-dash.register_page(__name__, path="/cursor-usage", name="Cursor Usage", order=1)
+from src.data.filter_engine import FilterSet, CategoryFilter, DateRangeFilter, apply_filters, extract_unique_values
+from src.utils.filter_helpers import build_filter_set_from_map
+from ._constants import COLUMN_MAP, DASHBOARD_ID
 
 
-def layout():
-    """Cursor Usage Dashboard layout."""
-    dataset_id = "cursor-usage"
+def load_filter_options(reader: ParquetReader, dataset_id: str) -> dict:
+    """Load filter option values from cached dataset.
 
-    # Load data to get available options for filters
-    reader = ParquetReader()
+    Returns a dict with keys: models, users, min_date, max_date
+
+    On any exception returns safe defaults (empty lists / None).
+    """
     try:
         df = get_cached_dataset(reader, dataset_id)
 
-        # Extract date from ISO datetime string (strip timezone for filter compatibility)
-        df["Date"] = pd.to_datetime(df["Date"], utc=True).dt.tz_convert(None)
-        df["DateOnly"] = df["Date"].dt.date
+        date_col = COLUMN_MAP["date"]
+        model_col = COLUMN_MAP["model"]
+        user_col = COLUMN_MAP["user"]
 
-        # Get unique models for filter
-        models = sorted(df["Model"].unique().tolist())
-        min_date = df["DateOnly"].min().isoformat()
-        max_date = df["DateOnly"].max().isoformat()
+        # Strip timezone for filter compatibility
+        df[date_col] = pd.to_datetime(df[date_col], utc=True).dt.tz_convert(None)
+        df["DateOnly"] = df[date_col].dt.date
+
+        # Extract unique values (exclude NaN)
+        models = extract_unique_values(df, model_col)
+        users = extract_unique_values(df, user_col)
+
+        # Extract date range
+        if len(df) > 0:
+            min_date = df["DateOnly"].min().isoformat()
+            max_date = df["DateOnly"].max().isoformat()
+        else:
+            min_date = None
+            max_date = None
+
+        return {
+            "models": models,
+            "users": users,
+            "min_date": min_date,
+            "max_date": max_date,
+        }
+
     except Exception:
-        # If data not loaded yet, use defaults
-        models = []
-        min_date = None
-        max_date = None
+        return {
+            "models": [],
+            "users": [],
+            "min_date": None,
+            "max_date": None,
+        }
+
+
+def load_and_filter_data(
+    reader: ParquetReader,
+    dataset_id: str,
+    start_date,
+    end_date,
+    model_values,
+    user_values,
+) -> pd.DataFrame:
+    """Load dataset and apply all filter criteria.
+
+    Args:
+        reader: ParquetReader instance.
+        dataset_id: S3 dataset identifier.
+        start_date: ISO date string (YYYY-MM-DD) or None.
+        end_date: ISO date string (YYYY-MM-DD) or None.
+        model_values: List of model name strings or None/[].
+        user_values: List of user name strings or None/[].
+
+    Returns:
+        Filtered DataFrame.
+    """
+    df = get_cached_dataset(reader, dataset_id)
+
+    date_col = COLUMN_MAP["date"]
+
+    # Strip timezone for filter compatibility (Parquet returns UTC-aware)
+    df[date_col] = pd.to_datetime(df[date_col], utc=True).dt.tz_convert(None)
+    df["DateOnly"] = df[date_col].dt.date
+
+    # Build FilterSet using helper function
+    filter_pairs = [
+        ("model", model_values),
+        ("user", user_values),
+    ]
+    filters = build_filter_set_from_map(COLUMN_MAP, filter_pairs)
+
+    # Add date range filter if provided
+    if start_date and end_date:
+        filters.date_filters.append(
+            DateRangeFilter(
+                column=date_col,
+                start_date=start_date,
+                end_date=end_date,
+            )
+        )
+
+    return apply_filters(df, filters)
+```
+
+---
+
+### 4. `_layout.py` - レイアウト構築
+
+```python
+"""Cursor Usage Dashboard layout module."""
+from dash import html, dcc
+import dash_bootstrap_components as dbc
+
+from src.data.parquet_reader import ParquetReader
+from src.components.filters import create_date_range_filter, create_category_filter
+from ._constants import (
+    CHART_ID_KPI_TOTAL_COST,
+    CHART_ID_COST_TREND,
+    CHART_ID_DATA_TABLE,
+    ID_PREFIX,
+)
+from ._data_loader import load_filter_options
+
+
+def build_layout():
+    """Build Cursor Usage Dashboard layout.
+
+    Returns:
+        Dash layout component tree with filters, KPI cards, charts, and data table.
+    """
+    # Load data to get available options for filters
+    reader = ParquetReader()
+    dataset_id = "cursor-usage"
+    options = load_filter_options(reader, dataset_id)
 
     return html.Div([
         html.H1("Cursor Usage Dashboard", className="mb-4"),
@@ -60,327 +251,336 @@ def layout():
         dbc.Row([
             dbc.Col([
                 create_date_range_filter(
-                    filter_id="date-filter",
+                    filter_id=f"{ID_PREFIX}filter-date",
                     column_name="Date Range",
-                    min_date=min_date,
-                    max_date=max_date,
+                    min_date=options["min_date"],
+                    max_date=options["max_date"],
                 ),
-            ], md=6),
+            ], md=4),
             dbc.Col([
                 create_category_filter(
-                    filter_id="model-filter",
+                    filter_id=f"{ID_PREFIX}filter-model",
                     column_name="Model",
-                    options=models,
+                    options=options["models"],
                     multi=True,
                 ),
-            ], md=6),
+            ], md=4),
+            dbc.Col([
+                create_category_filter(
+                    filter_id=f"{ID_PREFIX}filter-user",
+                    column_name="User",
+                    options=options["users"],
+                    multi=True,
+                ),
+            ], md=4),
         ], className="mb-4"),
 
         # KPI Cards
         dbc.Row([
             dbc.Col([
-                html.Div(id="kpi-total-cost"),
-            ], md=4),
-            dbc.Col([
-                html.Div(id="kpi-total-tokens"),
-            ], md=4),
-            dbc.Col([
-                html.Div(id="kpi-request-count"),
+                html.Div(id=CHART_ID_KPI_TOTAL_COST),
             ], md=4),
         ], className="mb-4"),
 
-        # Charts Row 1
+        # Charts
         dbc.Row([
             dbc.Col([
-                dcc.Graph(id="chart-cost-trend"),
+                dcc.Graph(id=CHART_ID_COST_TREND),
             ], md=12),
-        ], className="mb-4"),
-
-        # Charts Row 2
-        dbc.Row([
-            dbc.Col([
-                dcc.Graph(id="chart-token-efficiency"),
-            ], md=6),
-            dbc.Col([
-                dcc.Graph(id="chart-model-distribution"),
-            ], md=6),
         ], className="mb-4"),
 
         # Data Table
         dbc.Row([
             dbc.Col([
                 html.H3("Detailed Data", className="mb-3"),
-                html.Div(id="data-table"),
+                html.Div(id=CHART_ID_DATA_TABLE),
             ], md=12),
         ]),
     ], className="page-container")
+```
+
+---
+
+### 5. `_callbacks.py` - コールバック（薄いオーケストレータ）
+
+```python
+"""Cursor Usage Dashboard callbacks module.
+
+Thin orchestration layer: data loading -> aggregation -> shared builders.
+All chart/table rendering uses the shared build_chart / build_table
+infrastructure with declarative Specs defined in _constants.py.
+"""
+from dash import callback, Input, Output
+
+from src.data.parquet_reader import ParquetReader
+from src.components.cards import create_kpi_card
+from src.charts.chart_builder import build_chart
+from src.charts.table_builder import build_table
+from src.charts.empty_states import create_empty_figure, create_error_figure, create_empty_table
+from src.utils.callback_helpers import register_clear_callbacks
+from ._constants import (
+    CHART_ID_KPI_TOTAL_COST,
+    CHART_ID_COST_TREND,
+    CHART_ID_DATA_TABLE,
+    COLUMN_MAP,
+    ID_PREFIX,
+    COST_TREND_SPEC,
+    DETAIL_TABLE_SPEC,
+)
+from ._data_loader import load_and_filter_data
 
 
 @callback(
     [
-        Output("kpi-total-cost", "children"),
-        Output("kpi-total-tokens", "children"),
-        Output("kpi-request-count", "children"),
-        Output("chart-cost-trend", "figure"),
-        Output("chart-token-efficiency", "figure"),
-        Output("chart-model-distribution", "figure"),
-        Output("data-table", "children"),
+        Output(CHART_ID_KPI_TOTAL_COST, "children"),
+        Output(CHART_ID_COST_TREND, "figure"),
+        Output(CHART_ID_DATA_TABLE, "children"),
     ],
     [
-        Input("date-filter", "start_date"),
-        Input("date-filter", "end_date"),
-        Input("model-filter", "value"),
+        Input(f"{ID_PREFIX}filter-date", "start_date"),
+        Input(f"{ID_PREFIX}filter-date", "end_date"),
+        Input(f"{ID_PREFIX}filter-model", "value"),
+        Input(f"{ID_PREFIX}filter-user", "value"),
     ],
 )
-def update_dashboard(start_date, end_date, model_values):
-    """Update dashboard components based on filters."""
-    dataset_id = "cursor-usage"
+def update_dashboard(start_date, end_date, model_values, user_values):
+    """Update dashboard components based on filters.
+
+    Args:
+        start_date: Start date from date range filter (ISO string or None)
+        end_date: End date from date range filter (ISO string or None)
+        model_values: Selected models from dropdown (list or None)
+        user_values: Selected users from dropdown (list or None)
+
+    Returns:
+        Tuple of (kpi_cost, cost_trend_fig, table_component)
+    """
     reader = ParquetReader()
+    dataset_id = "cursor-usage"
 
     try:
-        # Load data
-        df = get_cached_dataset(reader, dataset_id)
-
-        # Convert Date column to datetime (strip timezone for filter compatibility)
-        df["Date"] = pd.to_datetime(df["Date"], utc=True).dt.tz_convert(None)
-        df["DateOnly"] = df["Date"].dt.date
-
-        # Build filters
-        filters = FilterSet()
-
-        if start_date and end_date:
-            filters.date_filters.append(
-                DateRangeFilter(
-                    column="Date",
-                    start_date=start_date,
-                    end_date=end_date,
-                )
-            )
-
-        if model_values:
-            filters.category_filters.append(
-                CategoryFilter(
-                    column="Model",
-                    values=model_values,
-                )
-            )
-
-        # Apply filters
-        filtered_df = apply_filters(df, filters)
+        # Load and filter data
+        filtered_df = load_and_filter_data(
+            reader, dataset_id, start_date, end_date, model_values, user_values
+        )
 
         if len(filtered_df) == 0:
-            # Empty state
-            empty_fig = go.Figure()
-            empty_fig.add_annotation(
-                text="No data available for selected filters",
-                xref="paper", yref="paper",
-                x=0.5, y=0.5,
-                showarrow=False,
+            # Empty state using shared functions
+            empty_fig = create_empty_figure(
+                message="No data available for selected filters"
             )
-            empty_fig.update_layout(height=400)
 
             return (
                 create_kpi_card("Total Cost", "$0.00"),
-                create_kpi_card("Total Tokens", "0"),
-                create_kpi_card("Request Count", "0"),
                 empty_fig,
-                empty_fig,
-                empty_fig,
-                html.P("No data available", className="text-muted"),
+                create_empty_table(),
             )
 
+        cost_col = COLUMN_MAP["cost"]
+        date_col = COLUMN_MAP["date"]
+
         # Calculate KPIs
-        total_cost = filtered_df["Cost"].sum()
-        total_tokens = filtered_df["Total Tokens"].sum()
-        request_count = len(filtered_df)
-
-        # KPI Cards
+        total_cost = filtered_df[cost_col].sum()
         kpi_cost = create_kpi_card("Total Cost", f"${total_cost:.2f}")
-        kpi_tokens = create_kpi_card("Total Tokens", f"{total_tokens:,}")
-        kpi_requests = create_kpi_card("Request Count", f"{request_count:,}")
 
-        # Chart 1: Daily Cost Trend
-        daily_cost = filtered_df.groupby(filtered_df["Date"].dt.date)["Cost"].sum().reset_index()
-        daily_cost.columns = ["Date", "Cost"]
-        daily_cost = daily_cost.sort_values("Date")
+        # Chart: Daily Cost Trend
+        daily_cost = filtered_df.groupby(filtered_df[date_col].dt.date)[cost_col].sum().reset_index()
+        daily_cost.columns = [date_col, cost_col]
+        daily_cost = daily_cost.sort_values(date_col)
 
-        cost_trend_fig = render_line_chart(
-            dataset=daily_cost,
-            filters=None,
-            params={
-                "x_column": "Date",
-                "y_column": "Cost",
-            },
-        )
-        cost_trend_fig.update_layout(
-            title="Daily Cost Trend",
-            xaxis_title="Date",
-            yaxis_title="Cost ($)",
-        )
+        cost_trend_fig = build_chart(daily_cost, COST_TREND_SPEC)
 
-        # Chart 2: Token Efficiency by Model
-        model_stats = filtered_df.groupby("Model").agg({
-            "Total Tokens": "sum",
-            "Cost": "sum",
-        }).reset_index()
-        model_stats["TokensPerCost"] = model_stats["Total Tokens"] / model_stats["Cost"]
-        model_stats = model_stats.sort_values("TokensPerCost", ascending=False)
-
-        efficiency_fig = render_bar_chart(
-            dataset=model_stats,
-            filters=None,
-            params={
-                "x_column": "Model",
-                "y_column": "TokensPerCost",
-            },
-        )
-        efficiency_fig.update_layout(
-            title="Token Efficiency by Model (Tokens per $)",
-            xaxis_title="Model",
-            yaxis_title="Tokens per Cost",
-        )
-
-        # Chart 3: Model Distribution
-        model_dist = filtered_df.groupby("Model")["Cost"].sum().reset_index()
-        model_dist.columns = ["Model", "Cost"]
-
-        distribution_fig = render_pie_chart(
-            dataset=model_dist,
-            filters=None,
-            params={
-                "names_column": "Model",
-                "values_column": "Cost",
-            },
-        )
-        distribution_fig.update_layout(
-            title="Cost Distribution by Model",
-        )
-
-        # Data Table (Dash 4.x compatible)
-        display_df = filtered_df[[
-            "Date", "User", "Model", "Kind",
-            "Total Tokens", "Cost"
-        ]].copy()
-        display_df["Date"] = display_df["Date"].dt.strftime("%Y-%m-%d %H:%M")
+        # Data Table
+        display_df = filtered_df.copy()
+        display_df[date_col] = display_df[date_col].dt.strftime("%Y-%m-%d %H:%M")
         display_df = display_df.head(100)
 
-        table_component = dash_table.DataTable(
-            data=display_df.to_dict("records"),
-            columns=[{"name": c, "id": c} for c in display_df.columns],
-            page_size=20,
-            style_table={"overflowX": "auto"},
-            style_cell={"textAlign": "left", "padding": "8px"},
-            style_header={"fontWeight": "bold"},
-        )
+        _, table_component = build_table(display_df, DETAIL_TABLE_SPEC)
 
         return (
             kpi_cost,
-            kpi_tokens,
-            kpi_requests,
             cost_trend_fig,
-            efficiency_fig,
-            distribution_fig,
             table_component,
         )
 
     except Exception as e:
-        # Error state
-        error_msg = html.Div([
-            html.P(f"Error loading data: {str(e)}", className="text-danger"),
-        ])
-
-        empty_fig = go.Figure()
-        empty_fig.add_annotation(
-            text=f"Error: {str(e)}",
-            xref="paper", yref="paper",
-            x=0.5, y=0.5,
-            showarrow=False,
-        )
-        empty_fig.update_layout(height=400)
+        # Error state using shared functions
+        error_fig = create_error_figure(error=str(e))
 
         return (
             create_kpi_card("Total Cost", "Error"),
-            create_kpi_card("Total Tokens", "Error"),
-            create_kpi_card("Request Count", "Error"),
-            empty_fig,
-            empty_fig,
-            empty_fig,
-            error_msg,
+            error_fig,
+            create_empty_table(message=f"Error loading data: {str(e)}"),
         )
+
+
+# Register clear button callbacks (if using slicer filters)
+# Example: CLEAR_PAIRS = [(FILTER_ID_MODEL, CTRL_ID_CLEAR_MODEL), ...]
+# register_clear_callbacks(CLEAR_PAIRS)
+```
+
+---
+
+### 6. `__init__.py` - Dash登録
+
+```python
+"""Cursor Usage Dashboard page."""
+import dash
+from ._layout import build_layout
+
+
+def layout():
+    """Return Cursor Usage Dashboard layout."""
+    return build_layout()
+
+
+dash.register_page(__name__, path="/cursor-usage", name="Cursor Usage", order=1, layout=layout)
+
+# Import callbacks to register them with Dash
+from . import _callbacks  # noqa: F401, E402
+```
+
+---
+
+### 7. `_filters.py` - フィルタUI構築（5個以上のフィルタがある場合）
+
+フィルタが5個以上ある場合は、`_filters.py` に `build_filter_layout()` 関数を定義します。
+以下は `hamm_overview` からの参考例:
+
+```python
+"""Filter UI layout builder for Hamm Overview dashboard."""
+from dash import html
+import dash_bootstrap_components as dbc
+
+from src.components.filters import create_category_filter, create_slicer_filter
+from ._constants import (
+    FILTER_ID_REGION,
+    FILTER_ID_YEAR,
+    CTRL_ID_CLEAR_REGION,
+    CTRL_ID_CLEAR_YEAR,
+)
+
+
+def build_filter_layout(opts: dict, title_element=None) -> list:
+    """Build the filter section rows for Hamm Overview layout.
+
+    Args:
+        opts: Dict returned by load_filter_options(), containing
+            regions, years, etc.
+        title_element: Optional element to prepend to the first row
+            (e.g. the dashboard title div).
+
+    Returns:
+        List of html.Div components representing filter rows.
+    """
+    filters_row1 = [
+        create_slicer_filter(
+            filter_id=FILTER_ID_REGION,
+            column_name="Region",
+            options=opts["regions"],
+            clear_button_id=CTRL_ID_CLEAR_REGION,
+        ),
+        create_slicer_filter(
+            filter_id=FILTER_ID_YEAR,
+            column_name="Year",
+            options=opts["years"],
+            clear_button_id=CTRL_ID_CLEAR_YEAR,
+        ),
+    ]
+
+    if title_element is not None:
+        filters_row1 = [title_element] + filters_row1
+
+    title_row = html.Div(
+        filters_row1,
+        className="mb-3 filter-row-title-2filters",
+    )
+
+    return [title_row]
+```
+
+クリアボタンコールバックは `_callbacks.py` の末尾で登録:
+
+```python
+from src.utils.callback_helpers import register_clear_callbacks
+from ._constants import CLEAR_PAIRS
+
+# Clear callback pairs: (filter_id, clear_button_id)
+CLEAR_PAIRS = [
+    (FILTER_ID_REGION, CTRL_ID_CLEAR_REGION),
+    (FILTER_ID_YEAR, CTRL_ID_CLEAR_YEAR),
+]
+
+# Register all clear callbacks
+register_clear_callbacks(CLEAR_PAIRS)
 ```
 
 ---
 
 ## よく使うコールバックパターン
 
-### パターン1: シンプルなフィルタ連動
+### パターン1: 共通ビルダーを使った単一チャート更新
 
 ```python
+from src.charts.chart_builder import build_chart
+from src.charts.specs import ChartSpec
+
+CHART_SPEC = ChartSpec(
+    title="Daily Trend",
+    chart_type="line",
+    x_column="Date",
+    y_columns=["Value"],
+)
+
 @callback(
     Output("chart", "figure"),
-    [
-        Input("filter-1", "value"),
-        Input("filter-2", "value"),
-    ],
+    [Input("filter-1", "value")],
 )
-def update_chart(filter1_value, filter2_value):
+def update_chart(filter_value):
     """Update chart based on filters."""
-    df = get_cached_dataset(reader, dataset_id)
-    
-    # Apply filters
-    if filter1_value:
-        df = df[df["Column1"] == filter1_value]
-    if filter2_value:
-        df = df[df["Column2"].isin(filter2_value)]
-    
-    # Create chart
-    fig = render_line_chart(
-        dataset=df,
-        filters=None,
-        params={"x_column": "Date", "y_column": "Value"},
-    )
-    
-    return fig
+    df = load_and_filter_data(reader, dataset_id, filter_value)
+
+    # Use shared builder with declarative spec
+    return build_chart(df, CHART_SPEC)
 ```
 
-### パターン2: 複数出力のコールバック
+### パターン2: 共通ビルダーを使った複数出力
 
 ```python
+from src.charts.chart_builder import build_chart
+from src.charts.table_builder import build_table
+from src.components.cards import create_kpi_card
+
 @callback(
     [
         Output("kpi-1", "children"),
-        Output("kpi-2", "children"),
         Output("chart", "figure"),
+        Output("table", "children"),
     ],
     [Input("filter", "value")],
 )
 def update_dashboard(filter_value):
     """Update multiple components."""
-    df = get_cached_dataset(reader, dataset_id)
-    
-    if filter_value:
-        df = df[df["Category"] == filter_value]
-    
-    # Calculate KPIs
-    kpi1_value = df["Value"].sum()
-    kpi2_value = len(df)
-    
-    # Create components
-    kpi1 = create_kpi_card("Total", f"{kpi1_value:,.0f}")
-    kpi2 = create_kpi_card("Count", f"{kpi2_value:,}")
-    
-    fig = render_bar_chart(
-        dataset=df.groupby("Date")["Value"].sum().reset_index(),
-        filters=None,
-        params={"x_column": "Date", "y_column": "Value"},
-    )
-    
-    return kpi1, kpi2, fig
+    df = load_and_filter_data(reader, dataset_id, filter_value)
+
+    # Calculate KPI
+    kpi_value = df["Value"].sum()
+    kpi1 = create_kpi_card("Total", f"{kpi_value:,.0f}")
+
+    # Build chart using shared builder
+    chart_fig = build_chart(df, CHART_SPEC)
+
+    # Build table using shared builder
+    _, table_component = build_table(df, TABLE_SPEC)
+
+    return kpi1, chart_fig, table_component
 ```
 
-### パターン3: エラーハンドリング付き
+### パターン3: エラーハンドリング（共通empty_states使用）
 
 ```python
+from src.charts.empty_states import create_empty_figure, create_error_figure, create_empty_table
+
 @callback(
     Output("output", "children"),
     [Input("input", "value")],
@@ -388,20 +588,45 @@ def update_dashboard(filter_value):
 def update_output(input_value):
     """Update output with error handling."""
     try:
-        # Process data
-        df = get_cached_dataset(reader, dataset_id)
-        result = process_data(df, input_value)
-        
-        return html.Div([
-            html.H3("Results"),
-            html.P(str(result)),
-        ])
-    
+        df = load_and_filter_data(reader, dataset_id, input_value)
+
+        if len(df) == 0:
+            # Empty state
+            return create_empty_figure(message="No data available")
+
+        # Normal processing
+        return build_chart(df, CHART_SPEC)
+
     except Exception as e:
         # Error state
-        return html.Div([
-            html.P(f"Error: {str(e)}", className="text-danger"),
-        ], className="alert alert-danger")
+        return create_error_figure(error=str(e))
+```
+
+### パターン4: build_filter_set_from_map を使ったフィルタ構築
+
+```python
+from src.utils.filter_helpers import build_filter_set_from_map
+from src.data.filter_engine import apply_filters
+
+COLUMN_MAP = {
+    "region": "notification_company_name",
+    "year": "_year",
+    "month": "_month",
+}
+
+def load_and_filter_data(reader, dataset_id, region_values, year_values, month_values):
+    """Load and filter data using helper function."""
+    df = get_cached_dataset(reader, dataset_id)
+
+    # Build FilterSet using helper
+    filter_pairs = [
+        ("region", region_values),
+        ("year", year_values),
+        ("month", month_values),
+    ]
+    filters = build_filter_set_from_map(COLUMN_MAP, filter_pairs)
+
+    return apply_filters(df, filters)
 ```
 
 ---
@@ -410,7 +635,7 @@ def update_output(input_value):
 
 ### z-index問題の完全な修正
 
-`assets/03-components.css` に追加する完全なコード：
+`assets/03-components.css` に追加する完全なコード:
 
 ```css
 /* Dash 4.x (radix) dropdown/datepicker content */
@@ -421,7 +646,6 @@ def update_output(input_value):
 .dash-datepicker-popover,
 .dash-datepicker-overlay,
 [data-radix-popper-content-wrapper] {
-  position: relative !important;
   z-index: 9999 !important;
 }
 
@@ -429,9 +653,17 @@ def update_output(input_value):
   z-index: 9999 !important;
 }
 
-/* KPIカードのhover効果を調整（transformを削除） */
-.kpi-card:hover {
-  /* transform: translateY(-2px); を削除 */
+/* ドロップダウンの背景色を明示設定（透明防止） */
+.dash-dropdown-content {
+  background-color: white;
+}
+
+/* カードのhover効果を調整（transformを削除してスタッキングコンテキスト問題を防止） */
+.card {
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.card:hover {
   box-shadow: var(--shadow-md), var(--shadow-glow);
   border-color: var(--border-accent);
 }
@@ -561,37 +793,28 @@ display_df["Rate"] = display_df["Rate"].apply(lambda x: f"{x:.1%}")
 
 ## エラーハンドリングパターン
 
-### パターン1: 空データの処理
+### パターン1: 空データの処理（共通関数使用）
 
 ```python
+from src.charts.empty_states import create_empty_figure
+
 if len(filtered_df) == 0:
-    empty_fig = go.Figure()
-    empty_fig.add_annotation(
-        text="No data available for selected filters",
-        xref="paper", yref="paper",
-        x=0.5, y=0.5,
-        showarrow=False,
-    )
-    empty_fig.update_layout(height=400)
-    return empty_fig
+    return create_empty_figure(message="No data available for selected filters")
 ```
 
-### パターン2: 例外処理
+### パターン2: 例外処理（共通関数使用）
 
 ```python
+from src.charts.empty_states import create_error_figure, create_empty_table
+
 try:
     df = get_cached_dataset(reader, dataset_id)
-    # Process data
     result = process_data(df)
     return result
 except FileNotFoundError:
-    return html.Div([
-        html.P("Data file not found. Please run ETL script first.", className="text-warning"),
-    ])
+    return create_empty_table(message="Data file not found. Please run ETL script first.")
 except Exception as e:
-    return html.Div([
-        html.P(f"Error: {str(e)}", className="text-danger"),
-    ])
+    return create_error_figure(error=str(e))
 ```
 
 ### パターン3: データ検証
@@ -602,9 +825,7 @@ required_columns = ["Date", "Value", "Category"]
 missing_columns = [col for col in required_columns if col not in df.columns]
 
 if missing_columns:
-    return html.Div([
-        html.P(f"Missing columns: {', '.join(missing_columns)}", className="text-danger"),
-    ])
+    return create_error_figure(error=f"Missing columns: {', '.join(missing_columns)}")
 ```
 
 ---
