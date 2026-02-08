@@ -179,13 +179,13 @@ class TestMonthFilter:
         slicer = find_component_by_id(rows[0], "apac-dot-filter-month")
         assert slicer.multiple is True
 
-    def test_month_filter_default_value_all_months(self):
+    def test_month_filter_default_value_empty(self):
         from src.pages.apac_dot_due_date._filters import build_filter_layout
 
         opts = _make_filter_options()
         rows = build_filter_layout(opts)
         slicer = find_component_by_id(rows[0], "apac-dot-filter-month")
-        assert sorted(slicer.value) == sorted(opts["months"])
+        assert slicer.value == []
 
     def test_month_filter_options_count(self):
         from src.pages.apac_dot_due_date._filters import build_filter_layout
@@ -215,7 +215,7 @@ class TestPrcFilter:
 
         rows = build_filter_layout(_make_filter_options())
         prc = find_component_by_id(rows[0], "apac-dot-filter-prc")
-        assert prc.value == "all"
+        assert prc.value == "prc_not_included"
 
     def test_prc_filter_is_single_select(self):
         from src.pages.apac_dot_due_date._filters import build_filter_layout
@@ -224,12 +224,12 @@ class TestPrcFilter:
         prc = find_component_by_id(rows[0], "apac-dot-filter-prc")
         assert prc.multiple is False
 
-    def test_prc_filter_has_three_options(self):
+    def test_prc_filter_has_two_options(self):
         from src.pages.apac_dot_due_date._filters import build_filter_layout
 
         rows = build_filter_layout(_make_filter_options())
         prc = find_component_by_id(rows[0], "apac-dot-filter-prc")
-        assert len(prc.children) == 3
+        assert len(prc.children) == 2
 
     def test_prc_filter_option_values(self):
         from src.pages.apac_dot_due_date._filters import build_filter_layout
@@ -237,16 +237,8 @@ class TestPrcFilter:
         rows = build_filter_layout(_make_filter_options())
         prc = find_component_by_id(rows[0], "apac-dot-filter-prc")
         values = [chip.value for chip in prc.children]
-        assert values == ["all", "prc_only", "prc_not_included"]
+        assert values == ["prc_only", "prc_not_included"]
 
-    def test_prc_filter_select_all_label_contains_total_count(self):
-        from src.pages.apac_dot_due_date._filters import build_filter_layout
-
-        opts = _make_filter_options()
-        rows = build_filter_layout(opts)
-        prc = find_component_by_id(rows[0], "apac-dot-filter-prc")
-        all_opt = [chip for chip in prc.children if chip.value == "all"][0]
-        assert str(opts["total_count"]) in all_opt.children
 
 
 # ===========================================================================
@@ -352,10 +344,3 @@ class TestBuildFilterLayoutEdgeCases:
         slicer = find_component_by_id(rows[0], "apac-dot-filter-month")
         assert slicer.value == []
 
-    def test_zero_total_count_in_prc_label(self):
-        from src.pages.apac_dot_due_date._filters import build_filter_layout
-
-        rows = build_filter_layout(_make_empty_filter_options())
-        prc = find_component_by_id(rows[0], "apac-dot-filter-prc")
-        all_opt = [chip for chip in prc.children if chip.value == "all"][0]
-        assert "0" in all_opt.children

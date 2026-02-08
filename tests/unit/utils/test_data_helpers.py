@@ -1,6 +1,7 @@
 """Tests for data_helpers module."""
 import pytest
 import pandas as pd
+import numpy as np
 from unittest.mock import MagicMock, patch
 
 from src.utils.data_helpers import (
@@ -66,7 +67,7 @@ class TestSafeLoadFilterOptions:
 
         assert len(result["dates"]) == 3
         # Dates should be timezone-naive after prepare_fn
-        assert df["Date"].dtype == "datetime64[ns]"
+        assert np.issubdtype(df["Date"].dtype, np.datetime64)
 
 
 class TestStripTimezone:
@@ -77,7 +78,7 @@ class TestStripTimezone:
             "date": pd.date_range("2024-01-01", periods=3, tz="UTC"),
         })
         result = strip_timezone(df, "date")
-        assert result["date"].dtype == "datetime64[ns]"
+        assert np.issubdtype(result["date"].dtype, np.datetime64)
         assert result["date"].dt.tz is None
 
     def test_missing_column_no_error(self):

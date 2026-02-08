@@ -73,7 +73,7 @@ class TestLoadFilterOptionsReturnStructure:
         reader = MagicMock()
 
         result = load_filter_options(reader, "cursor-usage")
-        expected_keys = {"models", "min_date", "max_date"}
+        expected_keys = {"models", "users", "kinds", "min_date", "max_date"}
         assert set(result.keys()) == expected_keys
 
 
@@ -155,6 +155,8 @@ class TestLoadFilterOptionsException:
 
         result = load_filter_options(reader, "cursor-usage")
         assert result["models"] == []
+        assert result["users"] == []
+        assert result["kinds"] == []
         assert result["min_date"] is None
         assert result["max_date"] is None
 
@@ -230,6 +232,8 @@ class TestLoadAndFilterDataBasic:
             start_date=None,
             end_date=None,
             model_values=None,
+            user_values=None,
+            kind_values=None,
         )
         assert isinstance(result, pd.DataFrame)
 
@@ -245,6 +249,8 @@ class TestLoadAndFilterDataBasic:
             start_date=None,
             end_date=None,
             model_values=None,
+            user_values=None,
+            kind_values=None,
         )
         assert len(result) == 5
 
@@ -264,6 +270,8 @@ class TestLoadAndFilterDataTimezone:
             start_date=None,
             end_date=None,
             model_values=None,
+            user_values=None,
+            kind_values=None,
         )
         # Date column must be timezone-naive after processing
         assert result["Date"].dt.tz is None
@@ -285,6 +293,8 @@ class TestLoadAndFilterDataTimezone:
             start_date=None,
             end_date=None,
             model_values=None,
+            user_values=None,
+            kind_values=None,
         )
         # Output MUST be timezone-naive
         assert result["Date"].dt.tz is None
@@ -305,6 +315,8 @@ class TestLoadAndFilterDataDateFilter:
             start_date="2024-01-01",
             end_date="2024-01-31",
             model_values=None,
+            user_values=None,
+            kind_values=None,
         )
         # Only January rows: 2024-01-10 and 2024-01-15
         assert len(result) == 2
@@ -321,6 +333,8 @@ class TestLoadAndFilterDataDateFilter:
             start_date="2024-01-10",
             end_date="2024-03-01",
             model_values=None,
+            user_values=None,
+            kind_values=None,
         )
         # start_date is inclusive, so row with 2024-01-10 should be included
         assert len(result) == 5
@@ -337,6 +351,8 @@ class TestLoadAndFilterDataDateFilter:
             start_date="2024-03-01",
             end_date="2024-03-01",
             model_values=None,
+            user_values=None,
+            kind_values=None,
         )
         # end_date is inclusive, row at 2024-03-01 16:45:00 should be included
         assert len(result) == 1
@@ -353,6 +369,8 @@ class TestLoadAndFilterDataDateFilter:
             start_date="2024-02-01",
             end_date="2024-02-28",
             model_values=None,
+            user_values=None,
+            kind_values=None,
         )
         # February rows: 2024-02-05 and 2024-02-20
         assert len(result) == 2
@@ -373,6 +391,8 @@ class TestLoadAndFilterDataModelFilter:
             start_date=None,
             end_date=None,
             model_values=["gpt-4"],
+            user_values=None,
+            kind_values=None,
         )
         assert len(result) == 3
         assert all(result["Model"] == "gpt-4")
@@ -389,6 +409,8 @@ class TestLoadAndFilterDataModelFilter:
             start_date=None,
             end_date=None,
             model_values=["gpt-4", "claude-3"],
+            user_values=None,
+            kind_values=None,
         )
         # All rows match either model
         assert len(result) == 5
@@ -405,6 +427,8 @@ class TestLoadAndFilterDataModelFilter:
             start_date=None,
             end_date=None,
             model_values=["nonexistent-model"],
+            user_values=None,
+            kind_values=None,
         )
         assert len(result) == 0
 
@@ -424,6 +448,8 @@ class TestLoadAndFilterDataCombinedFilters:
             start_date="2024-01-01",
             end_date="2024-01-31",
             model_values=["gpt-4"],
+            user_values=None,
+            kind_values=None,
         )
         # January + gpt-4: only row 0 (2024-01-10, gpt-4)
         assert len(result) == 1
@@ -441,6 +467,8 @@ class TestLoadAndFilterDataCombinedFilters:
             start_date="2024-03-01",
             end_date="2024-03-31",
             model_values=["claude-3"],
+            user_values=None,
+            kind_values=None,
         )
         # March has only gpt-4 (row 4), no claude-3 in March
         assert len(result) == 0
@@ -462,6 +490,8 @@ class TestLoadAndFilterDataEdgeCases:
             start_date=None,
             end_date=None,
             model_values=[],
+            user_values=None,
+            kind_values=None,
         )
         # Empty list should be treated same as None -> no filtering
         assert len(result) == 5
@@ -479,6 +509,8 @@ class TestLoadAndFilterDataEdgeCases:
             start_date="2024-02-01",
             end_date=None,
             model_values=None,
+            user_values=None,
+            kind_values=None,
         )
         # Both start_date AND end_date are required for date filter
         assert len(result) == 5
@@ -496,6 +528,8 @@ class TestLoadAndFilterDataEdgeCases:
             start_date=None,
             end_date="2024-02-28",
             model_values=None,
+            user_values=None,
+            kind_values=None,
         )
         # Both start_date AND end_date are required for date filter
         assert len(result) == 5
@@ -513,6 +547,8 @@ class TestLoadAndFilterDataEdgeCases:
             start_date=None,
             end_date=None,
             model_values=None,
+            user_values=None,
+            kind_values=None,
         )
         assert "DateOnly" in result.columns
 
@@ -528,6 +564,8 @@ class TestLoadAndFilterDataEdgeCases:
             start_date=None,
             end_date=None,
             model_values=None,
+            user_values=None,
+            kind_values=None,
         )
         assert len(result) == 0
         assert isinstance(result, pd.DataFrame)

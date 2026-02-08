@@ -22,6 +22,10 @@ def setup_test_env(monkeypatch):
     monkeypatch.setenv("S3_ACCESS_KEY", "test")
     monkeypatch.setenv("S3_SECRET_KEY", "test")
 
+    # Patch settings object directly (Pydantic Settings loaded at import time)
+    from src.data.config import settings
+    monkeypatch.setattr(settings, "s3_endpoint", "")
+
 
 @pytest.fixture
 def mock_s3():
