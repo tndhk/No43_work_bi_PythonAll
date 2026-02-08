@@ -1,4 +1,5 @@
 """Tests for Hamm Overview data loader module."""
+import numpy as np
 import pandas as pd
 from unittest.mock import MagicMock, patch
 
@@ -48,6 +49,30 @@ def test_load_filter_options_returns_expected_keys(mock_cache):
 
 @patch("src.pages.hamm_overview._data_loader.get_cached_dataset")
 def test_load_and_filter_data_filters_by_region_and_year(mock_cache):
+    """load_and_filter_data accepts filter_pairs list instead of named kwargs."""
+    from src.pages.hamm_overview._data_loader import load_and_filter_data, FILTER_COLUMN_MAP
+
+    mock_cache.return_value = _make_sample_df()
+    reader = MagicMock()
+
+    filter_pairs = [
+        ("region", ["APAC"]),
+        ("year", ["2026"]),
+    ]
+    df = load_and_filter_data(
+        reader,
+        "hamm-dashboard",
+        FILTER_COLUMN_MAP,
+        filter_pairs,
+    )
+
+    assert len(df) == 2
+    assert set(df["_year"].unique()) == {"2026"}
+
+
+@patch("src.pages.hamm_overview._data_loader.get_cached_dataset")
+def test_load_and_filter_data_with_empty_filter_pairs(mock_cache):
+    """Empty filter_pairs should return all rows (no filtering)."""
     from src.pages.hamm_overview._data_loader import load_and_filter_data, FILTER_COLUMN_MAP
 
     mock_cache.return_value = _make_sample_df()
@@ -57,12 +82,101 @@ def test_load_and_filter_data_filters_by_region_and_year(mock_cache):
         reader,
         "hamm-dashboard",
         FILTER_COLUMN_MAP,
-        regions=["APAC"],
-        years=["2026"],
+        filter_pairs=[],
+    )
+
+    assert len(df) == 2
+
+
+@patch("src.pages.hamm_overview._data_loader.get_cached_dataset")
+def test_load_and_filter_data_none_values_in_filter_pairs(mock_cache):
+    """filter_pairs with None values should be treated as no filter (skip)."""
+    from src.pages.hamm_overview._data_loader import load_and_filter_data, FILTER_COLUMN_MAP
+
+    mock_cache.return_value = _make_sample_df()
+    reader = MagicMock()
+
+    filter_pairs = [
+        ("region", None),
+        ("year", ["2026"]),
+    ]
+    df = load_and_filter_data(
+        reader,
+        "hamm-dashboard",
+        FILTER_COLUMN_MAP,
+        filter_pairs,
     )
 
     assert len(df) == 2
     assert set(df["_year"].unique()) == {"2026"}
+
+
+@patch("src.pages.hamm_overview._data_loader.get_cached_dataset")
+def test_load_and_filter_data_empty_list_values_in_filter_pairs(mock_cache):
+    """filter_pairs with empty list values should be treated as no filter (skip)."""
+    from src.pages.hamm_overview._data_loader import load_and_filter_data, FILTER_COLUMN_MAP
+
+    mock_cache.return_value = _make_sample_df()
+    reader = MagicMock()
+
+    filter_pairs = [
+        ("region", []),
+        ("year", ["2026"]),
+    ]
+    df = load_and_filter_data(
+        reader,
+        "hamm-dashboard",
+        FILTER_COLUMN_MAP,
+        filter_pairs,
+    )
+
+    assert len(df) == 2
+
+
+@patch("src.pages.hamm_overview._data_loader.get_cached_dataset")
+def test_load_and_filter_data_multiple_filters(mock_cache):
+    """Multiple filter_pairs should all be applied."""
+    from src.pages.hamm_overview._data_loader import load_and_filter_data, FILTER_COLUMN_MAP
+
+    mock_cache.return_value = _make_sample_df()
+    reader = MagicMock()
+
+    filter_pairs = [
+        ("region", ["APAC"]),
+        ("year", ["2026"]),
+        ("content_type", ["Prelim"]),
+    ]
+    df = load_and_filter_data(
+        reader,
+        "hamm-dashboard",
+        FILTER_COLUMN_MAP,
+        filter_pairs,
+    )
+
+    # Only row 1 is Prelim (row 2 is ERV)
+    assert len(df) == 1
+    assert df["video_type_description"].iloc[0] == "Prelim"
+
+
+@patch("src.pages.hamm_overview._data_loader.get_cached_dataset")
+def test_load_and_filter_data_filter_narrows_results(mock_cache):
+    """A filter that matches no rows should return empty DataFrame."""
+    from src.pages.hamm_overview._data_loader import load_and_filter_data, FILTER_COLUMN_MAP
+
+    mock_cache.return_value = _make_sample_df()
+    reader = MagicMock()
+
+    filter_pairs = [
+        ("region", ["EMEA"]),  # No EMEA in sample data
+    ]
+    df = load_and_filter_data(
+        reader,
+        "hamm-dashboard",
+        FILTER_COLUMN_MAP,
+        filter_pairs,
+    )
+
+    assert len(df) == 0
 
 
 @patch("src.pages.hamm_overview._data_loader.get_cached_dataset")
@@ -259,6 +373,236 @@ def _make_prepared_df() -> pd.DataFrame:
     })
 
 
+# ---------------------------------------------------------------------------
+# prepare_task_display_df tests
+# ---------------------------------------------------------------------------
+
+def _make_task_df() -> pd.DataFrame:
+    """Create a DataFrame simulating post-_prepare_base_df data for task display.
+
+    Timezone-naive datetimes, string id, has all COLUMN_MAP columns.
+    """
+    return pd.DataFrame({
+        "id": ["300", "100", "200"],
+        "title": ["Task C", "Task A", "Task B"],
+        "status": ["Complete", "Complete", "Error"],
+        "created_at": pd.to_datetime([
+            "2025-06-01 10:00:00",
+            "2025-06-01 10:00:00",
+            "2025-06-01 10:00:00",
+        ]),
+        "completed_at": pd.to_datetime([
+            "2025-06-01 12:30:00",
+            "2025-06-01 12:30:00",
+            "2025-06-01 12:30:00",
+        ]),
+        "notification_company_name": ["APAC", "APAC", "APAC"],
+        "video_type_description": ["Prelim", "ERV", "Prelim"],
+        "original_language_name": ["Japanese", "Korean", "Japanese"],
+        "was dialogue provided?": ["Yes", "No", "Yes"],
+        "genre_name": ["Crime", "Drama", "Crime"],
+        "error code": ["E1", "E2", "E1"],
+        "error user vs system": ["User", "System", "User"],
+        "video_duration": ["00:10:00", "00:20:00", "00:30:00"],
+        "audio location": ["Full mix", "Separate audio", "Stereo"],
+    })
+
+
+class TestPrepareTaskDisplayDf:
+    """prepare_task_display_df should transform raw data into display-ready DataFrame."""
+
+    def test_importable_from_data_loader(self):
+        """prepare_task_display_df must be importable from _data_loader."""
+        from src.pages.hamm_overview._data_loader import prepare_task_display_df
+        assert callable(prepare_task_display_df)
+
+    def test_returns_dataframe(self):
+        from src.pages.hamm_overview._data_loader import prepare_task_display_df
+        df = _make_task_df()
+        result = prepare_task_display_df(df)
+        assert isinstance(result, pd.DataFrame)
+
+    def test_has_expected_columns(self):
+        """Output should have exactly the display column names in TASK_TABLE_SPEC order."""
+        from src.pages.hamm_overview._data_loader import prepare_task_display_df
+        df = _make_task_df()
+        result = prepare_task_display_df(df)
+        expected_cols = [
+            "Task ID",
+            "Task Name",
+            "Content Type",
+            "Task Status",
+            "Source File Duration",
+            "Audio Details",
+            "Job Created",
+            "Completed / Err",
+            "Total Duration",
+        ]
+        assert list(result.columns) == expected_cols
+
+    def test_job_created_format(self):
+        """Job Created should be formatted as YYYY-MM-DD HH:MM."""
+        from src.pages.hamm_overview._data_loader import prepare_task_display_df
+        df = _make_task_df()
+        result = prepare_task_display_df(df)
+        # All rows have created_at = 2025-06-01 10:00:00
+        for val in result["Job Created"]:
+            assert val == "2025-06-01 10:00"
+
+    def test_completed_err_format(self):
+        """Completed / Err should be formatted as YYYY-MM-DD HH:MM."""
+        from src.pages.hamm_overview._data_loader import prepare_task_display_df
+        df = _make_task_df()
+        result = prepare_task_display_df(df)
+        # All rows have completed_at = 2025-06-01 12:30:00
+        for val in result["Completed / Err"]:
+            assert val == "2025-06-01 12:30"
+
+    def test_total_duration_format(self):
+        """Total Duration should be in HH:MM:SS format."""
+        from src.pages.hamm_overview._data_loader import prepare_task_display_df
+        df = _make_task_df()
+        result = prepare_task_display_df(df)
+        # 2.5 hours = 02:30:00
+        for val in result["Total Duration"]:
+            assert val == "02:30:00"
+
+    def test_total_duration_with_nat_completed(self):
+        """When completed_at is NaT, Total Duration should be empty string."""
+        from src.pages.hamm_overview._data_loader import prepare_task_display_df
+        df = pd.DataFrame({
+            "id": ["1001"],
+            "title": ["Sample Task"],
+            "status": ["In Progress"],
+            "created_at": pd.to_datetime(["2025-06-01 10:00:00"]),
+            "completed_at": [pd.NaT],
+            "notification_company_name": ["APAC"],
+            "video_type_description": ["Prelim"],
+            "original_language_name": ["Japanese"],
+            "was dialogue provided?": ["Yes"],
+            "genre_name": ["Crime"],
+            "error code": ["E1"],
+            "error user vs system": ["User"],
+            "video_duration": ["00:45:00"],
+            "audio location": ["Stereo"],
+        })
+        result = prepare_task_display_df(df)
+        assert result["Total Duration"].iloc[0] == ""
+
+    def test_sorts_by_task_id_numerically(self):
+        """Rows should be sorted by Task ID as numeric values (100, 200, 300)."""
+        from src.pages.hamm_overview._data_loader import prepare_task_display_df
+        df = _make_task_df()  # IDs: 300, 100, 200 (unsorted)
+        result = prepare_task_display_df(df)
+        task_ids = result["Task ID"].tolist()
+        assert task_ids == ["100", "200", "300"]
+
+    def test_column_mapping_task_id(self):
+        """Task ID should contain values from COLUMN_MAP['id'] column."""
+        from src.pages.hamm_overview._data_loader import prepare_task_display_df
+        df = _make_task_df()
+        result = prepare_task_display_df(df)
+        assert set(result["Task ID"].tolist()) == {"100", "200", "300"}
+
+    def test_column_mapping_task_name(self):
+        """Task Name should contain values from COLUMN_MAP['title'] column."""
+        from src.pages.hamm_overview._data_loader import prepare_task_display_df
+        df = _make_task_df()
+        result = prepare_task_display_df(df)
+        assert set(result["Task Name"].tolist()) == {"Task A", "Task B", "Task C"}
+
+    def test_column_mapping_content_type(self):
+        """Content Type should contain values from COLUMN_MAP['content_type'] column."""
+        from src.pages.hamm_overview._data_loader import prepare_task_display_df
+        df = _make_task_df()
+        result = prepare_task_display_df(df)
+        assert set(result["Content Type"].tolist()) == {"Prelim", "ERV"}
+
+    def test_column_mapping_task_status(self):
+        """Task Status should contain values from COLUMN_MAP['status'] column."""
+        from src.pages.hamm_overview._data_loader import prepare_task_display_df
+        df = _make_task_df()
+        result = prepare_task_display_df(df)
+        assert set(result["Task Status"].tolist()) == {"Complete", "Error"}
+
+    def test_column_mapping_source_file_duration(self):
+        """Source File Duration should contain values from COLUMN_MAP['video_duration']."""
+        from src.pages.hamm_overview._data_loader import prepare_task_display_df
+        df = _make_task_df()
+        result = prepare_task_display_df(df)
+        assert set(result["Source File Duration"].tolist()) == {
+            "00:10:00", "00:20:00", "00:30:00"
+        }
+
+    def test_column_mapping_audio_details(self):
+        """Audio Details should contain values from COLUMN_MAP['audio_details']."""
+        from src.pages.hamm_overview._data_loader import prepare_task_display_df
+        df = _make_task_df()
+        result = prepare_task_display_df(df)
+        assert set(result["Audio Details"].tolist()) == {
+            "Full mix", "Separate audio", "Stereo"
+        }
+
+    def test_empty_df_returns_empty_dataframe(self):
+        """Empty input should return an empty DataFrame with expected columns."""
+        from src.pages.hamm_overview._data_loader import prepare_task_display_df
+        df = _make_task_df().head(0)
+        result = prepare_task_display_df(df)
+        assert len(result) == 0
+        expected_cols = [
+            "Task ID", "Task Name", "Content Type", "Task Status",
+            "Source File Duration", "Audio Details",
+            "Job Created", "Completed / Err", "Total Duration",
+        ]
+        assert list(result.columns) == expected_cols
+
+    def test_total_duration_over_24_hours(self):
+        """Total Duration should handle durations exceeding 24 hours."""
+        from src.pages.hamm_overview._data_loader import prepare_task_display_df
+        df = pd.DataFrame({
+            "id": ["1"],
+            "title": ["Long Task"],
+            "status": ["Complete"],
+            "created_at": pd.to_datetime(["2025-06-01 00:00:00"]),
+            "completed_at": pd.to_datetime(["2025-06-02 02:15:30"]),
+            "notification_company_name": ["APAC"],
+            "video_type_description": ["Prelim"],
+            "original_language_name": ["Japanese"],
+            "was dialogue provided?": ["Yes"],
+            "genre_name": ["Crime"],
+            "error code": ["E1"],
+            "error user vs system": ["User"],
+            "video_duration": ["00:10:00"],
+            "audio location": ["Stereo"],
+        })
+        result = prepare_task_display_df(df)
+        # 1 day + 2 hours + 15 min + 30 sec = 26:15:30
+        assert result["Total Duration"].iloc[0] == "26:15:30"
+
+    def test_completed_err_nat_shows_nat_string(self):
+        """When completed_at is NaT, Completed / Err should show NaT string."""
+        from src.pages.hamm_overview._data_loader import prepare_task_display_df
+        df = pd.DataFrame({
+            "id": ["1001"],
+            "title": ["Sample Task"],
+            "status": ["In Progress"],
+            "created_at": pd.to_datetime(["2025-06-01 10:00:00"]),
+            "completed_at": [pd.NaT],
+            "notification_company_name": ["APAC"],
+            "video_type_description": ["Prelim"],
+            "original_language_name": ["Japanese"],
+            "was dialogue provided?": ["Yes"],
+            "genre_name": ["Crime"],
+            "error code": ["E1"],
+            "error user vs system": ["User"],
+            "video_duration": ["00:45:00"],
+            "audio location": ["Stereo"],
+        })
+        result = prepare_task_display_df(df)
+        # NaT.strftime returns NaN in pandas (not a string)
+        assert pd.isna(result["Completed / Err"].iloc[0])
+
+
 class TestBuildVolumeSummaryInDataLoader:
     """build_volume_summary should be importable from _data_loader and work correctly."""
 
@@ -314,3 +658,436 @@ class TestBuildVolumeSummaryInDataLoader:
         df = _make_prepared_df().head(0)
         result = build_volume_summary(df, "weekly")
         assert len(result) == 0
+
+
+# ---------------------------------------------------------------------------
+# Vectorization equivalence tests (Task #4)
+# ---------------------------------------------------------------------------
+
+def _make_cadence_test_df() -> pd.DataFrame:
+    """Create a DataFrame with diverse dates for cadence column tests.
+
+    Covers:
+    - Each quarter (Q1-Q4) for quarterly logic
+    - Different months for monthly logic
+    - NaT values for null handling
+    - Dates spanning multiple years
+    """
+    return pd.DataFrame({
+        "created_at": pd.to_datetime([
+            "2025-01-15 10:00:00",   # Q1 Jan
+            "2025-03-31 23:59:59",   # Q1 Mar (end of quarter)
+            "2025-04-01 00:00:00",   # Q2 Apr (start of quarter)
+            "2025-06-15 12:00:00",   # Q2 Jun
+            "2025-07-20 08:30:00",   # Q3 Jul
+            "2025-09-30 18:00:00",   # Q3 Sep (end of quarter)
+            "2025-10-05 09:00:00",   # Q4 Oct
+            "2025-12-31 23:59:59",   # Q4 Dec (end of year)
+            "2026-02-14 14:00:00",   # Q1 Feb (next year)
+            pd.NaT,                  # NaT
+        ]),
+    })
+
+
+class TestFormatStartDateMonthlyVectorized:
+    """_format_start_date_monthly_vec should match scalar _format_start_date_monthly."""
+
+    def test_normal_dates_match_scalar(self):
+        from src.pages.hamm_overview._data_loader import (
+            _format_start_date_monthly,
+            _format_start_date_monthly_vec,
+        )
+        df = _make_cadence_test_df()
+        series = df["created_at"]
+
+        scalar_result = series.apply(_format_start_date_monthly)
+        vec_result = _format_start_date_monthly_vec(series)
+
+        pd.testing.assert_series_equal(
+            vec_result, scalar_result, check_names=False,
+        )
+
+    def test_nat_returns_null_string(self):
+        from src.pages.hamm_overview._data_loader import _format_start_date_monthly_vec
+        series = pd.Series([pd.NaT])
+        result = _format_start_date_monthly_vec(series)
+        assert result.iloc[0] == "Null"
+
+    def test_format_example(self):
+        """Jan 2025 should produce '1-Jan-25'."""
+        from src.pages.hamm_overview._data_loader import _format_start_date_monthly_vec
+        series = pd.Series(pd.to_datetime(["2025-01-15 10:00:00"]))
+        result = _format_start_date_monthly_vec(series)
+        assert result.iloc[0] == "1-Jan-25"
+
+    def test_empty_series(self):
+        from src.pages.hamm_overview._data_loader import _format_start_date_monthly_vec
+        series = pd.Series([], dtype="datetime64[ns]")
+        result = _format_start_date_monthly_vec(series)
+        assert len(result) == 0
+
+
+class TestFormatStartDateQuarterlyVectorized:
+    """_format_start_date_quarterly_vec should match scalar version."""
+
+    def test_all_dates_match_scalar(self):
+        from src.pages.hamm_overview._data_loader import (
+            _format_start_date_quarterly,
+            _format_start_date_quarterly_vec,
+        )
+        df = _make_cadence_test_df()
+        series = df["created_at"]
+
+        scalar_result = series.apply(_format_start_date_quarterly)
+        vec_result = _format_start_date_quarterly_vec(series)
+
+        pd.testing.assert_series_equal(
+            vec_result, scalar_result, check_names=False,
+        )
+
+    def test_q1_returns_1_jan(self):
+        from src.pages.hamm_overview._data_loader import _format_start_date_quarterly_vec
+        series = pd.Series(pd.to_datetime(["2025-02-15"]))
+        result = _format_start_date_quarterly_vec(series)
+        assert result.iloc[0] == "1-Jan-25"
+
+    def test_q2_returns_1_apr(self):
+        from src.pages.hamm_overview._data_loader import _format_start_date_quarterly_vec
+        series = pd.Series(pd.to_datetime(["2025-05-01"]))
+        result = _format_start_date_quarterly_vec(series)
+        assert result.iloc[0] == "1-Apr-25"
+
+    def test_q3_returns_1_jul(self):
+        from src.pages.hamm_overview._data_loader import _format_start_date_quarterly_vec
+        series = pd.Series(pd.to_datetime(["2025-08-20"]))
+        result = _format_start_date_quarterly_vec(series)
+        assert result.iloc[0] == "1-Jul-25"
+
+    def test_q4_returns_1_oct(self):
+        from src.pages.hamm_overview._data_loader import _format_start_date_quarterly_vec
+        series = pd.Series(pd.to_datetime(["2025-11-30"]))
+        result = _format_start_date_quarterly_vec(series)
+        assert result.iloc[0] == "1-Oct-25"
+
+    def test_nat_returns_null_string(self):
+        from src.pages.hamm_overview._data_loader import _format_start_date_quarterly_vec
+        series = pd.Series([pd.NaT])
+        result = _format_start_date_quarterly_vec(series)
+        assert result.iloc[0] == "Null"
+
+    def test_empty_series(self):
+        from src.pages.hamm_overview._data_loader import _format_start_date_quarterly_vec
+        series = pd.Series([], dtype="datetime64[ns]")
+        result = _format_start_date_quarterly_vec(series)
+        assert len(result) == 0
+
+
+class TestFormatEndDateQuarterlyVectorized:
+    """_format_end_date_quarterly_vec should match scalar version."""
+
+    def test_all_dates_match_scalar(self):
+        from src.pages.hamm_overview._data_loader import (
+            _format_end_date_quarterly,
+            _format_end_date_quarterly_vec,
+        )
+        df = _make_cadence_test_df()
+        series = df["created_at"]
+
+        scalar_result = series.apply(_format_end_date_quarterly)
+        vec_result = _format_end_date_quarterly_vec(series)
+
+        pd.testing.assert_series_equal(
+            vec_result, scalar_result, check_names=False,
+        )
+
+    def test_q1_returns_31_mar(self):
+        from src.pages.hamm_overview._data_loader import _format_end_date_quarterly_vec
+        series = pd.Series(pd.to_datetime(["2025-02-15"]))
+        result = _format_end_date_quarterly_vec(series)
+        assert result.iloc[0] == "31-Mar-25"
+
+    def test_q2_returns_30_jun(self):
+        from src.pages.hamm_overview._data_loader import _format_end_date_quarterly_vec
+        series = pd.Series(pd.to_datetime(["2025-05-01"]))
+        result = _format_end_date_quarterly_vec(series)
+        assert result.iloc[0] == "30-Jun-25"
+
+    def test_q3_returns_30_sep(self):
+        from src.pages.hamm_overview._data_loader import _format_end_date_quarterly_vec
+        series = pd.Series(pd.to_datetime(["2025-08-20"]))
+        result = _format_end_date_quarterly_vec(series)
+        assert result.iloc[0] == "30-Sep-25"
+
+    def test_q4_returns_31_dec(self):
+        from src.pages.hamm_overview._data_loader import _format_end_date_quarterly_vec
+        series = pd.Series(pd.to_datetime(["2025-11-30"]))
+        result = _format_end_date_quarterly_vec(series)
+        assert result.iloc[0] == "31-Dec-25"
+
+    def test_nat_returns_null_string(self):
+        from src.pages.hamm_overview._data_loader import _format_end_date_quarterly_vec
+        series = pd.Series([pd.NaT])
+        result = _format_end_date_quarterly_vec(series)
+        assert result.iloc[0] == "Null"
+
+
+class TestFormatStartDateYearlyVectorized:
+    """_format_start_date_yearly_vec should match scalar version."""
+
+    def test_all_dates_match_scalar(self):
+        from src.pages.hamm_overview._data_loader import (
+            _format_start_date_yearly,
+            _format_start_date_yearly_vec,
+        )
+        df = _make_cadence_test_df()
+        series = df["created_at"]
+
+        scalar_result = series.apply(_format_start_date_yearly)
+        vec_result = _format_start_date_yearly_vec(series)
+
+        pd.testing.assert_series_equal(
+            vec_result, scalar_result, check_names=False,
+        )
+
+    def test_format_example(self):
+        from src.pages.hamm_overview._data_loader import _format_start_date_yearly_vec
+        series = pd.Series(pd.to_datetime(["2025-06-15"]))
+        result = _format_start_date_yearly_vec(series)
+        assert result.iloc[0] == "1-Jan-25"
+
+    def test_nat_returns_null_string(self):
+        from src.pages.hamm_overview._data_loader import _format_start_date_yearly_vec
+        series = pd.Series([pd.NaT])
+        result = _format_start_date_yearly_vec(series)
+        assert result.iloc[0] == "Null"
+
+
+class TestFormatEndDateYearlyVectorized:
+    """_format_end_date_yearly_vec should match scalar version."""
+
+    def test_all_dates_match_scalar(self):
+        from src.pages.hamm_overview._data_loader import (
+            _format_end_date_yearly,
+            _format_end_date_yearly_vec,
+        )
+        df = _make_cadence_test_df()
+        series = df["created_at"]
+
+        scalar_result = series.apply(_format_end_date_yearly)
+        vec_result = _format_end_date_yearly_vec(series)
+
+        pd.testing.assert_series_equal(
+            vec_result, scalar_result, check_names=False,
+        )
+
+    def test_format_example(self):
+        from src.pages.hamm_overview._data_loader import _format_end_date_yearly_vec
+        series = pd.Series(pd.to_datetime(["2025-06-15"]))
+        result = _format_end_date_yearly_vec(series)
+        assert result.iloc[0] == "31-Dec-25"
+
+    def test_nat_returns_null_string(self):
+        from src.pages.hamm_overview._data_loader import _format_end_date_yearly_vec
+        series = pd.Series([pd.NaT])
+        result = _format_end_date_yearly_vec(series)
+        assert result.iloc[0] == "Null"
+
+
+class TestTotalDurationVectorized:
+    """_compute_total_duration_vec should match the .apply(lambda) approach."""
+
+    def test_normal_durations(self):
+        from src.pages.hamm_overview._data_loader import _compute_total_duration_vec
+        created = pd.Series(pd.to_datetime([
+            "2025-06-01 10:00:00",
+            "2025-06-01 00:00:00",
+            "2025-06-01 08:00:00",
+        ]))
+        completed = pd.Series(pd.to_datetime([
+            "2025-06-01 12:30:00",   # 2h 30m
+            "2025-06-02 02:15:30",   # 26h 15m 30s
+            "2025-06-01 08:00:45",   # 0h 0m 45s
+        ]))
+        result = _compute_total_duration_vec(created, completed)
+        assert result.iloc[0] == "02:30:00"
+        assert result.iloc[1] == "26:15:30"
+        assert result.iloc[2] == "00:00:45"
+
+    def test_nat_completed_returns_empty_string(self):
+        from src.pages.hamm_overview._data_loader import _compute_total_duration_vec
+        created = pd.Series(pd.to_datetime(["2025-06-01 10:00:00"]))
+        completed = pd.Series([pd.NaT])
+        result = _compute_total_duration_vec(created, completed)
+        assert result.iloc[0] == ""
+
+    def test_zero_duration(self):
+        from src.pages.hamm_overview._data_loader import _compute_total_duration_vec
+        ts = pd.to_datetime("2025-06-01 10:00:00")
+        created = pd.Series([ts])
+        completed = pd.Series([ts])
+        result = _compute_total_duration_vec(created, completed)
+        assert result.iloc[0] == "00:00:00"
+
+    def test_empty_series(self):
+        from src.pages.hamm_overview._data_loader import _compute_total_duration_vec
+        created = pd.Series([], dtype="datetime64[ns]")
+        completed = pd.Series([], dtype="datetime64[ns]")
+        result = _compute_total_duration_vec(created, completed)
+        assert len(result) == 0
+
+    def test_mixed_nat_and_valid(self):
+        """Mix of valid and NaT completed_at values."""
+        from src.pages.hamm_overview._data_loader import _compute_total_duration_vec
+        created = pd.Series(pd.to_datetime([
+            "2025-06-01 10:00:00",
+            "2025-06-01 10:00:00",
+            "2025-06-01 10:00:00",
+        ]))
+        completed = pd.Series(pd.to_datetime([
+            "2025-06-01 12:30:00",
+            pd.NaT,
+            "2025-06-01 11:00:00",
+        ]))
+        result = _compute_total_duration_vec(created, completed)
+        assert result.iloc[0] == "02:30:00"
+        assert result.iloc[1] == ""
+        assert result.iloc[2] == "01:00:00"
+
+    def test_multi_day_duration(self):
+        """Duration spanning multiple days."""
+        from src.pages.hamm_overview._data_loader import _compute_total_duration_vec
+        created = pd.Series(pd.to_datetime(["2025-06-01 00:00:00"]))
+        completed = pd.Series(pd.to_datetime(["2025-06-04 03:45:15"]))
+        result = _compute_total_duration_vec(created, completed)
+        # 3 days + 3h 45m 15s = 75:45:15
+        assert result.iloc[0] == "75:45:15"
+
+
+class TestAddCadenceColumnsVectorizedEquivalence:
+    """add_cadence_columns output should be identical after vectorization.
+
+    These tests capture the exact output of the current (scalar .apply)
+    implementation so we can verify the vectorized version is equivalent.
+    """
+
+    def test_monthly_start_date_values(self):
+        from src.pages.hamm_overview._data_loader import add_cadence_columns
+        df = _make_cadence_test_df()
+        result = add_cadence_columns(df, "monthly")
+
+        # Expected: "1-Mon-YY" for valid dates, "Null" for NaT
+        expected_start = [
+            "1-Jan-25", "1-Mar-25", "1-Apr-25", "1-Jun-25",
+            "1-Jul-25", "1-Sep-25", "1-Oct-25", "1-Dec-25",
+            "1-Feb-26", "Null",
+        ]
+        assert result["_start_date"].tolist() == expected_start
+
+    def test_monthly_end_date_is_last_day_of_month(self):
+        from src.pages.hamm_overview._data_loader import add_cadence_columns
+        df = _make_cadence_test_df()
+        result = add_cadence_columns(df, "monthly")
+
+        # End date should be last day of the month formatted as dd-Mon-yy
+        expected_end = [
+            "31-Jan-25", "31-Mar-25", "30-Apr-25", "30-Jun-25",
+            "31-Jul-25", "30-Sep-25", "31-Oct-25", "31-Dec-25",
+            "28-Feb-26", "Null",
+        ]
+        assert result["_end_date"].tolist() == expected_end
+
+    def test_quarterly_start_date_values(self):
+        from src.pages.hamm_overview._data_loader import add_cadence_columns
+        df = _make_cadence_test_df()
+        result = add_cadence_columns(df, "quarterly")
+
+        expected_start = [
+            "1-Jan-25", "1-Jan-25", "1-Apr-25", "1-Apr-25",
+            "1-Jul-25", "1-Jul-25", "1-Oct-25", "1-Oct-25",
+            "1-Jan-26", "Null",
+        ]
+        assert result["_start_date"].tolist() == expected_start
+
+    def test_quarterly_end_date_values(self):
+        from src.pages.hamm_overview._data_loader import add_cadence_columns
+        df = _make_cadence_test_df()
+        result = add_cadence_columns(df, "quarterly")
+
+        expected_end = [
+            "31-Mar-25", "31-Mar-25", "30-Jun-25", "30-Jun-25",
+            "30-Sep-25", "30-Sep-25", "31-Dec-25", "31-Dec-25",
+            "31-Mar-26", "Null",
+        ]
+        assert result["_end_date"].tolist() == expected_end
+
+    def test_yearly_start_date_values(self):
+        from src.pages.hamm_overview._data_loader import add_cadence_columns
+        df = _make_cadence_test_df()
+        result = add_cadence_columns(df, "yearly")
+
+        expected_start = [
+            "1-Jan-25", "1-Jan-25", "1-Jan-25", "1-Jan-25",
+            "1-Jan-25", "1-Jan-25", "1-Jan-25", "1-Jan-25",
+            "1-Jan-26", "Null",
+        ]
+        assert result["_start_date"].tolist() == expected_start
+
+    def test_yearly_end_date_values(self):
+        from src.pages.hamm_overview._data_loader import add_cadence_columns
+        df = _make_cadence_test_df()
+        result = add_cadence_columns(df, "yearly")
+
+        expected_end = [
+            "31-Dec-25", "31-Dec-25", "31-Dec-25", "31-Dec-25",
+            "31-Dec-25", "31-Dec-25", "31-Dec-25", "31-Dec-25",
+            "31-Dec-26", "Null",
+        ]
+        assert result["_end_date"].tolist() == expected_end
+
+    def test_weekly_unchanged_by_vectorization(self):
+        """Weekly cadence uses no .apply() so should remain identical."""
+        from src.pages.hamm_overview._data_loader import add_cadence_columns
+        df = _make_cadence_test_df()
+        result = add_cadence_columns(df, "weekly")
+        assert "_start_date" in result.columns
+        assert "_end_date" in result.columns
+
+
+class TestPrepareTaskDisplayDfTotalDurationVectorized:
+    """Total Duration in prepare_task_display_df should be identical after vectorization."""
+
+    def test_various_durations(self):
+        from src.pages.hamm_overview._data_loader import prepare_task_display_df
+        df = pd.DataFrame({
+            "id": ["1", "2", "3", "4"],
+            "title": ["A", "B", "C", "D"],
+            "status": ["Done", "Done", "Done", "Pending"],
+            "created_at": pd.to_datetime([
+                "2025-06-01 10:00:00",
+                "2025-06-01 00:00:00",
+                "2025-06-01 08:00:00",
+                "2025-06-01 10:00:00",
+            ]),
+            "completed_at": pd.to_datetime([
+                "2025-06-01 12:30:00",   # 2h 30m
+                "2025-06-02 02:15:30",   # 26h 15m 30s
+                "2025-06-01 08:00:45",   # 0h 0m 45s
+                pd.NaT,
+            ]),
+            "notification_company_name": ["APAC"] * 4,
+            "video_type_description": ["Prelim"] * 4,
+            "original_language_name": ["Japanese"] * 4,
+            "was dialogue provided?": ["Yes"] * 4,
+            "genre_name": ["Crime"] * 4,
+            "error code": ["E1"] * 4,
+            "error user vs system": ["User"] * 4,
+            "video_duration": ["00:10:00"] * 4,
+            "audio location": ["Stereo"] * 4,
+        })
+        result = prepare_task_display_df(df)
+        # sorted by Task ID: 1, 2, 3, 4
+        durations = result["Total Duration"].tolist()
+        assert durations[0] == "02:30:00"
+        assert durations[1] == "26:15:30"
+        assert durations[2] == "00:00:45"
+        assert durations[3] == ""

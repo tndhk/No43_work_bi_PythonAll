@@ -59,6 +59,15 @@ class TestChartIds:
         assert const.CHART_ID_VOLUME_CHART == "hamm-volume-chart"
         assert const.CHART_ID_TASK_TABLE == "hamm-task-table"
 
+    def test_dead_kpi_ids_removed(self):
+        """CHART_ID_KPI_TOTAL_TASKS and CHART_ID_KPI_AVG_VIDEO_DURATION
+        were dead code (never referenced in layout/callbacks) and must
+        not exist in the constants module."""
+        from src.pages.hamm_overview import _constants as const
+
+        assert not hasattr(const, "CHART_ID_KPI_TOTAL_TASKS")
+        assert not hasattr(const, "CHART_ID_KPI_AVG_VIDEO_DURATION")
+
 
 class TestClearControlIds:
     def test_clear_control_ids_values(self):

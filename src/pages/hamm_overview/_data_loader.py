@@ -1,11 +1,12 @@
 """Data loading and filtering logic for Hamm Overview dashboard."""
-from typing import Optional
+from typing import Any, List, Optional, Tuple
+import numpy as np
 import pandas as pd
 
 from src.data.parquet_reader import ParquetReader
 from src.core.cache import get_cached_dataset
 from src.data.data_source_registry import resolve_dataset_id
-from src.data.filter_engine import FilterSet, apply_filters, extract_unique_values
+from src.data.filter_engine import apply_filters, extract_unique_values
 from src.utils.filter_helpers import build_filter_set_from_map
 from ._constants import (
     COLUMN_MAP,
@@ -13,6 +14,7 @@ from ._constants import (
     CHART_ID_VOLUME_TABLE,
     CHART_ID_VOLUME_CHART,
     CHART_ID_TASK_TABLE,
+    TASK_TABLE_SPEC,
     DERIVED_YEAR,
     DERIVED_MONTH,
     DERIVED_FISCAL_YEAR,
@@ -122,6 +124,97 @@ def _format_end_date_yearly(ts: Optional[pd.Timestamp]) -> str:
     return f"31-Dec-{ts.strftime('%y')}"
 
 
+# ---------------------------------------------------------------------------
+# Vectorized equivalents of the scalar date formatters above.
+# Each accepts a pd.Series of datetime64 and returns a pd.Series of str.
+# NaT values are mapped to "Null" to match the scalar versions.
+# ---------------------------------------------------------------------------
+
+def _format_start_date_monthly_vec(series: pd.Series) -> pd.Series:
+    """Vectorized: '1-Mon-YY' for each timestamp, 'Null' for NaT."""
+    formatted = "1-" + series.dt.strftime("%b-%y")
+    return formatted.where(series.notna(), "Null")
+
+
+def _format_start_date_quarterly_vec(series: pd.Series) -> pd.Series:
+    """Vectorized: quarter start date as '1-Mon-YY', 'Null' for NaT."""
+    quarter = series.dt.quarter
+    year_str = series.dt.strftime("%y")
+
+    result = np.select(
+        [quarter == 1, quarter == 2, quarter == 3, quarter == 4],
+        [
+            "1-Jan-" + year_str,
+            "1-Apr-" + year_str,
+            "1-Jul-" + year_str,
+            "1-Oct-" + year_str,
+        ],
+        default="Null",
+    )
+    out = pd.Series(result, index=series.index)
+    return out.where(series.notna(), "Null")
+
+
+def _format_end_date_quarterly_vec(series: pd.Series) -> pd.Series:
+    """Vectorized: quarter end date as 'dd-Mon-YY', 'Null' for NaT."""
+    quarter = series.dt.quarter
+    year_str = series.dt.strftime("%y")
+
+    result = np.select(
+        [quarter == 1, quarter == 2, quarter == 3, quarter == 4],
+        [
+            "31-Mar-" + year_str,
+            "30-Jun-" + year_str,
+            "30-Sep-" + year_str,
+            "31-Dec-" + year_str,
+        ],
+        default="Null",
+    )
+    out = pd.Series(result, index=series.index)
+    return out.where(series.notna(), "Null")
+
+
+def _format_start_date_yearly_vec(series: pd.Series) -> pd.Series:
+    """Vectorized: '1-Jan-YY' for each timestamp, 'Null' for NaT."""
+    formatted = "1-Jan-" + series.dt.strftime("%y")
+    return formatted.where(series.notna(), "Null")
+
+
+def _format_end_date_yearly_vec(series: pd.Series) -> pd.Series:
+    """Vectorized: '31-Dec-YY' for each timestamp, 'Null' for NaT."""
+    formatted = "31-Dec-" + series.dt.strftime("%y")
+    return formatted.where(series.notna(), "Null")
+
+
+def _compute_total_duration_vec(
+    created: pd.Series, completed: pd.Series
+) -> pd.Series:
+    """Vectorized: compute 'HH:MM:SS' duration, '' for NaT completed.
+
+    Replaces the .dt.components.apply(lambda row: ...) pattern.
+    """
+    if created.empty:
+        return pd.Series([], dtype=str)
+
+    missing = completed.isna()
+    delta = (completed - created).fillna(pd.Timedelta(0))
+    total_seconds = delta.dt.total_seconds().astype("int64")
+
+    hours = total_seconds // 3600
+    minutes = (total_seconds % 3600) // 60
+    seconds = total_seconds % 60
+
+    formatted = (
+        hours.astype(str).str.zfill(2)
+        + ":"
+        + minutes.astype(str).str.zfill(2)
+        + ":"
+        + seconds.astype(str).str.zfill(2)
+    )
+
+    return formatted.where(~missing, "")
+
+
 def add_cadence_columns(df: pd.DataFrame, cadence: str) -> pd.DataFrame:
     created_col = COLUMN_MAP["created_at"]
     df = df.copy()
@@ -148,20 +241,20 @@ def add_cadence_columns(df: pd.DataFrame, cadence: str) -> pd.DataFrame:
 
     elif cadence == CADENCE_MONTHLY:
         df[DERIVED_ISO_WEEK] = ""
-        df[DERIVED_START_DATE] = df[created_col].apply(_format_start_date_monthly)
+        df[DERIVED_START_DATE] = _format_start_date_monthly_vec(df[created_col])
         df[DERIVED_END_DATE] = df[created_col].dt.to_period("M").dt.end_time.dt.strftime(
             "%d-%b-%y"
         ).fillna("Null")
 
     elif cadence == CADENCE_QUARTERLY:
         df[DERIVED_ISO_WEEK] = ""
-        df[DERIVED_START_DATE] = df[created_col].apply(_format_start_date_quarterly)
-        df[DERIVED_END_DATE] = df[created_col].apply(_format_end_date_quarterly)
+        df[DERIVED_START_DATE] = _format_start_date_quarterly_vec(df[created_col])
+        df[DERIVED_END_DATE] = _format_end_date_quarterly_vec(df[created_col])
 
     else:
         df[DERIVED_ISO_WEEK] = ""
-        df[DERIVED_START_DATE] = df[created_col].apply(_format_start_date_yearly)
-        df[DERIVED_END_DATE] = df[created_col].apply(_format_end_date_yearly)
+        df[DERIVED_START_DATE] = _format_start_date_yearly_vec(df[created_col])
+        df[DERIVED_END_DATE] = _format_end_date_yearly_vec(df[created_col])
 
     return df
 
@@ -206,33 +299,24 @@ def load_and_filter_data(
     reader: ParquetReader,
     dataset_id: str,
     column_map: dict[str, str],
-    regions=None,
-    years=None,
-    months=None,
-    task_ids=None,
-    content_types=None,
-    original_languages=None,
-    dialogue_values=None,
-    genres=None,
-    error_codes=None,
-    error_types=None,
+    filter_pairs: Optional[List[Tuple[str, Any]]] = None,
 ) -> pd.DataFrame:
-    """Load dataset and apply all filter criteria."""
+    """Load dataset and apply all filter criteria.
+
+    Args:
+        reader: ParquetReader instance for data access.
+        dataset_id: ID of the dataset to load.
+        column_map: Mapping from logical filter keys to DataFrame column names.
+        filter_pairs: List of (key, values) tuples where key is a key in
+            column_map and values is a list of filter values, None, or [].
+            None/[] values are ignored (no filtering for that key).
+            Example: [("region", ["AMER"]), ("year", [2024]), ...]
+    """
     df = get_cached_dataset(reader, dataset_id)
     df = _prepare_base_df(df)
 
-    filter_pairs = [
-        ("region", regions),
-        ("year", years),
-        ("month", months),
-        ("id", task_ids),
-        ("content_type", content_types),
-        ("original_language", original_languages),
-        ("dialogue", dialogue_values),
-        ("genre", genres),
-        ("error_code", error_codes),
-        ("error_type", error_types),
-    ]
+    if filter_pairs is None:
+        filter_pairs = []
     filters = build_filter_set_from_map(column_map, filter_pairs)
 
     return apply_filters(df, filters)
@@ -323,3 +407,64 @@ def build_volume_summary(df: pd.DataFrame, cadence: str) -> pd.DataFrame:
     pivot = pivot.sort_values(by=[SORT_START_COL, "End Date"], kind="mergesort")
 
     return pivot
+
+
+def prepare_task_display_df(df: pd.DataFrame) -> pd.DataFrame:
+    """Transform raw task data into a display-ready DataFrame.
+
+    Performs the following transformations:
+    1. Format created_at as "Job Created" (YYYY-MM-DD HH:MM)
+    2. Format completed_at as "Completed / Err" (YYYY-MM-DD HH:MM)
+    3. Compute "Total Duration" (completed_at - created_at -> HH:MM:SS)
+    4. Rename columns via COLUMN_MAP to display names
+    5. Sort by Task ID numerically
+
+    Args:
+        df: Pre-filtered DataFrame (already through _prepare_base_df).
+
+    Returns:
+        A display-ready DataFrame with columns matching TASK_TABLE_SPEC.column_order.
+    """
+    if df.empty:
+        return pd.DataFrame(columns=TASK_TABLE_SPEC.column_order)
+
+    created_col = COLUMN_MAP["created_at"]
+    completed_col = COLUMN_MAP["completed_at"]
+
+    display_df = df.copy()
+    display_df["Job Created"] = display_df[created_col].dt.strftime("%Y-%m-%d %H:%M")
+    display_df["Completed / Err"] = display_df[completed_col].dt.strftime(
+        "%Y-%m-%d %H:%M"
+    )
+
+    display_df["Total Duration"] = _compute_total_duration_vec(
+        display_df[created_col], display_df[completed_col]
+    )
+
+    table_columns = {
+        "Task ID": COLUMN_MAP["id"],
+        "Task Name": COLUMN_MAP["title"],
+        "Content Type": COLUMN_MAP["content_type"],
+        "Task Status": COLUMN_MAP["status"],
+        "Source File Duration": COLUMN_MAP["video_duration"],
+        "Audio Details": COLUMN_MAP["audio_details"],
+    }
+
+    output_df = pd.DataFrame(
+        {
+            display_name: display_df[column_name]
+            for display_name, column_name in table_columns.items()
+        }
+    )
+
+    output_df["Job Created"] = display_df["Job Created"]
+    output_df["Completed / Err"] = display_df["Completed / Err"]
+    output_df["Total Duration"] = display_df["Total Duration"]
+
+    # Sort by Task ID (as numeric)
+    output_df = output_df.sort_values(
+        by="Task ID",
+        key=lambda x: pd.to_numeric(x, errors="coerce").fillna(0),
+    )
+
+    return output_df

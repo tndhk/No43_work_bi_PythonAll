@@ -4,8 +4,6 @@ This module is the slim orchestration layer.  All chart/table rendering
 lives in ``_chart_builders``, data aggregation in ``_data_loader``, and
 clear-filter callbacks are registered via ``register_clear_callbacks``.
 """
-from typing import Iterable
-
 import pandas as pd
 from dash import callback, Input, Output, html
 
@@ -34,6 +32,7 @@ from ._data_loader import (
     resolve_dataset_id_for_dashboard,
     load_and_filter_data,
     build_volume_summary,
+    prepare_task_display_df,
     FILTER_COLUMN_MAP,
 )
 from ._chart_builders import (
@@ -49,10 +48,6 @@ def _ensure_list(value) -> list:
     if isinstance(value, list):
         return value
     return [value]
-
-
-def _normalize_filter_values(*values: Iterable) -> list[list]:
-    return [_ensure_list(v) for v in values]
 
 
 def _strip_sort_column(df: pd.DataFrame) -> pd.DataFrame:
@@ -91,31 +86,18 @@ def update_dashboard(
     reader = ParquetReader()
     dataset_id = resolve_dataset_id_for_dashboard()
 
-    normalized = _normalize_filter_values(
-        region_values,
-        year_values,
-        month_values,
-        task_id_value,
-        content_type_values,
-        original_language_values,
-        dialogue_values,
-        genre_values,
-        error_code_values,
-        error_type_values,
-    )
-
-    (
-        region_values,
-        year_values,
-        month_values,
-        task_ids,
-        content_type_values,
-        original_language_values,
-        dialogue_values,
-        genre_values,
-        error_code_values,
-        error_type_values,
-    ) = normalized
+    filter_pairs = [
+        ("region", _ensure_list(region_values)),
+        ("year", _ensure_list(year_values)),
+        ("month", _ensure_list(month_values)),
+        ("id", _ensure_list(task_id_value)),
+        ("content_type", _ensure_list(content_type_values)),
+        ("original_language", _ensure_list(original_language_values)),
+        ("dialogue", _ensure_list(dialogue_values)),
+        ("genre", _ensure_list(genre_values)),
+        ("error_code", _ensure_list(error_code_values)),
+        ("error_type", _ensure_list(error_type_values)),
+    ]
 
     cadence = cadence_value or "weekly"
 
@@ -124,16 +106,7 @@ def update_dashboard(
             reader,
             dataset_id,
             FILTER_COLUMN_MAP,
-            regions=region_values,
-            years=year_values,
-            months=month_values,
-            task_ids=task_ids,
-            content_types=content_type_values,
-            original_languages=original_language_values,
-            dialogue_values=dialogue_values,
-            genres=genre_values,
-            error_codes=error_code_values,
-            error_types=error_type_values,
+            filter_pairs,
         )
 
         volume_summary = build_volume_summary(df, cadence)
@@ -146,9 +119,10 @@ def update_dashboard(
             )
         )
 
-        volume_table = build_volume_table(volume_table_df)
+        _, volume_table = build_volume_table(volume_table_df)
         volume_chart = build_volume_chart(volume_chart_df)
-        task_table = build_task_table(df)
+        task_display_df = prepare_task_display_df(df)
+        _, task_table = build_task_table(task_display_df)
 
         return volume_table, volume_chart, task_table
 
