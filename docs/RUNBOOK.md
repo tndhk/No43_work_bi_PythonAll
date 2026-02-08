@@ -1,6 +1,6 @@
 # 運用ガイド (RUNBOOK)
 
-Last Updated: 2026-02-07 (rev.4)
+Last Updated: 2026-02-08 (rev.5)
 
 ## このドキュメントについて
 
@@ -103,6 +103,7 @@ aws logs tail /ecs/bi-dashboard --follow
 | `AUTH_PROVIDER_TYPE` | 認証プロバイダ種別 | `form`（Phase 3で `saml` に切替可能） |
 | `DOMO_CLIENT_ID` | DOMO API Client ID | DOMO Developer Portalで発行 |
 | `DOMO_CLIENT_SECRET` | DOMO API Client Secret | DOMO Developer Portalで発行 |
+| `ETL_MASKING_SECRET` | ETLマスキング用HMAC秘密鍵 | masking有効なDataSet使用時に必須 |
 | `RDS_HOST` | RDS エンドポイント | RDS 使用時のみ |
 | `RDS_PORT` | RDS ポート | 通常 `5432` |
 | `RDS_USER` | RDS ユーザー | Secrets Manager より取得 |
@@ -303,6 +304,16 @@ python backend/scripts/load_domo.py --all --dry-run
 - DOMO ETLでデータをロード: `python backend/scripts/load_domo.py --dataset "APAC DOT join Due Date change(first time)"`
 - Parquetファイルのカラム名が `_constants.py` の `COLUMN_MAP` と一致しているか確認
 - キャッシュが古い場合はアプリ再起動でキャッシュクリア
+
+### Issue 9: ETLマスキングが失敗する
+
+症状: `ETL_MASKING_SECRET environment variable is required` エラー
+
+解決策:
+
+- `.env` に `ETL_MASKING_SECRET` を設定
+- `backend/config/{csv,domo}_datasets.yaml` の `masking.enabled` を確認
+- `masking.strict: true` の場合、対象カラムがデータに存在するか確認
 
 ---
 

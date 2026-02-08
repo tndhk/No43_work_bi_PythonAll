@@ -1,6 +1,6 @@
 # 開発者ガイド (CONTRIB)
 
-最終更新: 2026-02-07 (rev.4)
+最終更新: 2026-02-08 (rev.5)
 
 ## このドキュメントについて
 
@@ -69,6 +69,9 @@ python3 app.py
 | `S3_SECRET_KEY` | `minioadmin` | S3シークレットキー（ローカル開発は MinIO デフォルト） | 文字列。IAMロール使用時は空可 |
 | `BASIC_AUTH_USERNAME` | `admin` | フォームログインのユーザー名 | 非空文字列 |
 | `BASIC_AUTH_PASSWORD` | `changeme` | フォームログインのパスワード | 非空文字列 |
+| `DOMO_CLIENT_ID` | (空) | DOMO API Client ID（ETL用） | DOMO Developer Portalで発行 |
+| `DOMO_CLIENT_SECRET` | (空) | DOMO API Client Secret（ETL用） | DOMO Developer Portalで発行 |
+| `ETL_MASKING_SECRET` | (空) | ETLマスキング用秘密鍵（masking有効時のみ必須） | 任意の文字列 |
 
 ---
 
@@ -197,6 +200,7 @@ work_BI_PythonAll/
         data_sources.yml         # Cursor Usageのデータソース設定
       apac_dot_due_date/
         data_sources.yml         # APAC DOT Due Dateのデータソース設定
+      hamm_overview/             # HAMM Overview ダッシュボード
     layout.py                    # メインレイアウト（認証対応）
     exceptions.py                # カスタム例外クラス
   backend/
