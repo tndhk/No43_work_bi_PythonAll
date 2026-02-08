@@ -151,6 +151,8 @@ def layout():
 - **カテゴリフィルタ**: `create_category_filter(...)` - [`src/components/filters.py`](src/components/filters.py)
 - **チャート**: `render_line_chart()`, `render_bar_chart()`, `render_pie_chart()` - [`src/charts/templates.py`](src/charts/templates.py)
 
+レイアウトパターン（Bootstrap Grid vs CSS Grid、Mantine Chip切り詰めなど）の詳細は [layout-patterns.md](layout-patterns.md) を参照してください。
+
 ---
 
 ## Phase 3: コールバック実装

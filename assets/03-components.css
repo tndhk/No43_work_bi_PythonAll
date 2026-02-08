@@ -132,12 +132,41 @@
   width: 100%;
 }
 
-/* 7-column filter row */
+/* Filter row with 7 equal columns using CSS Grid */
 .filter-row-7col {
   display: grid !important;
   grid-template-columns: repeat(7, 1fr);
   gap: 1rem;
   align-items: stretch;
+}
+
+/* テキスト切り詰め対策（DOMO同様の ellipsis 表示） */
+.filter-row-7col .filter-header,
+.filter-row-7col .card-header {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* グリッドセル内でカードを高さ100%に */
+.filter-row-7col > .filter-card {
+  height: 100%;
+  margin-bottom: 0;
+}
+
+/* 7列グリッド内のフィルタカード: パディング縮小 */
+.filter-row-7col .filter-card {
+  padding: 0.5rem !important;
+}
+
+.filter-row-7col .filter-card .card-header {
+  padding: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+  font-size: 0.85rem !important;
+}
+
+.filter-row-7col .filter-card .card-body {
+  padding: 0.5rem !important;
 }
 
 .filter-header {
@@ -352,6 +381,31 @@ tbody tr:hover {
   background-color: var(--bg-card) !important;
   border-color: var(--accent-primary) !important;
   color: var(--text-primary) !important;
+}
+
+/* 7列グリッド内のChip: テキスト切り詰め対応 */
+.filter-row-7col .mantine-Chip-label {
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+  font-size: 0.7rem !important;
+  padding: 3px 8px !important;
+}
+
+/* 7列グリッド内のChipGroup: 横並び配置 */
+.filter-row-7col .mantine-ChipGroup-root {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  gap: 3px !important;
+  align-items: flex-start !important;
+}
+
+.filter-row-7col .mantine-Chip-root {
+  margin: 0 !important;
+  flex-shrink: 0;
 }
 
 .mantine-Chip-input:checked + .mantine-Chip-label {

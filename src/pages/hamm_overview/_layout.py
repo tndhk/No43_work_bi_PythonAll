@@ -59,6 +59,9 @@ def build_layout() -> html.Div:
         "borderRadius": "8px",
         "fontSize": "32px",
         "fontWeight": "600",
+        "height": "100%",
+        "display": "flex",
+        "alignItems": "center",
     }
 
     section_style = {
