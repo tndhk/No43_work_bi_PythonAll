@@ -8,6 +8,8 @@ def create_kpi_card(
     title: str,
     value: Union[str, int, float],
     subtitle: Optional[str] = None,
+    bg_color: Optional[str] = None,
+    accent_color: Optional[str] = None,
 ) -> dbc.Card:
     """
     Create a KPI display card.
@@ -16,10 +18,19 @@ def create_kpi_card(
         title: Card title (e.g., "Total Sales")
         value: Value to display
         subtitle: Additional text (e.g., "+5% vs last month")
+        bg_color: Custom background color (e.g., "#f0f0f0")
+        accent_color: Top border accent color (e.g., "#007bff")
 
     Returns:
         dbc.Card component
     """
+    # Build style dict based on provided colors
+    style = {}
+    if bg_color:
+        style["backgroundColor"] = bg_color
+    if accent_color:
+        style["borderTop"] = f"4px solid {accent_color}"
+
     return dbc.Card([
         dbc.CardBody([
             html.H6(title, className="kpi-label mb-2"),
@@ -29,7 +40,7 @@ def create_kpi_card(
             ),
             html.P(subtitle, className="kpi-subtitle") if subtitle else None,
         ]),
-    ], className="kpi-card mb-3 animate-fade-in-up")
+    ], className="kpi-card mb-3 animate-fade-in-up", style=style if style else None)
 
 
 def create_kpi_card_with_delta(
