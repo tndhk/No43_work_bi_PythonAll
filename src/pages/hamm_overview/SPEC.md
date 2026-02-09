@@ -61,3 +61,17 @@ Volume Tableのデータを積み上げ棒グラフで可視化します。時�
 
 ### Task Details（タスク詳細テーブル）
 個別タスクの詳細情報を一覧表示します。コンパクトなフォントサイズで、タスクID、タイトル、ステータス、作成日、完了日、ビデオ時間、エラー情報など多くのカラムを一度に確認できます。
+
+### Error Details（エラー詳細）
+
+#### Issues Ratio (HAMM vs Human Intervention)
+ユーザー起因エラーとHAMM起因エラーの割合を円グラフで表示します。
+
+#### Intervention per Screener Type
+Screener Type（Prelim/ERV）別の介入件数を、User/HAMM別に積み上げ棒グラフで表示します。
+
+#### User Intervention Breakdown
+ユーザー起因エラーの内訳を、エラー内容別に棒グラフで表示します。
+
+#### HAMM Intervention Breakdown
+HAMM起因エラーの内訳を、エラー内容別に棒グラフで表示します。

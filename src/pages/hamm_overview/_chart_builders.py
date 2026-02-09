@@ -19,6 +19,10 @@ from ._constants import (
     VOLUME_TABLE_SPEC,
     VOLUME_CHART_SPEC,
     TASK_TABLE_SPEC,
+    ERROR_RATIO_SPEC,
+    ERROR_BY_SCREENER_SPEC,
+    USER_BREAKDOWN_SPEC,
+    HAMM_BREAKDOWN_SPEC,
 )
 
 
@@ -78,3 +82,55 @@ def build_task_table(df: pd.DataFrame) -> tuple[str, Any]:
         ``dash_table.DataTable`` or an ``html.P`` empty-state placeholder.
     """
     return build_table(df, TASK_TABLE_SPEC)
+
+
+# ---------------------------------------------------------------------------
+# Error Details chart builders
+# ---------------------------------------------------------------------------
+
+def build_error_ratio_chart(df: pd.DataFrame) -> go.Figure:
+    """Render User vs HAMM ratio via shared build_chart.
+    
+    Args:
+        df: DataFrame with columns: error_type, count
+    
+    Returns:
+        A themed go.Figure with pie chart, or empty-state figure.
+    """
+    return build_chart(df, ERROR_RATIO_SPEC)
+
+
+def build_error_by_screener_chart(df: pd.DataFrame) -> go.Figure:
+    """Render Screener Type vs User/HAMM intervention via shared build_chart.
+    
+    Args:
+        df: DataFrame with columns: video_type_description, User, HAMM
+    
+    Returns:
+        A themed go.Figure with stacked bar chart, or empty-state figure.
+    """
+    return build_chart(df, ERROR_BY_SCREENER_SPEC)
+
+
+def build_user_breakdown_chart(df: pd.DataFrame) -> go.Figure:
+    """Render User intervention breakdown via shared build_chart.
+    
+    Args:
+        df: DataFrame with columns: error_description, count
+    
+    Returns:
+        A themed go.Figure with bar chart, or empty-state figure.
+    """
+    return build_chart(df, USER_BREAKDOWN_SPEC)
+
+
+def build_hamm_breakdown_chart(df: pd.DataFrame) -> go.Figure:
+    """Render HAMM intervention breakdown via shared build_chart.
+    
+    Args:
+        df: DataFrame with columns: error_description, count
+    
+    Returns:
+        A themed go.Figure with bar chart, or empty-state figure.
+    """
+    return build_chart(df, HAMM_BREAKDOWN_SPEC)

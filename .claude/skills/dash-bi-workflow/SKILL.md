@@ -232,6 +232,45 @@ def build_layout():
     ], className="page-container")
 ```
 
+#### チャート/テーブルのカード配置（必須ルール）
+
+全てのチャート、テーブル、KPIカードは `dbc.Card` で囲むこと。
+
+理由:
+- ページ全体の灰色背景（`--bg-base`）との対比で視認性向上
+- フィルターエリアとのデザイン統一
+- `assets/03-components.css` のカードスタイルが自動適用（白背景、境界線、ホバー効果）
+
+推奨構造:
+
+```python
+# チャート配置の例
+dbc.Row([
+    dbc.Col([
+        dbc.Card([
+            dbc.CardHeader("Chart Title", className="card-header"),
+            dbc.CardBody([
+                dcc.Graph(id=CHART_ID),
+            ]),
+        ]),
+    ], md=6),
+], className="mb-4")
+
+# テーブル配置の例
+dbc.Row([
+    dbc.Col([
+        dbc.Card([
+            dbc.CardHeader("Table Title", className="card-header"),
+            dbc.CardBody([
+                html.Div(id=TABLE_ID),
+            ]),
+        ]),
+    ], md=12),
+], className="mb-4")
+```
+
+参考実装: [`src/pages/hamm_overview/_layout.py`](../../src/pages/hamm_overview/_layout.py)
+
 ### 2-7. `_callbacks.py` - コールバック実装
 
 参考実装: [`src/pages/cursor_usage/_callbacks.py`](../../src/pages/cursor_usage/_callbacks.py)
@@ -426,18 +465,7 @@ Dash 4.x (Radix UI) のポップアップが低いz-indexで表示される。
 
 ```css
 /* Dash 4.x (radix) dropdown/datepicker content */
-.dash-dropdown-content,
-.dash-options-list,
-.dash-dropdown-options,
-.dash-datepicker-content,
-.dash-datepicker-popover,
-.dash-datepicker-overlay,
 [data-radix-popper-content-wrapper] {
-  position: relative !important;
-  z-index: 9999 !important;
-}
-
-[data-radix-popper-content-wrapper] > * {
   z-index: 9999 !important;
 }
 ```

@@ -24,7 +24,7 @@ description: データ取得とETL処理のワークフロー。CSV、API、RDS�
 ### DOMO API
 - [ ] DOMO API認証情報を `.env` に設定（`DOMO_CLIENT_ID`, `DOMO_CLIENT_SECRET`）
 - [ ] `backend/config/domo_datasets.yaml` にDataSetを追加
-- [ ] `python backend/scripts/load_domo.py --dataset "DataSet Name"` で実行
+- [ ] `python3 backend/scripts/load_domo.py --dataset "DataSet Name"` で実行
 
 ### 汎用API
 - [ ] APIエンドポイントと認証情報を確認
@@ -324,16 +324,16 @@ etl.run("apac-dot-due-date")
 
 ```bash
 # DataSet一覧を表示
-python backend/scripts/load_domo.py --list
+python3 backend/scripts/load_domo.py --list
 
 # 特定DataSetを取得
-python backend/scripts/load_domo.py --dataset "APAC DOT Due Date"
+python3 backend/scripts/load_domo.py --dataset "APAC DOT Due Date"
 
 # 全DataSetを一括取得
-python backend/scripts/load_domo.py --all
+python3 backend/scripts/load_domo.py --all
 
 # ドライラン（実行内容確認のみ）
-python backend/scripts/load_domo.py --all --dry-run
+python3 backend/scripts/load_domo.py --all --dry-run
 ```
 
 #### DataSet追加手順
@@ -591,7 +591,7 @@ CSV ETLとDOMO API ETLは設定ファイルベースの管理が推奨されま�
 python3 backend/scripts/load_csv.py --dataset "DataSet Name"
 
 # DOMO API
-python backend/scripts/load_domo.py --dataset "DataSet Name"
+python3 backend/scripts/load_domo.py --dataset "DataSet Name"
 ```
 
 詳細は各パターンの「汎用ローダースクリプト」セクションを参照してください。

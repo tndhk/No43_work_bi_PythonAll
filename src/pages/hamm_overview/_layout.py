@@ -10,6 +10,10 @@ from ._constants import (
     CHART_ID_VOLUME_TABLE,
     CHART_ID_VOLUME_CHART,
     CHART_ID_TASK_TABLE,
+    CHART_ID_ERROR_RATIO,
+    CHART_ID_ERROR_BY_SCREENER,
+    CHART_ID_USER_BREAKDOWN,
+    CHART_ID_HAMM_BREAKDOWN,
 )
 from ._data_loader import load_filter_options
 from ._filters import build_filter_layout, build_cadence_filter
@@ -64,20 +68,84 @@ def build_layout() -> html.Div:
 
             dbc.Row([
                 dbc.Col([
-                    html.H4("Volume Table", className="mb-2"),
-                    html.Div(id=CHART_ID_VOLUME_TABLE),
+                    dbc.Card([
+                        dbc.CardHeader("Volume Table", className="card-header"),
+                        dbc.CardBody([
+                            html.Div(id=CHART_ID_VOLUME_TABLE),
+                        ]),
+                    ]),
                 ], md=6),
                 dbc.Col([
-                    html.H4("Volume Chart", className="mb-2"),
-                    dcc.Graph(id=CHART_ID_VOLUME_CHART),
+                    dbc.Card([
+                        dbc.CardHeader("Volume Chart", className="card-header"),
+                        dbc.CardBody([
+                            dcc.Graph(id=CHART_ID_VOLUME_CHART),
+                        ]),
+                    ]),
                 ], md=6),
             ], className="mb-4"),
 
             dbc.Row([
                 dbc.Col([
-                    html.H4("Task Details", className="mb-2"),
-                    html.Div(id=CHART_ID_TASK_TABLE),
+                    dbc.Card([
+                        dbc.CardHeader("Task Details", className="card-header"),
+                        dbc.CardBody([
+                            html.Div(id=CHART_ID_TASK_TABLE),
+                        ]),
+                    ]),
                 ], md=12),
-            ]),
+            ], className="mb-4"),
+
+            # Error Details header section
+            dbc.Row([
+                dbc.Col([
+                    html.Div([
+                        html.H3("Error Details", className="mb-2", style={"color": "white"}),
+                        html.P(
+                            "Error analysis showing User vs HAMM intervention breakdown by screener type and error description.",
+                            className="mb-0",
+                            style={"color": "rgba(255,255,255,0.85)"},
+                        ),
+                    ], style={**section_style, "height": "100%"}),
+                ], md=12),
+            ], className="mb-3"),
+
+            # Error Details charts
+            dbc.Row([
+                dbc.Col([
+                    dbc.Card([
+                        dbc.CardHeader("Issues Ratio", className="card-header"),
+                        dbc.CardBody([
+                            dcc.Graph(id=CHART_ID_ERROR_RATIO),
+                        ]),
+                    ]),
+                ], md=6),
+                dbc.Col([
+                    dbc.Card([
+                        dbc.CardHeader("Intervention per Screener Type", className="card-header"),
+                        dbc.CardBody([
+                            dcc.Graph(id=CHART_ID_ERROR_BY_SCREENER),
+                        ]),
+                    ]),
+                ], md=6),
+            ], className="mb-3"),
+            dbc.Row([
+                dbc.Col([
+                    dbc.Card([
+                        dbc.CardHeader("User Intervention Breakdown", className="card-header"),
+                        dbc.CardBody([
+                            dcc.Graph(id=CHART_ID_USER_BREAKDOWN),
+                        ]),
+                    ]),
+                ], md=6),
+                dbc.Col([
+                    dbc.Card([
+                        dbc.CardHeader("HAMM Intervention Breakdown", className="card-header"),
+                        dbc.CardBody([
+                            dcc.Graph(id=CHART_ID_HAMM_BREAKDOWN),
+                        ]),
+                    ]),
+                ], md=6),
+            ], className="mb-4"),
         ]),  # End MantineProvider
     ], className="page-container")

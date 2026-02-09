@@ -97,6 +97,29 @@ from src.utils.data_helpers import (
 )
 ```
 
+### レイアウト構築ルール
+
+#### チャート/テーブルのカード配置（必須）
+
+全てのチャート、テーブル、KPIカードは `dbc.Card` で囲むこと。
+
+```python
+# 必須構造
+dbc.Card([
+    dbc.CardHeader("Chart Title", className="card-header"),
+    dbc.CardBody([
+        dcc.Graph(id=CHART_ID),
+    ]),
+])
+```
+
+理由:
+- ページ全体の灰色背景（`var(--bg-base)`）との対比で視認性向上
+- フィルターエリアとのデザイン統一
+- `assets/03-components.css` のカードスタイル（白背景、境界線、ホバー効果）が自動適用
+
+参考実装: `src/pages/hamm_overview/_layout.py`
+
 ### SPEC.md 必須ルール（MANDATORY）
 - 全ダッシュボードページには `SPEC.md` を配置すること
 - 目的: ユーザーがダッシュボードの目的・使い方を理解するため
