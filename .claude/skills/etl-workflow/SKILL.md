@@ -48,6 +48,25 @@ description: データ取得とETL処理のワークフロー。CSV、API、RDS�
 
 ---
 
+## データソース比較表
+
+| データソース | ETLクラス | 設定ファイル | 汎用ローダー | 認証 | パーティション対応 | 実装状況 |
+|------------|---------|------------|------------|------|-----------------|---------|
+| CSV | `CsvETL` | `csv_datasets.yaml` | `load_csv.py` | 不要 | ○ | 完全実装 |
+| DOMO API | `DomoApiETL` | `domo_datasets.yaml` | `load_domo.py` | OAuth2（自動） | ○ | 完全実装 |
+| 汎用API | `ApiETL` | - | - | 各種対応 | ○ | Skeleton |
+| RDS | `RdsETL` | - | - | 接続文字列 | ○ | Skeleton |
+| S3 | `S3RawETL` | - | - | IAM/環境変数 | ○ | Skeleton |
+
+### 設定ファイルベース vs カスタム実装
+
+- **設定ファイルベース（CSV, DOMO API）**: `yaml`設定 + 汎用ローダーで管理。データセット追加は設定ファイル編集のみ
+- **カスタム実装（汎用API, RDS, S3）**: 継承クラス作成 + 個別スクリプト作成が必要
+
+詳細は各パターンのセクションを参照してください。
+
+---
+
 ## BaseETLアーキテクチャ
 
 すべてのETLクラスは [`backend/etl/base_etl.py`](backend/etl/base_etl.py) の `BaseETL` を継承します。
@@ -378,25 +397,15 @@ cron/Airflowでの自動更新に対応：
 
 ### Pattern 2: 汎用API
 
-#### ApiETLの実装
-
 [`backend/etl/etl_api.py`](backend/etl/etl_api.py) の `ApiETL` は現在skeleton実装のため、カスタムクラスを作成する必要があります。
 
-**テンプレート:**
+**実装のポイント:**
 
 ```python
 from backend.etl.etl_api import ApiETL
 import requests
-import pandas as pd
-from typing import Optional
 
 class CustomApiETL(ApiETL):
-    """カスタムAPI ETL実装例"""
-    
-    def __init__(self, endpoint: str, api_key: str):
-        self.endpoint = endpoint
-        self.api_key = api_key
-    
     def extract(self) -> pd.DataFrame:
         """APIからデータを取得"""
         response = requests.get(
@@ -407,7 +416,7 @@ class CustomApiETL(ApiETL):
         response.raise_for_status()
         data = response.json()
         
-        # JSONをDataFrameに変換
+        # JSONをDataFrameに変換（APIのレスポンス形式に応じて調整）
         if isinstance(data, list):
             return pd.DataFrame(data)
         elif isinstance(data, dict) and "data" in data:
@@ -416,19 +425,16 @@ class CustomApiETL(ApiETL):
             raise ValueError("Unexpected API response format")
     
     def transform(self, df: pd.DataFrame) -> pd.DataFrame:
-        """データを変換"""
-        # Type inference, cleaning
+        """共通のtransform実装を使用（下記参照）"""
         from src.data.type_inferrer import infer_schema, apply_types
-        
         schema = infer_schema(df)
         return apply_types(df, schema)
 ```
 
 **認証パターン:**
-
-- **Bearer Token**: `headers={"Authorization": f"Bearer {token}"}`
-- **API Key**: `headers={"X-API-Key": api_key}` または `params={"api_key": api_key}`
-- **Basic Auth**: `auth=(username, password)`
+- Bearer Token: `headers={"Authorization": f"Bearer {token}"}`
+- API Key: `headers={"X-API-Key": api_key}` または `params={"api_key": api_key}`
+- Basic Auth: `auth=(username, password)`
 
 詳細は [DATA_SOURCES.md](DATA_SOURCES.md#api) を参照してください。
 
@@ -436,45 +442,32 @@ class CustomApiETL(ApiETL):
 
 ### Pattern 3: RDS
 
-#### RdsETLの実装
-
 [`backend/etl/etl_rds.py`](backend/etl/etl_rds.py) の `RdsETL` は現在skeleton実装のため、カスタムクラスを作成する必要があります。
 
-**テンプレート:**
+**実装のポイント:**
 
 ```python
 from backend.etl.etl_rds import RdsETL
-import pandas as pd
-import psycopg2
 from sqlalchemy import create_engine
 
 class CustomRdsETL(RdsETL):
-    """カスタムRDS ETL実装例"""
-    
-    def __init__(self, connection_string: str, query: str):
-        self.connection_string = connection_string
-        self.query = query
-    
     def extract(self) -> pd.DataFrame:
-        """RDSからデータを取得"""
-        # SQLAlchemyを使用（推奨）
+        """RDSからデータを取得（SQLAlchemy推奨）"""
         engine = create_engine(self.connection_string)
         df = pd.read_sql_query(self.query, engine)
         engine.dispose()
         return df
     
     def transform(self, df: pd.DataFrame) -> pd.DataFrame:
-        """データを変換"""
+        """共通のtransform実装を使用（下記参照）"""
         from src.data.type_inferrer import infer_schema, apply_types
-        
         schema = infer_schema(df)
         return apply_types(df, schema)
 ```
 
 **接続文字列の例:**
-
-- **PostgreSQL**: `postgresql://user:password@host:port/database`
-- **MySQL**: `mysql+pymysql://user:password@host:port/database`
+- PostgreSQL: `postgresql://user:password@host:port/database`
+- MySQL: `mysql+pymysql://user:password@host:port/database`
 
 詳細は [DATA_SOURCES.md](DATA_SOURCES.md#rds) を参照してください。
 
@@ -482,27 +475,17 @@ class CustomRdsETL(RdsETL):
 
 ### Pattern 4: S3
 
-#### S3RawETLの実装
-
 [`backend/etl/etl_s3.py`](backend/etl/etl_s3.py) の `S3RawETL` は現在skeleton実装のため、カスタムクラスを作成する必要があります。
 
-**テンプレート:**
+**実装のポイント:**
 
 ```python
 from backend.etl.etl_s3 import S3RawETL
-import pandas as pd
 from src.data.s3_client import get_s3_client
 
 class CustomS3ETL(S3RawETL):
-    """カスタムS3 ETL実装例"""
-    
-    def __init__(self, bucket: str, key: str, file_format: str = "csv"):
-        self.bucket = bucket
-        self.key = key
-        self.file_format = file_format
-    
     def extract(self) -> pd.DataFrame:
-        """S3からデータを取得"""
+        """S3からデータを取得（ファイル形式に応じて処理）"""
         client = get_s3_client()
         response = client.get_object(Bucket=self.bucket, Key=self.key)
         
@@ -510,8 +493,7 @@ class CustomS3ETL(S3RawETL):
             return pd.read_csv(response["Body"])
         elif self.file_format == "json":
             import json
-            data = json.loads(response["Body"].read())
-            return pd.DataFrame(data)
+            return pd.DataFrame(json.loads(response["Body"].read()))
         elif self.file_format == "parquet":
             import pyarrow.parquet as pq
             return pq.read_table(response["Body"]).to_pandas()
@@ -519,14 +501,27 @@ class CustomS3ETL(S3RawETL):
             raise ValueError(f"Unsupported file format: {self.file_format}")
     
     def transform(self, df: pd.DataFrame) -> pd.DataFrame:
-        """データを変換"""
+        """共通のtransform実装を使用（下記参照）"""
         from src.data.type_inferrer import infer_schema, apply_types
-        
         schema = infer_schema(df)
         return apply_types(df, schema)
 ```
 
 詳細は [DATA_SOURCES.md](DATA_SOURCES.md#s3) を参照してください。
+
+---
+
+### カスタムETLの共通transform実装
+
+Pattern 2-4のすべてで、以下の共通transform実装を使用します:
+
+```python
+def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+    """データ型推論とクリーニング"""
+    from src.data.type_inferrer import infer_schema, apply_types
+    schema = infer_schema(df)
+    return apply_types(df, schema)
+```
 
 ---
 
@@ -582,175 +577,99 @@ datasets/{dataset_id}/
 
 ## ETLスクリプト作成ガイド
 
-> 注意: CSV ETLとDOMO API ETLは設定ファイルベースの管理が推奨されます。個別スクリプトの作成はカスタム要件がある場合のみ必要です。詳細は各パターンの「汎用ローダースクリプト」セクションを参照してください。
+### 設定ファイルベース（推奨）
 
-### 配置場所
+CSV ETLとDOMO API ETLは設定ファイルベースの管理が推奨されます。個別スクリプトの作成は不要です。
 
-`backend/scripts/` ディレクトリにETLスクリプトを作成します。
+**参考実装:**
+- CSV: [`backend/scripts/load_csv.py`](../../backend/scripts/load_csv.py)
+- DOMO API: [`backend/scripts/load_domo.py`](../../backend/scripts/load_domo.py)
 
-### 命名規則
+**使用方法:**
+```bash
+# CSV
+python3 backend/scripts/load_csv.py --dataset "DataSet Name"
 
-`load_{dataset_name}.py`
+# DOMO API
+python backend/scripts/load_domo.py --dataset "DataSet Name"
+```
 
-例: `load_cursor_usage.py`, `load_sales_data.py`
+詳細は各パターンの「汎用ローダースクリプト」セクションを参照してください。
 
-### 基本構造
+### カスタムETLスクリプト（Pattern 2-4の場合）
+
+汎用API、RDS、S3など、設定ファイルベースで管理できないデータソースの場合のみ、個別スクリプトを作成します。
+
+**基本構造:**
 
 ```python
 """ETL script to load {dataset} data to MinIO S3 as Parquet."""
 import sys
 from pathlib import Path
 
-# Add project root to path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from backend.etl.etl_csv import CsvETL  # または他のETL
-
+from backend.etl.etl_api import CustomApiETL  # または他のETL
 
 def main():
-    """Load data to MinIO."""
-    # データソースの設定
-    csv_path = project_root / "backend" / "data_sources" / "your-file.csv"
-    
-    if not csv_path.exists():
-        print(f"Error: CSV file not found at {csv_path}")
-        sys.exit(1)
-    
-    print(f"Loading data from: {csv_path}")
-    
-    # ETLインスタンスの作成
-    etl = CsvETL(
-        csv_path=str(csv_path),
-        partition_column="Date",
-    )
-    
-    # ETL実行
-    dataset_id = "your-dataset-id"
-    print(f"Running ETL for dataset: {dataset_id}")
-    etl.run(dataset_id)
-    
-    print(f"Successfully loaded dataset '{dataset_id}' to S3")
-
+    etl = CustomApiETL(endpoint="...", api_key="...")
+    etl.run("dataset-id")
 
 if __name__ == "__main__":
     main()
 ```
 
-### 実行方法
-
-```bash
-# 仮想環境をアクティベート
-source .venv/bin/activate  # Linux/Mac
-# または
-.venv\Scripts\activate  # Windows
-
-# ETLスクリプトを実行
-python backend/scripts/load_your_dataset.py
-```
-
----
-
-## よくある問題と解決策
-
-### 大量データの処理
-
-**問題:** メモリ不足でエラーが発生する
-
-**解決策:**
-- チャンク処理を使用
-- パーティション分割でファイルサイズを削減
-- 不要なカラムを早期に削除
-
-```python
-# チャンク処理の例（CSVの場合）
-def extract(self) -> pd.DataFrame:
-    chunks = []
-    for chunk in pd.read_csv(self.csv_path, chunksize=10000):
-        chunks.append(chunk)
-    return pd.concat(chunks, ignore_index=True)
-```
-
-### API Rate Limit
-
-**問題:** APIのレート制限に引っかかる
-
-**解決策:**
-- リトライロジックとバックオフを実装
-- リクエスト間隔を調整
-
-```python
-import time
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
-
-def extract(self) -> pd.DataFrame:
-    session = requests.Session()
-    retry_strategy = Retry(
-        total=3,
-        backoff_factor=1,
-        status_forcelist=[429, 500, 502, 503, 504],
-    )
-    adapter = HTTPAdapter(max_retries=retry_strategy)
-    session.mount("http://", adapter)
-    session.mount("https://", adapter)
-    
-    response = session.get(self.endpoint, headers=...)
-    # ...
-```
-
-### データ型の不一致
-
-**問題:** データ型が正しく推論されない
-
-**解決策:**
-- Type inferrerを活用
-- 必要に応じて手動で型変換
-
-```python
-def transform(self, df: pd.DataFrame) -> pd.DataFrame:
-    from src.data.type_inferrer import infer_schema, apply_types
-    
-    schema = infer_schema(df)
-    df = apply_types(df, schema)
-    
-    # 手動で型変換が必要な場合
-    df["custom_column"] = pd.to_datetime(df["custom_column"], format="%Y-%m-%d")
-    
-    return df
-```
-
-### 接続エラー
-
-**問題:** データベースやAPIへの接続が失敗する
-
-**解決策:**
-- 接続情報の確認
-- タイムアウト設定の調整
-- リトライメカニズムの実装
+**配置場所:** `backend/scripts/load_{dataset_name}.py`
 
 ---
 
 ## よくあるトラブルと解決策
 
-### 環境変数が読み込まれない
+### 環境変数・設定
+
+**環境変数が読み込まれない:**
 - `.env`の値にダブルクォート不要: `KEY=value`（`"value"`は誤り）
 - Pydantic ValidationError: `config.py`に設定項目追加
 - スクリプトで`load_dotenv()`を明示的に呼び出す
 
-### S3/MinIO接続エラー
+**S3/MinIO接続エラー:**
 - `NoCredentialsError`: `.env`に`S3_ACCESS_KEY`, `S3_SECRET_KEY`追加
 - ローカル開発: `S3_ENDPOINT=http://localhost:9000`
 
-### データ検証
+### データ処理
+
+**大量データのメモリ不足:**
+- チャンク処理: `pd.read_csv(path, chunksize=10000)`
+- パーティション分割でファイルサイズを削減
+- 不要なカラムを早期に削除
+
+**データ型の不一致:**
+- Type inferrerを活用: `infer_schema()` → `apply_types()`
+- 必要に応じて手動で型変換: `pd.to_datetime(df["col"], format="%Y-%m-%d")`
+
+**API Rate Limit:**
+- リトライロジックとバックオフを実装（`urllib3.util.retry.Retry`）
+- リクエスト間隔を調整
+
+**接続エラー:**
+- 接続情報の確認
+- タイムアウト設定の調整
+- リトライメカニズムの実装
+
+### データ検証・パーティション
+
+**データ検証:**
 - Flask Cacheエラー: `reader.read_dataset("id")`を直接使用（キャッシュなし）
 - Dashアプリ内: `get_cached_dataset(reader, "id")`
 
-### パーティション分割
-- データ量1万行未満: 不要
+**パーティション分割の目安:**
+- 1万行未満: 不要
 - 1-10万行: 推奨（日付カラムあり）
 - 10万行以上: 必須
 - NULL値レコードはパーティション除外される
+
+詳細は [DATA_SOURCES.md](DATA_SOURCES.md) を参照してください。
 
 ---
 
