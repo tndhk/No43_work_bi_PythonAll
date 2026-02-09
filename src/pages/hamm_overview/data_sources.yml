@@ -1,8 +1,14 @@
 charts:
   hamm-volume-table: hamm-dashboard
   hamm-volume-chart: hamm-dashboard
+  hamm-kpi-total-screens: hamm-dashboard
+  hamm-kpi-total-erv: hamm-dashboard
+  hamm-kpi-total-prelim: hamm-dashboard
   hamm-task-table: hamm-dashboard
   hamm-error-ratio: hamm-dashboard
   hamm-error-by-screener: hamm-dashboard
   hamm-user-breakdown: hamm-dashboard
   hamm-hamm-breakdown: hamm-dashboard
+  hamm-metadata-original-language: hamm-dashboard
+  hamm-metadata-dialogue: hamm-dashboard
+  hamm-metadata-genre: hamm-dashboard

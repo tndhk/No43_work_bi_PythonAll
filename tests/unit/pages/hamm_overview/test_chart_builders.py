@@ -30,8 +30,8 @@ def volume_df() -> pd.DataFrame:
             "ISO Week": ["W01", "W02"],
             "Start Date": ["01-Jan-25", "08-Jan-25"],
             "End Date": ["07-Jan-25", "14-Jan-25"],
-            "Prelim": [10, 20],
-            "ERV": [5, 8],
+            "Completed": [10, 20],
+            "Invalid": [5, 8],
             "VOLUME TOTAL": [15, 28],
         }
     )
@@ -47,8 +47,8 @@ def empty_volume_df() -> pd.DataFrame:
             "ISO Week",
             "Start Date",
             "End Date",
-            "Prelim",
-            "ERV",
+            "Completed",
+            "Invalid",
             "VOLUME TOTAL",
         ]
     )
@@ -189,8 +189,8 @@ class TestBuildVolumeTable:
             "ISO Week",
             "Start Date",
             "End Date",
-            "Prelim",
-            "ERV",
+            "Completed",
+            "Invalid",
             "VOLUME TOTAL",
         ]
         assert column_names == expected
@@ -268,8 +268,8 @@ class TestBuildVolumeChart:
 
         fig = build_volume_chart(volume_df)
         trace_names = [t.name for t in fig.data]
-        assert "ERV" in trace_names
-        assert "Prelim" in trace_names
+        assert "Completed" in trace_names
+        assert "Invalid" in trace_names
 
     def test_barmode_is_stack(self, volume_df):
         from src.pages.hamm_overview._chart_builders import build_volume_chart
@@ -283,19 +283,19 @@ class TestBuildVolumeChart:
         fig = build_volume_chart(volume_df)
         assert fig.layout.height == 400
 
-    def test_erv_marker_color(self, volume_df):
+    def test_completed_marker_color(self, volume_df):
         from src.pages.hamm_overview._chart_builders import build_volume_chart
 
         fig = build_volume_chart(volume_df)
-        erv_trace = [t for t in fig.data if t.name == "ERV"][0]
-        assert erv_trace.marker.color == "#f6b3b3"
+        completed_trace = [t for t in fig.data if t.name == "Completed"][0]
+        assert completed_trace.marker.color == "#2d6a2e"
 
-    def test_prelim_marker_color(self, volume_df):
+    def test_invalid_marker_color(self, volume_df):
         from src.pages.hamm_overview._chart_builders import build_volume_chart
 
         fig = build_volume_chart(volume_df)
-        prelim_trace = [t for t in fig.data if t.name == "Prelim"][0]
-        assert prelim_trace.marker.color == "#e57f7f"
+        invalid_trace = [t for t in fig.data if t.name == "Invalid"][0]
+        assert invalid_trace.marker.color == "#9ca3af"
 
     def test_custom_margin(self, volume_df):
         """Custom margin should be applied after build_chart."""
@@ -500,3 +500,49 @@ class TestBuildTaskTable:
             mock_bt.assert_called_once()
             call_args = mock_bt.call_args
             assert call_args[0][1] is TASK_TABLE_SPEC
+
+
+class TestContentMetadataChartBuilders:
+    def test_build_original_language_chart(self):
+        from src.pages.hamm_overview._chart_builders import build_original_language_chart
+
+        df = pd.DataFrame({
+            "original_language": ["Japanese", "Korean"],
+            "count": [12, 9],
+        })
+        fig = build_original_language_chart(df)
+
+        assert isinstance(fig, go.Figure)
+        assert len(fig.data) == 1
+        assert isinstance(fig.data[0], go.Pie)
+        assert set(fig.data[0].labels) == {"Japanese", "Korean"}
+
+    def test_build_dialogue_chart(self):
+        from src.pages.hamm_overview._chart_builders import build_dialogue_chart
+
+        df = pd.DataFrame({
+            "content_type": ["ERV", "Prelim"],
+            "Yes": [9, 5],
+            "No": [4, 3],
+        })
+        fig = build_dialogue_chart(df)
+
+        assert isinstance(fig, go.Figure)
+        bar_traces = [t for t in fig.data if isinstance(t, go.Bar)]
+        assert len(bar_traces) == 2
+        assert set([t.name for t in bar_traces]) == {"Yes", "No"}
+        assert fig.layout.barmode == "stack"
+
+    def test_build_genre_chart(self):
+        from src.pages.hamm_overview._chart_builders import build_genre_chart
+
+        df = pd.DataFrame({
+            "genre": ["Documentary", "Crime/Mystery/Thriller", "Drama"],
+            "count": [12, 5, 4],
+        })
+        fig = build_genre_chart(df)
+
+        assert isinstance(fig, go.Figure)
+        bar_traces = [t for t in fig.data if isinstance(t, go.Bar)]
+        assert len(bar_traces) == 1
+        assert bar_traces[0].name == "count"

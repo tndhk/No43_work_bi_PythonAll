@@ -9,7 +9,7 @@ Helper utilities:
 - _find_components: generic tree walker with a user-supplied predicate
 """
 from unittest.mock import patch, MagicMock
-from dash import html
+from dash import html, dcc
 import dash_bootstrap_components as dbc
 
 import pytest
@@ -293,3 +293,24 @@ class TestPerSlicerClearButtons:
         }
         for clear_id in clear_ids:
             assert clear_id in found_ids, f"{clear_id} not found in layout"
+
+
+class TestContentMetadataSection:
+    def test_content_metadata_header_exists(self, layout):
+        header_divs = _find_components(
+            layout,
+            lambda c: isinstance(c, html.H3) and getattr(c, "children", "") == "Content Metadata",
+        )
+        assert len(header_divs) >= 1, "Content Metadata header not found"
+
+    def test_content_metadata_graph_ids_exist(self, layout):
+        expected_ids = {
+            "hamm-metadata-original-language",
+            "hamm-metadata-dialogue",
+            "hamm-metadata-genre",
+        }
+        graphs = _find_components(layout, lambda c: isinstance(c, dcc.Graph))
+        graph_ids = {getattr(g, "id", None) for g in graphs}
+
+        for expected_id in expected_ids:
+            assert expected_id in graph_ids, f"{expected_id} not found in layout"

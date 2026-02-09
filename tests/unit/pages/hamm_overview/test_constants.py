@@ -58,6 +58,9 @@ class TestChartIds:
         assert const.CHART_ID_VOLUME_TABLE == "hamm-volume-table"
         assert const.CHART_ID_VOLUME_CHART == "hamm-volume-chart"
         assert const.CHART_ID_TASK_TABLE == "hamm-task-table"
+        assert const.CHART_ID_METADATA_ORIGINAL_LANGUAGE == "hamm-metadata-original-language"
+        assert const.CHART_ID_METADATA_DIALOGUE == "hamm-metadata-dialogue"
+        assert const.CHART_ID_METADATA_GENRE == "hamm-metadata-genre"
 
     def test_dead_kpi_ids_removed(self):
         """CHART_ID_KPI_TOTAL_TASKS and CHART_ID_KPI_AVG_VIDEO_DURATION
@@ -157,7 +160,7 @@ class TestVolumeTableSpec:
         from src.pages.hamm_overview._constants import VOLUME_TABLE_SPEC
         expected = [
             "Fiscal Year", "Fiscal Quarter", "ISO Week",
-            "Start Date", "End Date", "Prelim", "ERV", "VOLUME TOTAL",
+            "Start Date", "End Date", "Completed", "Invalid", "VOLUME TOTAL",
         ]
         assert VOLUME_TABLE_SPEC.column_order == expected
 
@@ -180,14 +183,18 @@ class TestVolumeChartSpec:
 
     def test_volume_chart_spec_y_columns(self):
         from src.pages.hamm_overview._constants import VOLUME_CHART_SPEC
-        assert VOLUME_CHART_SPEC.y_columns == ["ERV", "Prelim"]
+        assert VOLUME_CHART_SPEC.y_columns == ["Completed", "Invalid"]
 
     def test_volume_chart_spec_color_map(self):
         from src.pages.hamm_overview._constants import VOLUME_CHART_SPEC
         assert VOLUME_CHART_SPEC.color_map == {
-            "ERV": "#f6b3b3",
-            "Prelim": "#e57f7f",
+            "Completed": "#2d6a2e",
+            "Invalid": "#9ca3af",
         }
+
+    def test_volume_chart_spec_text_template(self):
+        from src.pages.hamm_overview._constants import VOLUME_CHART_SPEC
+        assert VOLUME_CHART_SPEC.text_template == "%{y}"
 
     def test_volume_chart_spec_height(self):
         from src.pages.hamm_overview._constants import VOLUME_CHART_SPEC
@@ -226,3 +233,23 @@ class TestTaskTableSpec:
             "Job Created", "Completed / Err", "Total Duration",
         ]
         assert TASK_TABLE_SPEC.column_order == expected
+
+
+class TestContentMetadataChartSpecs:
+    def test_original_language_spec(self):
+        from src.pages.hamm_overview._constants import ORIGINAL_LANGUAGE_SPEC
+        assert ORIGINAL_LANGUAGE_SPEC.chart_type == "pie"
+        assert ORIGINAL_LANGUAGE_SPEC.x_column == "original_language"
+        assert ORIGINAL_LANGUAGE_SPEC.y_columns == ["count"]
+
+    def test_dialogue_spec(self):
+        from src.pages.hamm_overview._constants import DIALOGUE_SPEC
+        assert DIALOGUE_SPEC.chart_type == "stacked_bar"
+        assert DIALOGUE_SPEC.x_column == "content_type"
+        assert DIALOGUE_SPEC.y_columns == ["Yes", "No"]
+
+    def test_genre_spec(self):
+        from src.pages.hamm_overview._constants import GENRE_SPEC
+        assert GENRE_SPEC.chart_type == "bar"
+        assert GENRE_SPEC.x_column == "genre"
+        assert GENRE_SPEC.y_columns == ["count"]

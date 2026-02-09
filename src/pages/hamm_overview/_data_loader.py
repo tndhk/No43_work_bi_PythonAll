@@ -13,11 +13,17 @@ from ._constants import (
     DASHBOARD_ID,
     CHART_ID_VOLUME_TABLE,
     CHART_ID_VOLUME_CHART,
+    CHART_ID_KPI_TOTAL_SCREENS,
+    CHART_ID_KPI_TOTAL_ERV,
+    CHART_ID_KPI_TOTAL_PRELIM,
     CHART_ID_TASK_TABLE,
     CHART_ID_ERROR_RATIO,
     CHART_ID_ERROR_BY_SCREENER,
     CHART_ID_USER_BREAKDOWN,
     CHART_ID_HAMM_BREAKDOWN,
+    CHART_ID_METADATA_ORIGINAL_LANGUAGE,
+    CHART_ID_METADATA_DIALOGUE,
+    CHART_ID_METADATA_GENRE,
     TASK_TABLE_SPEC,
     DERIVED_YEAR,
     DERIVED_MONTH,
@@ -26,8 +32,8 @@ from ._constants import (
     DERIVED_ISO_WEEK,
     DERIVED_START_DATE,
     DERIVED_END_DATE,
-    PRELIM_LABEL,
-    ERV_LABEL,
+    COMPLETED_LABEL,
+    INVALID_LABEL,
     SORT_START_COL,
 )
 
@@ -50,11 +56,17 @@ def resolve_dataset_id_for_dashboard() -> str:
     chart_ids = [
         CHART_ID_VOLUME_TABLE,
         CHART_ID_VOLUME_CHART,
+        CHART_ID_KPI_TOTAL_SCREENS,
+        CHART_ID_KPI_TOTAL_ERV,
+        CHART_ID_KPI_TOTAL_PRELIM,
         CHART_ID_TASK_TABLE,
         CHART_ID_ERROR_RATIO,
         CHART_ID_ERROR_BY_SCREENER,
         CHART_ID_USER_BREAKDOWN,
         CHART_ID_HAMM_BREAKDOWN,
+        CHART_ID_METADATA_ORIGINAL_LANGUAGE,
+        CHART_ID_METADATA_DIALOGUE,
+        CHART_ID_METADATA_GENRE,
     ]
     dataset_ids = {resolve_dataset_id(DASHBOARD_ID, chart_id) for chart_id in chart_ids}
     if len(dataset_ids) != 1:
@@ -338,8 +350,8 @@ def _parse_start_date(value: str) -> pd.Timestamp:
 def build_volume_summary(df: pd.DataFrame, cadence: str) -> pd.DataFrame:
     """Build a volume summary DataFrame grouped by cadence period.
 
-    Adds cadence columns, excludes Cancelled/Invalid statuses, groups
-    by time period and content type, and pivots to show Prelim/ERV counts.
+    Adds cadence columns, excludes Cancelled status, groups
+    by time period and status, and pivots to show Completed/Invalid counts.
 
     Args:
         df: Pre-filtered DataFrame (already through _prepare_base_df).
@@ -347,14 +359,14 @@ def build_volume_summary(df: pd.DataFrame, cadence: str) -> pd.DataFrame:
 
     Returns:
         A pivoted DataFrame with columns: Fiscal Year, Fiscal Quarter,
-        ISO Week, Start Date, End Date, Prelim, ERV, VOLUME TOTAL,
+        ISO Week, Start Date, End Date, Completed, Invalid, VOLUME TOTAL,
         plus an internal _sort_start_dt column for ordering.
     """
     df = add_cadence_columns(df, cadence)
 
-    # Exclude Cancelled and Invalid status for volume summary
+    # Exclude Cancelled status for volume summary
     status_col = COLUMN_MAP["status"]
-    excluded_statuses = ["Cancelled", "Invalid"]
+    excluded_statuses = ["Cancelled"]
     df = df[~df[status_col].isin(excluded_statuses)]
 
     group_cols = [
@@ -363,7 +375,7 @@ def build_volume_summary(df: pd.DataFrame, cadence: str) -> pd.DataFrame:
         DERIVED_ISO_WEEK,
         DERIVED_START_DATE,
         DERIVED_END_DATE,
-        COLUMN_MAP["content_type"],
+        COLUMN_MAP["status"],
     ]
 
     summary = (
@@ -380,16 +392,16 @@ def build_volume_summary(df: pd.DataFrame, cadence: str) -> pd.DataFrame:
             DERIVED_START_DATE,
             DERIVED_END_DATE,
         ],
-        columns=COLUMN_MAP["content_type"],
+        columns=COLUMN_MAP["status"],
         values="count",
         fill_value=0,
     ).reset_index()
 
-    for label in (PRELIM_LABEL, ERV_LABEL):
+    for label in (COMPLETED_LABEL, INVALID_LABEL):
         if label not in pivot.columns:
             pivot[label] = 0
 
-    pivot["VOLUME TOTAL"] = pivot[PRELIM_LABEL] + pivot[ERV_LABEL]
+    pivot["VOLUME TOTAL"] = pivot[COMPLETED_LABEL] + pivot[INVALID_LABEL]
 
     pivot = pivot.rename(columns={
         DERIVED_FISCAL_YEAR: "Fiscal Year",
@@ -405,8 +417,8 @@ def build_volume_summary(df: pd.DataFrame, cadence: str) -> pd.DataFrame:
         "ISO Week",
         "Start Date",
         "End Date",
-        PRELIM_LABEL,
-        ERV_LABEL,
+        COMPLETED_LABEL,
+        INVALID_LABEL,
         "VOLUME TOTAL",
     ]]
 
@@ -476,6 +488,97 @@ def prepare_task_display_df(df: pd.DataFrame) -> pd.DataFrame:
     )
 
     return output_df
+
+
+def build_original_language_distribution(df: pd.DataFrame) -> pd.DataFrame:
+    """Build original language distribution for pie chart.
+
+    Returns:
+        DataFrame with columns: original_language, count
+    """
+    language_col = COLUMN_MAP["original_language"]
+    id_col = COLUMN_MAP["id"]
+
+    if len(df) == 0:
+        return pd.DataFrame(columns=["original_language", "count"])
+
+    result = (
+        df[df[language_col].notna()]
+        .groupby(language_col)[id_col]
+        .nunique()
+        .reset_index(name="count")
+        .rename(columns={language_col: "original_language"})
+        .sort_values("count", ascending=False, kind="mergesort")
+    )
+
+    return result
+
+
+def build_dialogue_by_content_type(df: pd.DataFrame) -> pd.DataFrame:
+    """Build Yes/No dialogue counts by content type for stacked bar chart.
+
+    Returns:
+        DataFrame with columns: content_type, Yes, No
+    """
+    content_col = COLUMN_MAP["content_type"]
+    dialogue_col = COLUMN_MAP["dialogue"]
+    id_col = COLUMN_MAP["id"]
+
+    if len(df) == 0:
+        return pd.DataFrame(columns=["content_type", "Yes", "No"])
+
+    filtered_df = df[df[dialogue_col].isin(["Yes", "No"])].copy()
+    if len(filtered_df) == 0:
+        return pd.DataFrame(columns=["content_type", "Yes", "No"])
+
+    summary = (
+        filtered_df.groupby([content_col, dialogue_col])[id_col]
+        .nunique()
+        .reset_index(name="count")
+    )
+
+    pivot_df = summary.pivot_table(
+        index=content_col,
+        columns=dialogue_col,
+        values="count",
+        fill_value=0,
+    ).reset_index()
+
+    pivot_df = pivot_df.rename(columns={content_col: "content_type"})
+    if "Yes" not in pivot_df.columns:
+        pivot_df["Yes"] = 0
+    if "No" not in pivot_df.columns:
+        pivot_df["No"] = 0
+
+    return pivot_df[["content_type", "Yes", "No"]].sort_values(
+        by="content_type",
+        ascending=True,
+        kind="mergesort",
+    )
+
+
+def build_genre_distribution(df: pd.DataFrame) -> pd.DataFrame:
+    """Build genre distribution for bar chart.
+
+    Returns:
+        DataFrame with columns: genre, count
+    """
+    genre_col = COLUMN_MAP["genre"]
+    id_col = COLUMN_MAP["id"]
+
+    if len(df) == 0:
+        return pd.DataFrame(columns=["genre", "count"])
+
+    result = (
+        df[df[genre_col].notna()]
+        .groupby(genre_col)[id_col]
+        .nunique()
+        .reset_index(name="count")
+        .rename(columns={genre_col: "genre"})
+        .sort_values("count", ascending=False, kind="mergesort")
+    )
+
+    return result
 
 
 # ---------------------------------------------------------------------------

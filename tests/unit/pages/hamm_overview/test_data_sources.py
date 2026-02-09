@@ -12,7 +12,17 @@ def test_data_sources_contains_all_chart_ids():
     expected = {
         const.CHART_ID_VOLUME_TABLE,
         const.CHART_ID_VOLUME_CHART,
+        const.CHART_ID_KPI_TOTAL_SCREENS,
+        const.CHART_ID_KPI_TOTAL_ERV,
+        const.CHART_ID_KPI_TOTAL_PRELIM,
         const.CHART_ID_TASK_TABLE,
+        const.CHART_ID_ERROR_RATIO,
+        const.CHART_ID_ERROR_BY_SCREENER,
+        const.CHART_ID_USER_BREAKDOWN,
+        const.CHART_ID_HAMM_BREAKDOWN,
+        const.CHART_ID_METADATA_ORIGINAL_LANGUAGE,
+        const.CHART_ID_METADATA_DIALOGUE,
+        const.CHART_ID_METADATA_GENRE,
     }
     assert chart_ids == expected
 
@@ -29,7 +39,17 @@ def test_resolve_dataset_id_for_dashboard_uses_all_chart_ids(mock_resolve):
     expected_calls = [
         call(const.DASHBOARD_ID, const.CHART_ID_VOLUME_TABLE),
         call(const.DASHBOARD_ID, const.CHART_ID_VOLUME_CHART),
+        call(const.DASHBOARD_ID, const.CHART_ID_KPI_TOTAL_SCREENS),
+        call(const.DASHBOARD_ID, const.CHART_ID_KPI_TOTAL_ERV),
+        call(const.DASHBOARD_ID, const.CHART_ID_KPI_TOTAL_PRELIM),
         call(const.DASHBOARD_ID, const.CHART_ID_TASK_TABLE),
+        call(const.DASHBOARD_ID, const.CHART_ID_ERROR_RATIO),
+        call(const.DASHBOARD_ID, const.CHART_ID_ERROR_BY_SCREENER),
+        call(const.DASHBOARD_ID, const.CHART_ID_USER_BREAKDOWN),
+        call(const.DASHBOARD_ID, const.CHART_ID_HAMM_BREAKDOWN),
+        call(const.DASHBOARD_ID, const.CHART_ID_METADATA_ORIGINAL_LANGUAGE),
+        call(const.DASHBOARD_ID, const.CHART_ID_METADATA_DIALOGUE),
+        call(const.DASHBOARD_ID, const.CHART_ID_METADATA_GENRE),
     ]
     mock_resolve.assert_has_calls(expected_calls, any_order=True)
     assert mock_resolve.call_count == len(expected_calls)

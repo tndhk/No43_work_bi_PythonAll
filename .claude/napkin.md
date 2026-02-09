@@ -7,6 +7,7 @@
 | 2026-02-07 | self | Repeatedly used exec_command to run apply_patch despite warning | Always use apply_patch tool for patches |
 | 2026-02-08 | self | Started ETL pytest run before checking test deps, failed on missing `boto3` import from `tests/conftest.py` | Check/install core test deps (at least `boto3`, `moto`) before running suite in this environment |
 | 2026-02-08 | self | test_data_loader.py で19件が DATASETS NameError。メソッド内importがある関数とない関数が混在 | テストファイルで定数をメソッド内importする場合、全メソッドで統一するかトップレベルimportにする |
+| 2026-02-09 | self | `python3 -m py_compile` に Markdown (`.claude/napkin.md`) を含めて失敗 | `py_compile` は Python ファイルのみに限定する |
 
 ## User Preferences
 - Prefer YAML only for look/labels; keep calculation logic in Python templates.
@@ -14,6 +15,7 @@
 
 ## Patterns That Don't Work
 - 2026-02-07: MinIO access from this environment failed (`http://localhost:9000` PermissionError). Run ParquetReader validation in the user environment where MinIO is reachable.
+- 2026-02-09: `git checkout -b codex/...` can fail in sandbox because writing `.git/refs/heads/*` is blocked. Retry with escalated permissions.
 
 ## Patterns That Work
 - 2026-02-08: DOMO ETL (`python3 backend/scripts/load_domo.py --dataset ...`) works when network is available. Previous DNS failure was transient.
