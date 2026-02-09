@@ -495,7 +495,7 @@ def build_issues_ratio(df: pd.DataFrame) -> pd.DataFrame:
     
     # Filter to only User and HAMM
     filtered_df = df[df[error_type_col].isin(["User", "HAMM"])].copy()
-    
+    filtered_df = filtered_df[filtered_df[COLUMN_MAP["status"]].isin(["Invalid", "Error"])]
     if len(filtered_df) == 0:
         return pd.DataFrame(columns=["error_type", "count"])
     
@@ -524,7 +524,7 @@ def build_intervention_by_screener(df: pd.DataFrame) -> pd.DataFrame:
     
     # Filter to only User and HAMM
     filtered_df = df[df[error_type_col].isin(["User", "HAMM"])].copy()
-    
+    filtered_df = filtered_df[filtered_df[COLUMN_MAP["status"]].isin(["Invalid", "Error"])]
     if len(filtered_df) == 0:
         return pd.DataFrame(columns=["video_type_description", "User", "HAMM"])
     
@@ -569,6 +569,7 @@ def build_user_intervention_breakdown(df: pd.DataFrame) -> pd.DataFrame:
     
     # Filter to only User records
     user_df = df[df[error_type_col] == "User"].copy()
+    user_df = user_df[user_df[COLUMN_MAP["status"]].isin(["Invalid", "Error"])]
     
     if len(user_df) == 0:
         return pd.DataFrame(columns=["error_description", "count"])
@@ -604,6 +605,7 @@ def build_hamm_intervention_breakdown(df: pd.DataFrame) -> pd.DataFrame:
     
     # Filter to only HAMM records
     hamm_df = df[df[error_type_col] == "HAMM"].copy()
+    hamm_df = hamm_df[hamm_df[COLUMN_MAP["status"]].isin(["Invalid", "Error"])]
     
     if len(hamm_df) == 0:
         return pd.DataFrame(columns=["error_description", "count"])
