@@ -347,36 +347,39 @@ def _make_prepared_df() -> pd.DataFrame:
     This means: timezone-naive datetimes, string id, derived _year/_month.
     """
     return pd.DataFrame({
-        "id": ["1", "2", "3", "4"],
-        "title": ["A", "B", "C", "D"],
-        "status": ["Completed", "Completed", "Cancelled", "Completed"],
+        "id": ["1", "2", "3", "4", "5"],
+        "title": ["A", "B", "C", "D", "E"],
+        "status": ["Completed", "Invalid", "Cancelled", "Completed", "Invalid"],
         "created_at": pd.to_datetime([
             "2026-01-05 10:00:00",
             "2026-01-06 12:00:00",
             "2026-01-07 14:00:00",
             "2026-01-08 09:00:00",
+            "2026-01-09 11:00:00",
         ]),
         "completed_at": pd.to_datetime([
             "2026-01-06 10:00:00",
             "2026-01-07 12:00:00",
             "2026-01-08 14:00:00",
             "2026-01-09 09:00:00",
+            "2026-01-10 11:00:00",
         ]),
-        "notification_company_name": ["APAC", "APAC", "APAC", "APAC"],
-        "video_type_description": ["Prelim", "ERV", "Prelim", "Prelim"],
-        "original_language_name": ["Japanese", "Korean", "Japanese", "Korean"],
-        "was dialogue provided?": ["Yes", "No", "Yes", "No"],
-        "genre_name": ["Crime", "Drama", "Crime", "Drama"],
-        "error code": ["E1", "E2", "E1", "E2"],
-        "error user vs system": ["User", "System", "User", "System"],
+        "notification_company_name": ["APAC", "APAC", "APAC", "APAC", "APAC"],
+        "video_type_description": ["Prelim", "ERV", "Prelim", "Prelim", "ERV"],
+        "original_language_name": ["Japanese", "Korean", "Japanese", "Korean", "Japanese"],
+        "was dialogue provided?": ["Yes", "No", "Yes", "No", "Yes"],
+        "genre_name": ["Crime", "Drama", "Crime", "Drama", "Crime"],
+        "error code": ["E1", "E2", "E1", "E2", "E3"],
+        "error user vs system": ["User", "System", "User", "System", "User"],
         "error description": [
             "Requested audio track does not exist",
             "SRT file truncated",
             "File upload failed",
             "Network error",
+            "Invalid format",
         ],
-        "video_duration": ["00:10:00", "00:20:00", "00:15:00", "00:25:00"],
-        "audio location": ["Full mix", "Separate audio", "Full mix", "Separate audio"],
+        "video_duration": ["00:10:00", "00:20:00", "00:15:00", "00:25:00", "00:30:00"],
+        "audio location": ["Full mix", "Separate audio", "Full mix", "Separate audio", "Stereo"],
     })
 
 
@@ -637,7 +640,7 @@ class TestBuildVolumeSummaryInDataLoader:
         result = build_volume_summary(df, "weekly")
         expected_cols = {
             "Fiscal Year", "Fiscal Quarter", "ISO Week",
-            "Start Date", "End Date", "Prelim", "ERV", "VOLUME TOTAL",
+            "Start Date", "End Date", "Completed", "Invalid", "VOLUME TOTAL",
         }
         # _sort_start_dt is an internal column that may or may not be present
         result_cols = set(result.columns) - {"_sort_start_dt"}
@@ -648,16 +651,16 @@ class TestBuildVolumeSummaryInDataLoader:
         from src.pages.hamm_overview._data_loader import build_volume_summary
         df = _make_prepared_df()
         result = build_volume_summary(df, "weekly")
-        # We have 4 rows, 1 Cancelled. So 3 non-cancelled tasks should be counted.
+        # We have 5 rows, 1 Cancelled. So 4 non-cancelled tasks should be counted.
         total = result["VOLUME TOTAL"].sum()
-        assert total == 3  # IDs 1, 2, 4 (ID 3 is Cancelled)
+        assert total == 4  # IDs 1, 2, 4, 5 (ID 3 is Cancelled)
 
-    def test_volume_total_is_sum_of_prelim_and_erv(self):
+    def test_volume_total_is_sum_of_completed_and_invalid(self):
         from src.pages.hamm_overview._data_loader import build_volume_summary
         df = _make_prepared_df()
         result = build_volume_summary(df, "weekly")
         for _, row in result.iterrows():
-            assert row["VOLUME TOTAL"] == row["Prelim"] + row["ERV"]
+            assert row["VOLUME TOTAL"] == row["Completed"] + row["Invalid"]
 
     def test_sorted_by_start_date(self):
         from src.pages.hamm_overview._data_loader import build_volume_summary
@@ -1322,3 +1325,84 @@ class TestBuildHammInterventionBreakdown:
         
         assert len(result) == 0
         assert list(result.columns) == ["error_description", "count"]
+
+
+def _make_content_metadata_df() -> pd.DataFrame:
+    return pd.DataFrame({
+        "id": ["1", "2", "3", "4", "5", "6", "7"],
+        "title": ["A", "B", "C", "D", "E", "F", "G"],
+        "status": ["Completed"] * 7,
+        "created_at": pd.to_datetime([
+            "2026-01-05 10:00:00",
+            "2026-01-06 10:00:00",
+            "2026-01-07 10:00:00",
+            "2026-01-08 10:00:00",
+            "2026-01-09 10:00:00",
+            "2026-01-10 10:00:00",
+            "2026-01-11 10:00:00",
+        ], utc=True),
+        "completed_at": pd.to_datetime([
+            "2026-01-06 10:00:00",
+            "2026-01-07 10:00:00",
+            "2026-01-08 10:00:00",
+            "2026-01-09 10:00:00",
+            "2026-01-10 10:00:00",
+            "2026-01-11 10:00:00",
+            "2026-01-12 10:00:00",
+        ], utc=True),
+        "notification_company_name": ["APAC"] * 7,
+        "video_type_description": ["ERV", "ERV", "ERV", "Prelim", "Prelim", "Prelim", "Prelim"],
+        "original_language_name": ["Japanese", "Japanese", "Korean", "Japanese", "Korean", "Korean", "Korean"],
+        "was dialogue provided?": ["Yes", "No", "Yes", "Yes", "No", "No", "Unknown"],
+        "genre_name": ["Documentary", "Documentary", "Drama", "Documentary", "Crime/Mystery/Thriller", "Crime/Mystery/Thriller", "Drama"],
+        "error code": ["E1"] * 7,
+        "error user vs system": ["User"] * 7,
+        "error description": ["desc"] * 7,
+        "video_duration": ["00:10:00"] * 7,
+        "audio location": ["Full mix"] * 7,
+    })
+
+
+class TestContentMetadataAggregations:
+    def test_original_language_distribution_counts_unique_ids(self):
+        from src.pages.hamm_overview._data_loader import (
+            _prepare_base_df,
+            build_original_language_distribution,
+        )
+
+        df = _prepare_base_df(_make_content_metadata_df())
+        result = build_original_language_distribution(df)
+
+        assert list(result.columns) == ["original_language", "count"]
+        counts = result.set_index("original_language")["count"].to_dict()
+        assert counts == {"Japanese": 3, "Korean": 4}
+
+    def test_dialogue_by_content_type_includes_yes_no_only(self):
+        from src.pages.hamm_overview._data_loader import (
+            _prepare_base_df,
+            build_dialogue_by_content_type,
+        )
+
+        df = _prepare_base_df(_make_content_metadata_df())
+        result = build_dialogue_by_content_type(df)
+
+        assert list(result.columns) == ["content_type", "Yes", "No"]
+        assert "Unknown" not in result.columns
+
+        rows = result.set_index("content_type").to_dict("index")
+        assert rows["ERV"] == {"Yes": 2, "No": 1}
+        assert rows["Prelim"] == {"Yes": 1, "No": 2}
+
+    def test_genre_distribution_is_descending(self):
+        from src.pages.hamm_overview._data_loader import (
+            _prepare_base_df,
+            build_genre_distribution,
+        )
+
+        df = _prepare_base_df(_make_content_metadata_df())
+        result = build_genre_distribution(df)
+
+        assert list(result.columns) == ["genre", "count"]
+        assert result["count"].tolist() == sorted(result["count"].tolist(), reverse=True)
+        assert result.iloc[0]["genre"] == "Documentary"
+        assert result.iloc[0]["count"] == 3

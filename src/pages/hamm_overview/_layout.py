@@ -14,6 +14,12 @@ from ._constants import (
     CHART_ID_ERROR_BY_SCREENER,
     CHART_ID_USER_BREAKDOWN,
     CHART_ID_HAMM_BREAKDOWN,
+    CHART_ID_METADATA_ORIGINAL_LANGUAGE,
+    CHART_ID_METADATA_DIALOGUE,
+    CHART_ID_METADATA_GENRE,
+    CHART_ID_KPI_TOTAL_SCREENS,
+    CHART_ID_KPI_TOTAL_ERV,
+    CHART_ID_KPI_TOTAL_PRELIM,
 )
 from ._data_loader import load_filter_options
 from ._filters import build_filter_layout, build_cadence_filter
@@ -42,7 +48,7 @@ def build_layout() -> html.Div:
 
     section_style = {**_SECTION_BASE, "padding": "12px"}
 
-    title_element = html.Div("HAMM Overview \U0001f437", style=title_style)
+    title_element = html.Div("HAMM Overview", style=title_style)
     filter_rows = build_filter_layout(opts, title_element=title_element)
 
     return html.Div([
@@ -65,6 +71,13 @@ def build_layout() -> html.Div:
                     build_cadence_filter(),
                 ], md=5, className="d-flex"),
             ], className="mb-3 align-items-stretch"),
+
+            # KPI Cards row
+            dbc.Row([
+                dbc.Col([html.Div(id=CHART_ID_KPI_TOTAL_SCREENS)], md=4),
+                dbc.Col([html.Div(id=CHART_ID_KPI_TOTAL_ERV)], md=4),
+                dbc.Col([html.Div(id=CHART_ID_KPI_TOTAL_PRELIM)], md=4),
+            ], className="mb-3"),
 
             dbc.Row([
                 dbc.Col([
@@ -94,6 +107,43 @@ def build_layout() -> html.Div:
                         ]),
                     ]),
                 ], md=12),
+            ], className="mb-4"),
+
+            # Content Metadata header section
+            dbc.Row([
+                dbc.Col([
+                    html.Div([
+                        html.H3("Content Metadata", className="mb-2", style={"color": "white"}),
+                    ], style={**section_style, "height": "100%"}),
+                ], md=12),
+            ], className="mb-3"),
+
+            # Content Metadata charts
+            dbc.Row([
+                dbc.Col([
+                    dbc.Card([
+                        dbc.CardHeader("Original Language", className="card-header"),
+                        dbc.CardBody([
+                            dcc.Graph(id=CHART_ID_METADATA_ORIGINAL_LANGUAGE),
+                        ]),
+                    ]),
+                ], md=4),
+                dbc.Col([
+                    dbc.Card([
+                        dbc.CardHeader("Was dialogue Provided?", className="card-header"),
+                        dbc.CardBody([
+                            dcc.Graph(id=CHART_ID_METADATA_DIALOGUE),
+                        ]),
+                    ]),
+                ], md=4),
+                dbc.Col([
+                    dbc.Card([
+                        dbc.CardHeader("Genre", className="card-header"),
+                        dbc.CardBody([
+                            dcc.Graph(id=CHART_ID_METADATA_GENRE),
+                        ]),
+                    ]),
+                ], md=4),
             ], className="mb-4"),
 
             # Error Details header section

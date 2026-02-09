@@ -11,7 +11,6 @@ from typing import Any
 
 import pandas as pd
 import plotly.graph_objects as go
-from dash import dash_table, html
 
 from src.charts.chart_builder import build_chart
 from src.charts.table_builder import build_table
@@ -23,6 +22,9 @@ from ._constants import (
     ERROR_BY_SCREENER_SPEC,
     USER_BREAKDOWN_SPEC,
     HAMM_BREAKDOWN_SPEC,
+    ORIGINAL_LANGUAGE_SPEC,
+    DIALOGUE_SPEC,
+    GENRE_SPEC,
 )
 
 
@@ -32,7 +34,7 @@ def build_volume_table(df: pd.DataFrame) -> tuple[str, Any]:
     Args:
         df: Volume summary DataFrame with columns: Fiscal Year,
             Fiscal Quarter, ISO Week, Start Date, End Date,
-            Prelim, ERV, VOLUME TOTAL.
+            Completed, Invalid, VOLUME TOTAL.
 
     Returns:
         A ``(title, component)`` tuple where component is either a
@@ -49,7 +51,7 @@ def build_volume_chart(df: pd.DataFrame) -> go.Figure:
     overrides (margin, legend orientation, axis titles).
 
     Args:
-        df: Volume summary DataFrame with Start Date, Prelim, ERV columns.
+        df: Volume summary DataFrame with Start Date, Completed, Invalid columns.
 
     Returns:
         A themed go.Figure with stacked bar traces, or empty-state figure.
@@ -134,3 +136,24 @@ def build_hamm_breakdown_chart(df: pd.DataFrame) -> go.Figure:
         A themed go.Figure with bar chart, or empty-state figure.
     """
     return build_chart(df, HAMM_BREAKDOWN_SPEC)
+
+
+def build_original_language_chart(df: pd.DataFrame) -> go.Figure:
+    """Render original language distribution via shared build_chart."""
+    fig = build_chart(df, ORIGINAL_LANGUAGE_SPEC)
+    if len(df) > 0 and len(fig.data) > 0:
+        # Pie uses category-based colors; ensure image-aligned colours.
+        color_map = ORIGINAL_LANGUAGE_SPEC.color_map or {}
+        colors = [color_map.get(label) for label in df["original_language"]]
+        fig.update_traces(marker={"colors": colors})
+    return fig
+
+
+def build_dialogue_chart(df: pd.DataFrame) -> go.Figure:
+    """Render dialogue Yes/No by content type via shared build_chart."""
+    return build_chart(df, DIALOGUE_SPEC)
+
+
+def build_genre_chart(df: pd.DataFrame) -> go.Figure:
+    """Render genre distribution via shared build_chart."""
+    return build_chart(df, GENRE_SPEC)

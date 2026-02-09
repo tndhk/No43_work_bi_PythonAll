@@ -14,6 +14,19 @@ CHART_ID_ERROR_RATIO: str = f"{ID_PREFIX}error-ratio"
 CHART_ID_ERROR_BY_SCREENER: str = f"{ID_PREFIX}error-by-screener"
 CHART_ID_USER_BREAKDOWN: str = f"{ID_PREFIX}user-breakdown"
 CHART_ID_HAMM_BREAKDOWN: str = f"{ID_PREFIX}hamm-breakdown"
+CHART_ID_METADATA_ORIGINAL_LANGUAGE: str = f"{ID_PREFIX}metadata-original-language"
+CHART_ID_METADATA_DIALOGUE: str = f"{ID_PREFIX}metadata-dialogue"
+CHART_ID_METADATA_GENRE: str = f"{ID_PREFIX}metadata-genre"
+
+# KPI Card IDs
+CHART_ID_KPI_TOTAL_SCREENS = f"{ID_PREFIX}kpi-total-screens"
+CHART_ID_KPI_TOTAL_ERV     = f"{ID_PREFIX}kpi-total-erv"
+CHART_ID_KPI_TOTAL_PRELIM  = f"{ID_PREFIX}kpi-total-prelim"
+
+# KPI Card colors
+KPI_COLOR_SCREENS = {"bg": "#d6e4f0", "accent": "#2f5f8f"}
+KPI_COLOR_ERV     = {"bg": "#f6b3b3", "accent": "#e57f7f"}
+KPI_COLOR_PRELIM  = {"bg": "#e57f7f", "accent": "#c0392b"}
 
 # Filter IDs
 FILTER_ID_REGION: str = f"{ID_PREFIX}filter-region"
@@ -76,7 +89,11 @@ COLUMN_MAP: dict[str, str] = {
     "audio_details": "audio location",
 }
 
-# Label constants used in volume summary
+# Label constants for volume summary (status-based)
+COMPLETED_LABEL: str = "Completed"
+INVALID_LABEL: str = "Invalid"
+
+# Label constants for KPI cards (content type-based)
 PRELIM_LABEL: str = "Prelim"
 ERV_LABEL: str = "ERV"
 
@@ -114,8 +131,8 @@ VOLUME_TABLE_SPEC: TableSpec = TableSpec(
         "ISO Week",
         "Start Date",
         "End Date",
-        PRELIM_LABEL,
-        ERV_LABEL,
+        COMPLETED_LABEL,
+        INVALID_LABEL,
         "VOLUME TOTAL",
     ],
 )
@@ -124,11 +141,12 @@ VOLUME_CHART_SPEC: ChartSpec = ChartSpec(
     title="Volume Chart",
     chart_type="stacked_bar",
     x_column="Start Date",
-    y_columns=[ERV_LABEL, PRELIM_LABEL],
+    y_columns=[COMPLETED_LABEL, INVALID_LABEL],
     color_map={
-        ERV_LABEL: "#f6b3b3",
-        PRELIM_LABEL: "#e57f7f",
+        COMPLETED_LABEL: "#2d6a2e",
+        INVALID_LABEL: "#9ca3af",
     },
+    text_template="%{y}",
     height=400,
 )
 
@@ -192,6 +210,42 @@ HAMM_BREAKDOWN_SPEC: ChartSpec = ChartSpec(
     y_columns=["count"],
     color_map={
         "count": "#5f8fc7",
+    },
+    height=400,
+)
+
+# Content Metadata Chart Specs
+ORIGINAL_LANGUAGE_SPEC: ChartSpec = ChartSpec(
+    title="Original Language",
+    chart_type="pie",
+    x_column="original_language",
+    y_columns=["count"],
+    color_map={
+        "Japanese": "#6EA5C8",
+        "Korean": "#A8D184",
+    },
+    height=400,
+)
+
+DIALOGUE_SPEC: ChartSpec = ChartSpec(
+    title="Was dialogue Provided?",
+    chart_type="stacked_bar",
+    x_column="content_type",
+    y_columns=["Yes", "No"],
+    color_map={
+        "Yes": "#4F89B5",
+        "No": "#D22D27",
+    },
+    height=400,
+)
+
+GENRE_SPEC: ChartSpec = ChartSpec(
+    title="Genre",
+    chart_type="bar",
+    x_column="genre",
+    y_columns=["count"],
+    color_map={
+        "count": "#7FAECC",
     },
     height=400,
 )
