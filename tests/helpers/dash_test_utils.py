@@ -117,26 +117,8 @@ def extract_dropdown_options(
     Returns:
         The options list of the dropdown, or None if not found.
     """
-    def _walk(comp: Any) -> Optional[list[dict]]:
-        # Check if this component matches the dropdown id
-        if hasattr(comp, "id") and comp.id == dropdown_id:
-            return getattr(comp, "options", None)
-
-        # Recurse into children
-        children = getattr(comp, "children", None)
-        if children is None:
-            return None
-        if not isinstance(children, (list, tuple)):
-            children = [children]
-        for child in children:
-            if child is None:
-                continue
-            result = _walk(child)
-            if result is not None:
-                return result
-        return None
-
-    return _walk(component)
+    comp = find_component_by_id(component, dropdown_id)
+    return getattr(comp, "options", None) if comp is not None else None
 
 
 def extract_dropdown_value(
@@ -151,24 +133,8 @@ def extract_dropdown_value(
     Returns:
         The value of the dropdown, or None if not found.
     """
-    def _walk(comp: Any) -> Any:
-        if hasattr(comp, "id") and comp.id == dropdown_id:
-            return getattr(comp, "value", None)
-
-        children = getattr(comp, "children", None)
-        if children is None:
-            return None
-        if not isinstance(children, (list, tuple)):
-            children = [children]
-        for child in children:
-            if child is None:
-                continue
-            result = _walk(child)
-            if result is not None:
-                return result
-        return None
-
-    return _walk(component)
+    comp = find_component_by_id(component, dropdown_id)
+    return getattr(comp, "value", None) if comp is not None else None
 
 
 def find_components(component: Any, predicate: callable) -> list[Any]:

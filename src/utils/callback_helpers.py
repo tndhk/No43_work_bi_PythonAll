@@ -9,6 +9,20 @@ import dash
 from dash import callback, Input, Output
 
 
+def ensure_list(value: Any) -> list:
+    """Normalise a callback value into a list.
+
+    - ``None`` -> ``[]``
+    - ``list`` -> returned as-is
+    - anything else -> ``[value]``
+    """
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return value
+    return [value]
+
+
 def register_clear_callbacks(
     clear_pairs: list[tuple[str, str]],
     default_value: Any = [],

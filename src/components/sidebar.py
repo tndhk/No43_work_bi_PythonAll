@@ -17,15 +17,10 @@ def create_sidebar() -> html.Div:
     )
 
     # Create navigation links
-    nav_links = []
-    for page in pages:
-        nav_links.append(
-            dbc.NavLink(
-                page.get("name", page["path"]),
-                href=page["path"],
-                active="exact",
-            )
-        )
+    nav_links = [
+        dbc.NavLink(page.get("name", page["path"]), href=page["path"], active="exact")
+        for page in pages
+    ]
 
     return html.Div([
         html.Div([

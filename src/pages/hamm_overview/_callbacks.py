@@ -9,7 +9,7 @@ from dash import callback, Input, Output, html
 
 from src.data.parquet_reader import ParquetReader
 from src.charts.empty_states import create_empty_figure
-from src.utils.callback_helpers import register_clear_callbacks
+from src.utils.callback_helpers import ensure_list, register_clear_callbacks
 from src.components.cards import create_kpi_card
 from ._constants import (
     CHART_ID_VOLUME_TABLE,
@@ -73,14 +73,6 @@ from ._chart_builders import (
     build_dialogue_chart,
     build_genre_chart,
 )
-
-
-def _ensure_list(value) -> list:
-    if value is None:
-        return []
-    if isinstance(value, list):
-        return value
-    return [value]
 
 
 def _strip_sort_column(df: pd.DataFrame) -> pd.DataFrame:
@@ -166,16 +158,16 @@ def update_dashboard(
     dataset_id = resolve_dataset_id_for_dashboard()
 
     filter_pairs = [
-        ("region", _ensure_list(region_values)),
-        ("year", _ensure_list(year_values)),
-        ("month", _ensure_list(month_values)),
-        ("id", _ensure_list(task_id_value)),
-        ("content_type", _ensure_list(content_type_values)),
-        ("original_language", _ensure_list(original_language_values)),
-        ("dialogue", _ensure_list(dialogue_values)),
-        ("genre", _ensure_list(genre_values)),
-        ("error_code", _ensure_list(error_code_values)),
-        ("error_type", _ensure_list(error_type_values)),
+        ("region", ensure_list(region_values)),
+        ("year", ensure_list(year_values)),
+        ("month", ensure_list(month_values)),
+        ("id", ensure_list(task_id_value)),
+        ("content_type", ensure_list(content_type_values)),
+        ("original_language", ensure_list(original_language_values)),
+        ("dialogue", ensure_list(dialogue_values)),
+        ("genre", ensure_list(genre_values)),
+        ("error_code", ensure_list(error_code_values)),
+        ("error_type", ensure_list(error_type_values)),
     ]
 
     cadence = cadence_value or "weekly"

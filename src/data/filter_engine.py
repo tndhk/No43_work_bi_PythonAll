@@ -58,15 +58,9 @@ def apply_filters(df: pd.DataFrame, filter_set: FilterSet) -> pd.DataFrame:
         if cat_filter.column not in result.columns:
             continue
 
+        mask = result[cat_filter.column].isin(cat_filter.values)
         if cat_filter.include_null:
-            # Include NULL values
-            mask = (
-                result[cat_filter.column].isin(cat_filter.values)
-                | result[cat_filter.column].isna()
-            )
-        else:
-            # Exclude NULL values
-            mask = result[cat_filter.column].isin(cat_filter.values)
+            mask = mask | result[cat_filter.column].isna()
 
         result = result[mask]
 

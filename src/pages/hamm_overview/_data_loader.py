@@ -538,28 +538,42 @@ def prepare_language_display_df(df: pd.DataFrame) -> pd.DataFrame:
     return output_df
 
 
+def _build_distribution(df: pd.DataFrame, column_key: str, output_name: str) -> pd.DataFrame:
+    """Build a distribution (group-by + count unique IDs) for a given column.
+
+    Args:
+        df: Pre-filtered DataFrame (already through _prepare_base_df).
+        column_key: Key in COLUMN_MAP identifying the grouping column.
+        output_name: Name for the grouping column in the output DataFrame.
+
+    Returns:
+        DataFrame with columns: [output_name, "count"], sorted descending by count.
+    """
+    group_col = COLUMN_MAP[column_key]
+    id_col = COLUMN_MAP["id"]
+
+    if len(df) == 0:
+        return pd.DataFrame(columns=[output_name, "count"])
+
+    result = (
+        df[df[group_col].notna()]
+        .groupby(group_col)[id_col]
+        .nunique()
+        .reset_index(name="count")
+        .rename(columns={group_col: output_name})
+        .sort_values("count", ascending=False, kind="mergesort")
+    )
+
+    return result
+
+
 def build_original_language_distribution(df: pd.DataFrame) -> pd.DataFrame:
     """Build original language distribution for pie chart.
 
     Returns:
         DataFrame with columns: original_language, count
     """
-    language_col = COLUMN_MAP["original_language"]
-    id_col = COLUMN_MAP["id"]
-
-    if len(df) == 0:
-        return pd.DataFrame(columns=["original_language", "count"])
-
-    result = (
-        df[df[language_col].notna()]
-        .groupby(language_col)[id_col]
-        .nunique()
-        .reset_index(name="count")
-        .rename(columns={language_col: "original_language"})
-        .sort_values("count", ascending=False, kind="mergesort")
-    )
-
-    return result
+    return _build_distribution(df, "original_language", "original_language")
 
 
 def build_dialogue_by_content_type(df: pd.DataFrame) -> pd.DataFrame:
@@ -611,22 +625,7 @@ def build_genre_distribution(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         DataFrame with columns: genre, count
     """
-    genre_col = COLUMN_MAP["genre"]
-    id_col = COLUMN_MAP["id"]
-
-    if len(df) == 0:
-        return pd.DataFrame(columns=["genre", "count"])
-
-    result = (
-        df[df[genre_col].notna()]
-        .groupby(genre_col)[id_col]
-        .nunique()
-        .reset_index(name="count")
-        .rename(columns={genre_col: "genre"})
-        .sort_values("count", ascending=False, kind="mergesort")
-    )
-
-    return result
+    return _build_distribution(df, "genre", "genre")
 
 
 # ---------------------------------------------------------------------------
@@ -704,73 +703,54 @@ def build_intervention_by_screener(df: pd.DataFrame) -> pd.DataFrame:
     return pivot_df[["video_type_description", "User", "HAMM"]]
 
 
-def build_user_intervention_breakdown(df: pd.DataFrame) -> pd.DataFrame:
-    """Build User error breakdown by error description for bar chart.
-    
-    重要: 関数内で error_type = "User" で事前フィルタ必須
-    
+def _build_intervention_breakdown(df: pd.DataFrame, error_type: str) -> pd.DataFrame:
+    """Build error breakdown by error description for a given error type.
+
     Args:
         df: Pre-filtered DataFrame (already through _prepare_base_df).
-    
+        error_type: The error type to filter on (e.g. "User" or "HAMM").
+
     Returns:
         DataFrame with columns: error_description, count
     """
     error_type_col = COLUMN_MAP["error_type"]
     error_desc_col = COLUMN_MAP["error_description"]
-    
-    # Filter to only User records
-    user_df = df[df[error_type_col] == "User"].copy()
-    user_df = user_df[user_df[COLUMN_MAP["status"]].isin(["Invalid", "Error"])]
-    
-    if len(user_df) == 0:
+
+    filtered_df = df[df[error_type_col] == error_type].copy()
+    filtered_df = filtered_df[filtered_df[COLUMN_MAP["status"]].isin(["Invalid", "Error"])]
+
+    if len(filtered_df) == 0:
         return pd.DataFrame(columns=["error_description", "count"])
-    
-    # Group by error description
+
     breakdown_df = (
-        user_df.groupby(error_desc_col)[COLUMN_MAP["id"]]
+        filtered_df.groupby(error_desc_col)[COLUMN_MAP["id"]]
         .nunique()
         .reset_index(name="count")
     )
-    
+
     breakdown_df = breakdown_df.rename(columns={error_desc_col: "error_description"})
-    
-    # Sort by count descending
     breakdown_df = breakdown_df.sort_values("count", ascending=False)
-    
+
     return breakdown_df
+
+
+def build_user_intervention_breakdown(df: pd.DataFrame) -> pd.DataFrame:
+    """Build User error breakdown by error description for bar chart.
+
+    重要: 関数内で error_type = "User" で事前フィルタ必須
+
+    Returns:
+        DataFrame with columns: error_description, count
+    """
+    return _build_intervention_breakdown(df, "User")
 
 
 def build_hamm_intervention_breakdown(df: pd.DataFrame) -> pd.DataFrame:
     """Build HAMM error breakdown by error description for bar chart.
-    
+
     重要: 関数内で error_type = "HAMM" で事前フィルタ必須
-    
-    Args:
-        df: Pre-filtered DataFrame (already through _prepare_base_df).
-    
+
     Returns:
         DataFrame with columns: error_description, count
     """
-    error_type_col = COLUMN_MAP["error_type"]
-    error_desc_col = COLUMN_MAP["error_description"]
-    
-    # Filter to only HAMM records
-    hamm_df = df[df[error_type_col] == "HAMM"].copy()
-    hamm_df = hamm_df[hamm_df[COLUMN_MAP["status"]].isin(["Invalid", "Error"])]
-    
-    if len(hamm_df) == 0:
-        return pd.DataFrame(columns=["error_description", "count"])
-    
-    # Group by error description
-    breakdown_df = (
-        hamm_df.groupby(error_desc_col)[COLUMN_MAP["id"]]
-        .nunique()
-        .reset_index(name="count")
-    )
-    
-    breakdown_df = breakdown_df.rename(columns={error_desc_col: "error_description"})
-    
-    # Sort by count descending
-    breakdown_df = breakdown_df.sort_values("count", ascending=False)
-    
-    return breakdown_df
+    return _build_intervention_breakdown(df, "HAMM")

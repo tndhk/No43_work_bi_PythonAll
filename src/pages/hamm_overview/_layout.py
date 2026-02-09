@@ -26,6 +26,28 @@ from ._data_loader import load_filter_options
 from ._filters import build_filter_layout, build_cadence_filter
 
 
+def _chart_card(title: str, chart_id: str) -> dbc.Card:
+    return dbc.Card([
+        dbc.CardHeader(title, className="card-header"),
+        dbc.CardBody([
+            dcc.Graph(
+                id=chart_id,
+                className="chart-density-graph",
+                config={"displayModeBar": False, "responsive": True},
+            ),
+        ], className="p-1"),
+    ], className="chart-density-card")
+
+
+def _table_card(title: str, table_id: str) -> dbc.Card:
+    return dbc.Card([
+        dbc.CardHeader(title, className="card-header"),
+        dbc.CardBody([
+            html.Div(id=table_id),
+        ], className="p-1"),
+    ])
+
+
 def build_layout() -> html.Div:
     reader = ParquetReader()
     dataset_id = resolve_dataset_id(DASHBOARD_ID, CHART_ID_VOLUME_TABLE)
@@ -82,35 +104,16 @@ def build_layout() -> html.Div:
 
             dbc.Row([
                 dbc.Col([
-                    dbc.Card([
-                        dbc.CardHeader("Volume Table", className="card-header"),
-                        dbc.CardBody([
-                            html.Div(id=CHART_ID_VOLUME_TABLE),
-                        ], className="p-1"),
-                    ]),
+                    _table_card("Volume Table", CHART_ID_VOLUME_TABLE),
                 ], md=6),
                 dbc.Col([
-                    dbc.Card([
-                        dbc.CardHeader("Volume Chart", className="card-header"),
-                        dbc.CardBody([
-                            dcc.Graph(
-                                id=CHART_ID_VOLUME_CHART,
-                                className="chart-density-graph",
-                                config={"displayModeBar": False, "responsive": True},
-                            ),
-                        ], className="p-1"),
-                    ], className="chart-density-card"),
+                    _chart_card("Volume Chart", CHART_ID_VOLUME_CHART),
                 ], md=6),
             ], className="mb-4"),
 
             dbc.Row([
                 dbc.Col([
-                    dbc.Card([
-                        dbc.CardHeader("Task Details", className="card-header"),
-                        dbc.CardBody([
-                            html.Div(id=CHART_ID_TASK_TABLE),
-                        ], className="p-1"),
-                    ]),
+                    _table_card("Task Details", CHART_ID_TASK_TABLE),
                 ], md=12),
             ], className="mb-4"),
 
@@ -126,40 +129,13 @@ def build_layout() -> html.Div:
             # Content Metadata charts
             dbc.Row([
                 dbc.Col([
-                    dbc.Card([
-                        dbc.CardHeader("Original Language", className="card-header"),
-                        dbc.CardBody([
-                            dcc.Graph(
-                                id=CHART_ID_METADATA_ORIGINAL_LANGUAGE,
-                                className="chart-density-graph",
-                                config={"displayModeBar": False, "responsive": True},
-                            ),
-                        ], className="p-1"),
-                    ], className="chart-density-card"),
+                    _chart_card("Original Language", CHART_ID_METADATA_ORIGINAL_LANGUAGE),
                 ], md=4),
                 dbc.Col([
-                    dbc.Card([
-                        dbc.CardHeader("Was dialogue Provided?", className="card-header"),
-                        dbc.CardBody([
-                            dcc.Graph(
-                                id=CHART_ID_METADATA_DIALOGUE,
-                                className="chart-density-graph",
-                                config={"displayModeBar": False, "responsive": True},
-                            ),
-                        ], className="p-1"),
-                    ], className="chart-density-card"),
+                    _chart_card("Was dialogue Provided?", CHART_ID_METADATA_DIALOGUE),
                 ], md=4),
                 dbc.Col([
-                    dbc.Card([
-                        dbc.CardHeader("Genre", className="card-header"),
-                        dbc.CardBody([
-                            dcc.Graph(
-                                id=CHART_ID_METADATA_GENRE,
-                                className="chart-density-graph",
-                                config={"displayModeBar": False, "responsive": True},
-                            ),
-                        ], className="p-1"),
-                    ], className="chart-density-card"),
+                    _chart_card("Genre", CHART_ID_METADATA_GENRE),
                 ], md=4),
             ], className="mb-4 chart-density-row"),
 
@@ -180,66 +156,25 @@ def build_layout() -> html.Div:
             # Error Details charts
             dbc.Row([
                 dbc.Col([
-                    dbc.Card([
-                        dbc.CardHeader("Issues Ratio", className="card-header"),
-                        dbc.CardBody([
-                            dcc.Graph(
-                                id=CHART_ID_ERROR_RATIO,
-                                className="chart-density-graph",
-                                config={"displayModeBar": False, "responsive": True},
-                            ),
-                        ], className="p-1"),
-                    ], className="chart-density-card"),
+                    _chart_card("Issues Ratio", CHART_ID_ERROR_RATIO),
                 ], md=6),
                 dbc.Col([
-                    dbc.Card([
-                        dbc.CardHeader("Intervention per Screener Type", className="card-header"),
-                        dbc.CardBody([
-                            dcc.Graph(
-                                id=CHART_ID_ERROR_BY_SCREENER,
-                                className="chart-density-graph",
-                                config={"displayModeBar": False, "responsive": True},
-                            ),
-                        ], className="p-1"),
-                    ], className="chart-density-card"),
+                    _chart_card("Intervention per Screener Type", CHART_ID_ERROR_BY_SCREENER),
                 ], md=6),
             ], className="mb-3 chart-density-row"),
             dbc.Row([
                 dbc.Col([
-                    dbc.Card([
-                        dbc.CardHeader("User Intervention Breakdown", className="card-header"),
-                        dbc.CardBody([
-                            dcc.Graph(
-                                id=CHART_ID_USER_BREAKDOWN,
-                                className="chart-density-graph",
-                                config={"displayModeBar": False, "responsive": True},
-                            ),
-                        ], className="p-1"),
-                    ], className="chart-density-card"),
+                    _chart_card("User Intervention Breakdown", CHART_ID_USER_BREAKDOWN),
                 ], md=6),
                 dbc.Col([
-                    dbc.Card([
-                        dbc.CardHeader("HAMM Intervention Breakdown", className="card-header"),
-                        dbc.CardBody([
-                            dcc.Graph(
-                                id=CHART_ID_HAMM_BREAKDOWN,
-                                className="chart-density-graph",
-                                config={"displayModeBar": False, "responsive": True},
-                            ),
-                        ], className="p-1"),
-                    ], className="chart-density-card"),
+                    _chart_card("HAMM Intervention Breakdown", CHART_ID_HAMM_BREAKDOWN),
                 ], md=6),
             ], className="mb-4 chart-density-row"),
 
             # Language per Task table
             dbc.Row([
                 dbc.Col([
-                    dbc.Card([
-                        dbc.CardHeader("Language per Task", className="card-header"),
-                        dbc.CardBody([
-                            html.Div(id=CHART_ID_LANGUAGE_TABLE),
-                        ], className="p-1"),
-                    ]),
+                    _table_card("Language per Task", CHART_ID_LANGUAGE_TABLE),
                 ], md=12),
             ], className="mb-4"),
         ]),  # End MantineProvider

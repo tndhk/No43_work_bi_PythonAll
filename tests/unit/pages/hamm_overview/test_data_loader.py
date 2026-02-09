@@ -1453,6 +1453,135 @@ class TestResolveDatasetIdIncludesLanguageTable:
             assert "hamm-language-table" in called_chart_ids
 
 
+# ---------------------------------------------------------------------------
+# Task 5a: _build_intervention_breakdown internal helper tests
+# ---------------------------------------------------------------------------
+
+
+class TestBuildInterventionBreakdownHelper:
+    """_build_intervention_breakdown is the shared logic behind User/HAMM breakdown."""
+
+    def test_importable(self):
+        from src.pages.hamm_overview._data_loader import _build_intervention_breakdown
+        assert callable(_build_intervention_breakdown)
+
+    def test_user_matches_public_function(self):
+        """_build_intervention_breakdown(df, 'User') == build_user_intervention_breakdown(df)."""
+        from src.pages.hamm_overview._data_loader import (
+            _build_intervention_breakdown,
+            build_user_intervention_breakdown,
+            _prepare_base_df,
+        )
+        df = _prepare_base_df(_make_error_analysis_df())
+        result_helper = _build_intervention_breakdown(df, "User")
+        result_public = build_user_intervention_breakdown(df)
+        pd.testing.assert_frame_equal(result_helper, result_public)
+
+    def test_hamm_matches_public_function(self):
+        """_build_intervention_breakdown(df, 'HAMM') == build_hamm_intervention_breakdown(df)."""
+        from src.pages.hamm_overview._data_loader import (
+            _build_intervention_breakdown,
+            build_hamm_intervention_breakdown,
+            _prepare_base_df,
+        )
+        df = _prepare_base_df(_make_error_analysis_df())
+        result_helper = _build_intervention_breakdown(df, "HAMM")
+        result_public = build_hamm_intervention_breakdown(df)
+        pd.testing.assert_frame_equal(result_helper, result_public)
+
+    def test_empty_when_no_matching_error_type(self):
+        from src.pages.hamm_overview._data_loader import (
+            _build_intervention_breakdown,
+            _prepare_base_df,
+        )
+        df = _make_error_analysis_df()
+        df["error user vs system"] = "System"  # No User or HAMM
+        df = _prepare_base_df(df)
+        result = _build_intervention_breakdown(df, "User")
+        assert len(result) == 0
+        assert list(result.columns) == ["error_description", "count"]
+
+    def test_sorted_descending(self):
+        from src.pages.hamm_overview._data_loader import (
+            _build_intervention_breakdown,
+            _prepare_base_df,
+        )
+        df = _prepare_base_df(_make_error_analysis_df())
+        result = _build_intervention_breakdown(df, "User")
+        counts = result["count"].tolist()
+        assert counts == sorted(counts, reverse=True)
+
+
+# ---------------------------------------------------------------------------
+# Task 5b: _build_distribution internal helper tests
+# ---------------------------------------------------------------------------
+
+
+class TestBuildDistributionHelper:
+    """_build_distribution is the shared logic behind language/genre distribution."""
+
+    def test_importable(self):
+        from src.pages.hamm_overview._data_loader import _build_distribution
+        assert callable(_build_distribution)
+
+    def test_language_matches_public_function(self):
+        """_build_distribution(df, 'original_language', 'original_language') == build_original_language_distribution(df)."""
+        from src.pages.hamm_overview._data_loader import (
+            _build_distribution,
+            build_original_language_distribution,
+            _prepare_base_df,
+        )
+        df = _prepare_base_df(_make_content_metadata_df())
+        result_helper = _build_distribution(df, "original_language", "original_language")
+        result_public = build_original_language_distribution(df)
+        pd.testing.assert_frame_equal(result_helper, result_public)
+
+    def test_genre_matches_public_function(self):
+        """_build_distribution(df, 'genre', 'genre') == build_genre_distribution(df)."""
+        from src.pages.hamm_overview._data_loader import (
+            _build_distribution,
+            build_genre_distribution,
+            _prepare_base_df,
+        )
+        df = _prepare_base_df(_make_content_metadata_df())
+        result_helper = _build_distribution(df, "genre", "genre")
+        result_public = build_genre_distribution(df)
+        pd.testing.assert_frame_equal(result_helper, result_public)
+
+    def test_empty_df_returns_correct_columns(self):
+        from src.pages.hamm_overview._data_loader import (
+            _build_distribution,
+            _prepare_base_df,
+        )
+        df = _prepare_base_df(_make_content_metadata_df()).head(0)
+        result = _build_distribution(df, "genre", "genre")
+        assert len(result) == 0
+        assert list(result.columns) == ["genre", "count"]
+
+    def test_sorted_descending(self):
+        from src.pages.hamm_overview._data_loader import (
+            _build_distribution,
+            _prepare_base_df,
+        )
+        df = _prepare_base_df(_make_content_metadata_df())
+        result = _build_distribution(df, "original_language", "original_language")
+        counts = result["count"].tolist()
+        assert counts == sorted(counts, reverse=True)
+
+    def test_excludes_nan_values(self):
+        from src.pages.hamm_overview._data_loader import (
+            _build_distribution,
+            _prepare_base_df,
+        )
+        df = _make_content_metadata_df()
+        df.loc[0, "genre_name"] = np.nan  # Introduce NaN
+        df = _prepare_base_df(df)
+        result = _build_distribution(df, "genre", "genre")
+        # NaN rows should be excluded
+        for val in result["genre"].tolist():
+            assert pd.notna(val)
+
+
 class TestContentMetadataAggregations:
     def test_original_language_distribution_counts_unique_ids(self):
         from src.pages.hamm_overview._data_loader import (
