@@ -1,6 +1,6 @@
 # Frontend Codemap
 
-Freshness (UTC): 2026-02-09T12:00:00Z
+Freshness (UTC): 2026-02-10T00:00:00Z
 Analysis Scope: `app.py`, `src/layout.py`, `src/auth/`, `src/components/`, `src/pages/`, `src/charts/`, `src/utils/`
 
 ## UI Composition
@@ -41,7 +41,7 @@ app.py
 - Page packages
   - `cursor_usage`: data load/filter + chart/table builders + KPI cards
   - `apac_dot_due_date`: multi-dataset pivot/table flow + clear callbacks
-  - `hamm_overview`: cadence-aware aggregation + table/chart builders
+  - `hamm_overview`: cadence-aware aggregation + table/chart builders + language table + content metadata charts + error analysis
   - `dashboard_home.py`: static home navigation
 - Chart surface
   - `src/charts/chart_builder.py`: generic figure builder

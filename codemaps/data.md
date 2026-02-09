@@ -1,6 +1,6 @@
 # Data Codemap
 
-Freshness (UTC): 2026-02-09T12:00:00Z
+Freshness (UTC): 2026-02-10T00:00:00Z
 Analysis Scope: `src/data/`, `src/core/`, `src/utils/`, `src/exceptions.py`, data consumers in pages/backend
 
 ## Data Layer Structure

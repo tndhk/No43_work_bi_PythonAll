@@ -1,6 +1,6 @@
 # Plotly Dash BI Dashboard 技術仕様書 v0.2
 
-Last Updated: 2026-02-09
+Last Updated: 2026-02-10
 
 ## このドキュメントについて
 
@@ -516,10 +516,20 @@ target-version = "py39"
 ```toml
 [tool.mypy]
 python_version = "3.9"
-strict = true
-allow_untyped_calls = true
-allow_untyped_defs = true
+warn_return_any = false
+warn_unused_configs = true
+disallow_untyped_defs = false
+check_untyped_defs = false
+no_implicit_optional = false
+warn_redundant_casts = false
+warn_unused_ignores = false
+exclude = ["venv/", ".venv/", "build/", "dist/"]
 ```
+
+モジュール別オーバーライド（サードパーティ型スタブ不足の回避）:
+- `pyarrow.*`, `botocore.*`, `dash.*`, `dash_table.*`, `dash_bootstrap_components.*`, `dash_mantine_components.*`, `flask_caching.*`, `flask_login.*`, `plotly.*`: `ignore_missing_imports = true`
+- `_pytest.*`: `follow_imports = "skip"`
+- 一部 `src` モジュール: 特定エラーコードを個別抑制（`[tool.mypy.overrides]]` 参照）
 
 ### 10.3 pytest設定
 
@@ -532,7 +542,13 @@ filterwarnings = [
     "ignore::Warning:boto3.compat",
     "ignore::DeprecationWarning:dash.development.base_component",
 ]
+addopts = "--cov=src --cov=backend --cov-report=term-missing"
 ```
+
+カバレッジ設定（`[tool.coverage.run]` / `[tool.coverage.report]`）:
+- 対象: `src`, `backend`
+- ブランチカバレッジ: 有効
+- 除外: `__pycache__`, `tests`, `.venv`, `pragma: no cover`, `raise NotImplementedError`, `TYPE_CHECKING`, `__main__`
 
 ---
 

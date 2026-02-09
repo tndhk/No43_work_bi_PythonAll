@@ -1,6 +1,6 @@
 # Architecture Codemap
 
-Freshness (UTC): 2026-02-09T12:00:00Z
+Freshness (UTC): 2026-02-10T00:00:00Z
 Analysis Scope: `app.py`, `src/`, `backend/`
 
 ## High-Level Structure
@@ -10,6 +10,7 @@ Analysis Scope: `app.py`, `src/`, `backend/`
 3. Data access: `src/data/`, `src/core/cache.py`, `src/utils/`
 4. Visualization contracts: `src/charts/`
 5. Offline ingestion: `backend/etl/`, `backend/scripts/`, `backend/config/`
+6. CI/CD: `.github/workflows/ci.yml` (lint, typecheck, test -- 3 parallel jobs)
 
 ## Architecture Relationships
 
@@ -54,6 +55,28 @@ backend/scripts/*
 - Callback helpers: `register_clear_callbacks`
 - Data helpers: `safe_load_filter_options`, `strip_timezone`, `resolve_single_dataset_id`
 - ETL: `BaseETL`, `CsvETL`, `DomoApiETL`, `resolve_csv_path`, script `main()` functions
+
+## CI/CD Pipeline
+
+```text
+.github/workflows/ci.yml
+  triggers: push(main), pull_request(main)
+  concurrency: cancel-in-progress per branch
+
+  jobs (parallel):
+    lint       -> ruff check src/
+    typecheck  -> pip install requirements.txt + requirements-dev.txt -> mypy src/
+    test       -> pip install requirements.txt + requirements-dev.txt -> pytest -v --tb=short
+```
+
+## Dependency Files
+
+| File | Purpose |
+|------|---------|
+| `requirements.txt` | Runtime dependencies (Dash, pandas, boto3, etc.) |
+| `requirements-dev.txt` | Dev/test dependencies (pytest, ruff, mypy, moto) |
+| `pyproject.toml` | Project metadata, tool configs (pytest, ruff, mypy, coverage) |
+| `Dockerfile.dev` | Dev container (installs both requirements files) |
 
 ## Notes
 

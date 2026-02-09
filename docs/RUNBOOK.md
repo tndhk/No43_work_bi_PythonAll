@@ -1,6 +1,6 @@
 # 運用ガイド (RUNBOOK)
 
-最終更新: 2026-02-09
+最終更新: 2026-02-10
 
 このRUNBOOKは、現行リポジトリで確認できる手順のみを記載する。
 クラウド本番基盤（ECS/EKS/VMなど）の標準手順は、このリポジトリ内に定義がないため [TBD]。
@@ -11,7 +11,7 @@
 |------|------|
 | コンテナ実行 | `docker compose` が利用可能 (`docker-compose` は非推奨) |
 | 設定ファイル | `.env` が存在し、必要変数が設定済み |
-| 依存関係 | `Dockerfile.dev` (Python 3.9-slim) と `requirements.txt` で解決 |
+| 依存関係 | `Dockerfile.dev` (Python 3.9-slim) と `requirements.txt` + `requirements-dev.txt` で解決 |
 
 最低チェック:
 
@@ -266,11 +266,69 @@ DOMO_CLIENT_ID, DOMO_CLIENT_SECRET
 ETL_MASKING_SECRET
 ```
 
-## 9. 未定義事項 [TBD]
+## 9. CI/CD パイプライン
+
+### 9.1 GitHub Actions CI
+
+定義ファイル: `.github/workflows/ci.yml`
+
+トリガー条件:
+- `main` ブランチへの push
+- `main` ブランチへの pull_request
+
+同一ブランチに対する新しいpushが発生すると、先行するCIジョブは自動キャンセルされる。
+
+### 9.2 ジョブ構成
+
+3つのジョブが並列実行される:
+
+```text
+push / pull_request (main)
+  |
+  +-- lint       : ruff check src/
+  |
+  +-- typecheck  : mypy src/
+  |
+  +-- test       : pytest -v --tb=short
+```
+
+| ジョブ | Python | 依存インストール | 環境変数 |
+|--------|--------|-----------------|----------|
+| lint | 3.9 | ruff のみ | なし |
+| typecheck | 3.9 | requirements.txt + requirements-dev.txt | なし |
+| test | 3.9 | requirements.txt + requirements-dev.txt | ENV=test, S3_ENDPOINT="", 他テスト用最小セット |
+
+`typecheck` と `test` は pip キャッシュを使用しており、依存に変更がない限りインストール時間が短縮される。
+
+### 9.3 PR品質チェックプロセス
+
+PR作成前にローカルで以下を実行し、CIと同等のチェックを事前確認する:
+
+```bash
+# 1. Lint
+ruff check src/
+
+# 2. 型チェック
+mypy src/
+
+# 3. テスト
+pytest -v --tb=short
+```
+
+3点すべてがパスしてからPRを作成すること。CI上で全ジョブが成功しないとマージ不可（ブランチ保護ルール設定時）。
+
+### 9.4 CI失敗時の対応
+
+| 失敗ジョブ | 確認事項 | 対処 |
+|-----------|---------|------|
+| lint | `ruff check src/` の出力を確認 | 指摘箇所を修正して再push |
+| typecheck | `mypy src/` の出力を確認 | 型エラーを修正、または `pyproject.toml` の `[[tool.mypy.overrides]]` で既知のサードパーティ型を除外 |
+| test | `pytest -v --tb=short` の出力を確認 | テスト失敗を修正して再push |
+
+## 10. 未定義事項 [TBD]
 
 - 本番環境の標準デプロイ先（ECS/EKS/VM等） [TBD]
 - 本番監視基盤とアラート通知経路 [TBD]
 - 本番用シークレット管理標準 [TBD]
 - ETL自動スケジューリング（cron/systemd timer の標準設定） [TBD]
-- CI/CDパイプライン定義 [TBD]
 - バックアップ/リストア手順 [TBD]

@@ -1,6 +1,6 @@
 # 開発者ガイド (CONTRIB)
 
-最終更新: 2026-02-09
+最終更新: 2026-02-10
 
 ## 1. 前提条件
 
@@ -30,8 +30,16 @@ docker compose up --build
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+pip install -r requirements-dev.txt   # 開発・テスト用依存
 python3 app.py
 ```
+
+依存ファイルの役割:
+
+| ファイル | 内容 |
+|----------|------|
+| `requirements.txt` | ランタイム依存（Dash, pandas, boto3 等） |
+| `requirements-dev.txt` | 開発・テスト依存（pytest, ruff, mypy, moto） |
 
 ## 3. 実行コマンド一覧
 
@@ -48,11 +56,21 @@ python3 app.py
 
 | コマンド | 用途 |
 |---------|------|
-| `pytest` | 全テスト実行 |
-| `pytest --cov=src --cov-report=term-missing` | カバレッジ付きテスト |
+| `pytest` | 全テスト実行（カバレッジは `pyproject.toml` の `addopts` で自動付与） |
+| `pytest -v --tb=short` | 詳細表示・短縮トレースバック（CI相当） |
 | `docker compose run --rm test` | `test` サービスのデフォルトテスト実行 |
-| `ruff check src/` | Lint |
-| `mypy src/` | 型チェック |
+| `ruff check src/` | Lint（ruff >=0.4.0） |
+| `mypy src/` | 型チェック（mypy >=1.9.0、設定は `pyproject.toml` の `[tool.mypy]`） |
+
+PR前の品質チェック（3点セット）:
+
+```bash
+ruff check src/
+mypy src/
+pytest -v --tb=short
+```
+
+これらは GitHub Actions CI でも同じ内容が並列実行される（セクション10参照）。
 
 ### ETL
 
@@ -352,3 +370,40 @@ from src.utils.data_helpers import (
 | `minio` | S3互換ストレージ | 9000/9001 | ヘルスチェック付き |
 | `minio-init` | MinIO初期設定 | - | `bi-datasets` バケット作成 |
 | `test` | テスト実行 | - | `profiles: [test]` (手動起動のみ) |
+
+## 10. CI/CD
+
+### GitHub Actions ワークフロー
+
+定義ファイル: `.github/workflows/ci.yml`
+
+トリガー:
+- `main` ブランチへの push
+- `main` ブランチへの pull_request
+
+同一ブランチに対する新しいpushが発生すると、実行中のジョブは自動キャンセルされる（`concurrency` 設定）。
+
+### ジョブ構成（3並列）
+
+| ジョブ | 内容 | 依存パッケージ | 実行コマンド |
+|--------|------|----------------|-------------|
+| `lint` | Lintチェック | ruff のみ | `ruff check src/` |
+| `typecheck` | 型チェック | requirements.txt + requirements-dev.txt | `mypy src/` |
+| `test` | テスト実行 | requirements.txt + requirements-dev.txt | `pytest -v --tb=short` |
+
+3ジョブは独立して並列実行される。全ジョブが成功しないとPRのマージはできない（ブランチ保護ルール設定時）。
+
+共通設定:
+- Python 3.9（`pyproject.toml` の `requires-python` と一致）
+- `typecheck` と `test` は pip キャッシュを使用（`cache-dependency-path` で `requirements.txt` と `requirements-dev.txt` を参照）
+- `test` ジョブにはS3/MinIO不要の最小環境変数が設定済み（`ENV=test`, `S3_ENDPOINT=""` 等）
+
+### ローカルでのCI相当チェック
+
+PR作成前に以下を実行して、CI通過を事前確認する:
+
+```bash
+ruff check src/
+mypy src/
+pytest -v --tb=short
+```
