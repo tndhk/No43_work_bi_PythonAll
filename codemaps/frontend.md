@@ -35,7 +35,7 @@ app.py
     - `create_kpi_card_with_delta`: KPI with change indicator
   - `src/components/sidebar.py`: navigation from Dash `page_registry`
 - Utility modules
-  - `src/utils/callback_helpers.py`: `register_clear_callbacks` for bulk filter clear registration
+  - `src/utils/callback_helpers.py`: `register_clear_callbacks` for bulk filter clear registration; `ensure_list` for normalizing callback values (None -> [], scalar -> [scalar])
   - `src/utils/data_helpers.py`: `safe_load_filter_options`, `strip_timezone`, `resolve_single_dataset_id`
   - `src/utils/filter_helpers.py`: filter construction utilities
 - Page packages

@@ -13,6 +13,7 @@ import pytest
 import pandas as pd
 from unittest.mock import MagicMock, patch, call
 from dash import html
+import dash_bootstrap_components as dbc
 
 from tests.helpers.dash_test_utils import extract_text_recursive
 
@@ -184,7 +185,7 @@ class TestUpdateDashboardReturnValue:
         ]
 
         result = _invoke_update()
-        assert isinstance(result[0], str)  # KPI value
+        assert isinstance(result[0], dbc.Card)  # KPI value is now a Card
         assert result[1] == expected_title_0
         assert result[2] == expected_comp_0
         assert result[3] == expected_title_1
@@ -402,11 +403,14 @@ class TestErrorHandling:
     @patch(_PATCH_LOAD)
     @patch(_PATCH_READER)
     def test_error_kpi_is_zero(self, mock_reader_cls, mock_load):
-        """On error, KPI should be "0"."""
+        """On error, KPI should be a Card with "0"."""
         mock_load.side_effect = Exception("S3 connection failed")
 
         result = _invoke_update()
-        assert result[0] == "0"
+        assert isinstance(result[0], dbc.Card)  # KPI is now a Card
+        kpi_text = extract_text_recursive(result[0])
+        assert "0" in kpi_text
+        assert "Total Work Orders" in kpi_text
 
     @patch(_PATCH_LOAD)
     @patch(_PATCH_READER)
@@ -447,7 +451,9 @@ class TestErrorHandling:
         result = _invoke_update()
         assert isinstance(result, tuple)
         assert len(result) == 5
-        assert result[0] == "0"
+        assert isinstance(result[0], dbc.Card)  # KPI is now a Card
+        kpi_text = extract_text_recursive(result[0])
+        assert "0" in kpi_text
         assert result[1] == "0) Reference : Number of Work Order"
         assert result[3] == "1) DDD Change + Issue : Number of Work Order"
 

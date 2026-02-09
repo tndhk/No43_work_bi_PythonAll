@@ -115,6 +115,5 @@ def build_detail_table(df: pd.DataFrame):
     
     display_df = df.copy()
     display_df[date_col] = display_df[date_col].dt.strftime("%Y-%m-%d %H:%M")
-    display_df = display_df.head(100)
-    
+
     return build_table(display_df, DETAIL_TABLE_SPEC)

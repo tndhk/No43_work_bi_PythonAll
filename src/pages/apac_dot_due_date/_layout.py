@@ -69,33 +69,36 @@ def build_layout() -> html.Div:
         dcc.Loading([
             dbc.Row([
                 dbc.Col([
-                    dbc.Card([
-                        dbc.CardBody([
-                            html.H5("Total Work Orders", className="card-title"),
-                            html.H2(id=KPI_ID_TOTAL_WORK_ORDERS, className="card-text text-primary"),
-                        ])
-                    ], className="mb-4"),
+                    html.Div(id=KPI_ID_TOTAL_WORK_ORDERS),
                 ], md=3),
-            ], className="mt-3"),
+            ], className="mt-3 mb-4"),
         ]),
 
         # Reference / Table Section (Chart 00)
         dcc.Loading([
             dbc.Row([
                 dbc.Col([
-                    html.H3(id=CHART_ID_REFERENCE_TABLE_TITLE, className="mt-4 mb-3"),
-                    html.Div(id=CHART_ID_REFERENCE_TABLE),
+                    dbc.Card([
+                        dbc.CardHeader(id=CHART_ID_REFERENCE_TABLE_TITLE, className="card-header"),
+                        dbc.CardBody([
+                            html.Div(id=CHART_ID_REFERENCE_TABLE),
+                        ]),
+                    ]),
                 ], md=12),
-            ]),
+            ], className="mt-4 mb-3"),
         ]),
 
         # DDD Change + Issue Table Section (Chart 01)
         dcc.Loading([
             dbc.Row([
                 dbc.Col([
-                    html.H3(id=CHART_ID_CHANGE_ISSUE_TABLE_TITLE, className="mt-4 mb-3"),
-                    html.Div(id=CHART_ID_CHANGE_ISSUE_TABLE),
+                    dbc.Card([
+                        dbc.CardHeader(id=CHART_ID_CHANGE_ISSUE_TABLE_TITLE, className="card-header"),
+                        dbc.CardBody([
+                            html.Div(id=CHART_ID_CHANGE_ISSUE_TABLE),
+                        ]),
+                    ]),
                 ], md=12),
-            ]),
+            ], className="mt-4 mb-3"),
         ]),
     ], className="page-container")

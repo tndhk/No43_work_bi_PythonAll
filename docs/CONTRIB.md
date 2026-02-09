@@ -124,7 +124,6 @@ tests/
       test_plotly_theme.py
       test_specs.py
       test_table_builder.py
-      test_templates.py
     components/            # UIコンポーネントテスト
       test_cards.py
       test_filters.py
@@ -133,7 +132,6 @@ tests/
       test_cache.py
       test_logging.py
     data/                  # データ層テスト
-      test_common_data_loader.py
       test_config.py
       test_csv_parser.py
       test_data_source_registry.py
@@ -143,7 +141,6 @@ tests/
       test_parquet_reader_partition.py
       test_type_inferrer.py
     pages/                 # ページ別テスト
-      test_apac_dot_due_date.py
       test_dashboard_home.py
       test_page_imports.py
       apac_dot_due_date/
@@ -156,18 +153,23 @@ tests/
         test_layout.py
       cursor_usage/
         test_callbacks.py
-        test_constants.py
-        test_data_loader.py
-        test_data_sources.py
-      hamm_overview/
-        test_callbacks.py
         test_chart_builders.py
         test_constants.py
         test_data_loader.py
         test_data_sources.py
         test_layout.py
+      hamm_overview/
+        conftest.py          # hamm_overview 共有フィクスチャ
+        test_callbacks.py
+        test_chart_builders.py
+        test_constants.py
+        test_data_loader.py
+        test_data_sources.py
+        test_kpi_volume.py
+        test_layout.py
     utils/                 # ユーティリティテスト
       test_callback_helpers.py
+      test_callback_helpers_ensure_list.py
       test_data_helpers.py
       test_filter_helpers.py
     test_exceptions.py
@@ -219,6 +221,7 @@ src/
     table_builder.py       # DataFrame + TableSpec -> DataTable
     empty_states.py        # 空状態/エラー状態プレースホルダー
     specs.py               # ChartSpec, TableSpec (frozen dataclass)
+    layout_helpers.py      # apply_compact_chart_layout() 共通レイアウト調整
     plotly_theme.py        # テーマ適用
     templates.py           # レガシーテンプレート (render_*_chart)
   components/              # 再利用可能UIコンポーネント (sidebar, filters, cards)
@@ -234,7 +237,6 @@ src/
     s3_client.py           # S3クライアント (boto3 wrapper)
     parquet_reader.py      # Parquetファイル読み込み & パーティション
     csv_parser.py          # CSV解析 & エンコーディング検出
-    data_loader.py         # 共通データローダー
     data_source_registry.py # データソースレジストリ
     type_inferrer.py       # カラム型推論
     dataset_summarizer.py  # データプロファイリング & 統計
@@ -246,8 +248,10 @@ src/
       __init__.py          # ページ登録 + layout()
       _constants.py        # DATASET_ID, ID_PREFIX, COLUMN_MAP
       _data_loader.py      # データ読込 & フィルタリング
+      _filters.py          # フィルタUI
       _layout.py           # レイアウトビルダー
       _callbacks.py        # Dashコールバック (KPIs, charts, table)
+      _chart_builders.py   # カスタム集計・描画ロジック
     apac_dot_due_date/     # APAC DOT Due Date ダッシュボード -- Tier 2
       __init__.py          # ページ登録 + layout()
       _constants.py        # DATASET_ID, COLUMN_MAP, CHART_SPECS, TABLE_SPECS
@@ -307,7 +311,7 @@ from src.charts.empty_states import (
 )
 
 # コールバックヘルパー
-from src.utils.callback_helpers import register_clear_callbacks
+from src.utils.callback_helpers import register_clear_callbacks, ensure_list
 
 # データソース解決
 from src.data.data_source_registry import resolve_dataset_id
@@ -318,6 +322,9 @@ from src.components.filters import (
     create_date_range_filter,
     create_slicer_filter,
 )
+
+# チャートレイアウトヘルパー
+from src.charts.layout_helpers import apply_compact_chart_layout
 
 # データヘルパー（新規ページで利用可能）
 from src.utils.data_helpers import (

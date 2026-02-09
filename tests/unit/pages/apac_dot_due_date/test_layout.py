@@ -209,15 +209,15 @@ class TestChartSection:
     @patch("src.pages.apac_dot_due_date._layout.ParquetReader")
     @patch("src.pages.apac_dot_due_date._layout.load_filter_options")
     def test_table_title_is_h3(self, mock_load_opts, mock_reader_cls):
-        """apac-dot-chart-00-title should be an H3 element."""
+        """apac-dot-chart-00-title should be a CardHeader element."""
         mock_load_opts.return_value = _make_filter_options()
 
         from src.pages.apac_dot_due_date._layout import build_layout
 
         result = build_layout()
         found = find_component_by_id(result, "apac-dot-chart-00-title")
-        assert isinstance(found, html.H3), (
-            f"Expected html.H3, got {type(found).__name__}"
+        assert isinstance(found, dbc.CardHeader), (
+            f"Expected dbc.CardHeader, got {type(found).__name__}"
         )
 
     @patch("src.pages.apac_dot_due_date._layout.ParquetReader")
@@ -263,15 +263,15 @@ class TestChartSection:
     @patch("src.pages.apac_dot_due_date._layout.ParquetReader")
     @patch("src.pages.apac_dot_due_date._layout.load_filter_options")
     def test_chart_01_title_is_h3(self, mock_load_opts, mock_reader_cls):
-        """apac-dot-chart-01-title should be an H3 element."""
+        """apac-dot-chart-01-title should be a CardHeader element."""
         mock_load_opts.return_value = _make_filter_options()
 
         from src.pages.apac_dot_due_date._layout import build_layout
 
         result = build_layout()
         found = find_component_by_id(result, "apac-dot-chart-01-title")
-        assert isinstance(found, html.H3), (
-            f"Expected html.H3, got {type(found).__name__}"
+        assert isinstance(found, dbc.CardHeader), (
+            f"Expected dbc.CardHeader, got {type(found).__name__}"
         )
 
     @patch("src.pages.apac_dot_due_date._layout.ParquetReader")

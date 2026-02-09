@@ -14,6 +14,7 @@ from src.data.data_source_registry import resolve_dataset_id
 from src.charts.table_builder import build_table
 from src.charts.empty_states import create_empty_table
 from src.utils.callback_helpers import register_clear_callbacks
+from src.components.cards import create_kpi_card
 from ._chart_builders import build_pivot_data
 from ._constants import (
     DASHBOARD_ID,
@@ -187,7 +188,7 @@ def update_dashboard(
             total_work_orders = len(filtered_df_for_kpi)
 
         return (
-            f"{total_work_orders:,}",
+            create_kpi_card("Total Work Orders", f"{total_work_orders:,}"),
             *chart_results[0],  # reference table (title, component)
             *chart_results[1],  # change_issue table (title, component)
         )
@@ -198,7 +199,7 @@ def update_dashboard(
         change_config = DATASETS["change_issue"]
 
         return (
-            "0",
+            create_kpi_card("Total Work Orders", "0"),
             TABLE_SPECS[ref_config.table_spec_key].title,
             html.Div([html.P(msg, className="text-danger")]),
             TABLE_SPECS[change_config.table_spec_key].title,

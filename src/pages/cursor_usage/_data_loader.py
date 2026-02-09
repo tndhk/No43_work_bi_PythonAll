@@ -8,7 +8,8 @@ import pandas as pd
 from src.data.parquet_reader import ParquetReader
 from src.core.cache import get_cached_dataset
 from src.data.data_source_registry import resolve_dataset_id
-from src.data.filter_engine import FilterSet, CategoryFilter, DateRangeFilter, apply_filters, extract_unique_values
+from src.data.filter_engine import apply_filters, extract_unique_values
+from src.utils.filter_helpers import build_filter_set_from_map
 from ._constants import (
     COLUMN_MAP,
     DASHBOARD_ID,
@@ -135,40 +136,15 @@ def load_and_filter_data(
     df[date_col] = pd.to_datetime(df[date_col], utc=True).dt.tz_convert(None)
     df["DateOnly"] = df[date_col].dt.date
 
-    # Build FilterSet
-    filters = FilterSet()
-
-    if start_date and end_date:
-        filters.date_filters.append(
-            DateRangeFilter(
-                column=date_col,
-                start_date=start_date,
-                end_date=end_date,
-            )
-        )
-
-    if model_values:
-        filters.category_filters.append(
-            CategoryFilter(
-                column=model_col,
-                values=model_values,
-            )
-        )
-
-    if user_values:
-        filters.category_filters.append(
-            CategoryFilter(
-                column=user_col,
-                values=user_values,
-            )
-        )
-
-    if kind_values:
-        filters.category_filters.append(
-            CategoryFilter(
-                column=kind_col,
-                values=kind_values,
-            )
-        )
+    # Build FilterSet using shared helper
+    filters = build_filter_set_from_map(
+        column_map=COLUMN_MAP,
+        filter_pairs=[
+            ("model", model_values),
+            ("user", user_values),
+            ("kind", kind_values),
+        ],
+        date_range=("date", start_date, end_date) if start_date and end_date else None,
+    )
 
     return apply_filters(df, filters)

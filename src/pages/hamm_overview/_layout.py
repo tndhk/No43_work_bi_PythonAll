@@ -96,26 +96,30 @@ def build_layout() -> html.Div:
             ], className="mb-3 align-items-stretch"),
 
             # KPI Cards row
-            dbc.Row([
-                dbc.Col([html.Div(id=CHART_ID_KPI_TOTAL_SCREENS)], md=4),
-                dbc.Col([html.Div(id=CHART_ID_KPI_TOTAL_ERV)], md=4),
-                dbc.Col([html.Div(id=CHART_ID_KPI_TOTAL_PRELIM)], md=4),
-            ], className="mb-3"),
+            dcc.Loading([
+                dbc.Row([
+                    dbc.Col([html.Div(id=CHART_ID_KPI_TOTAL_SCREENS)], md=4),
+                    dbc.Col([html.Div(id=CHART_ID_KPI_TOTAL_ERV)], md=4),
+                    dbc.Col([html.Div(id=CHART_ID_KPI_TOTAL_PRELIM)], md=4),
+                ], className="mb-3"),
+            ]),
 
-            dbc.Row([
-                dbc.Col([
-                    _table_card("Volume Table", CHART_ID_VOLUME_TABLE),
-                ], md=6),
-                dbc.Col([
-                    _chart_card("Volume Chart", CHART_ID_VOLUME_CHART),
-                ], md=6),
-            ], className="mb-4"),
+            dcc.Loading([
+                dbc.Row([
+                    dbc.Col([
+                        _table_card("Volume Table", CHART_ID_VOLUME_TABLE),
+                    ], md=6),
+                    dbc.Col([
+                        _chart_card("Volume Chart", CHART_ID_VOLUME_CHART),
+                    ], md=6),
+                ], className="mb-4"),
 
-            dbc.Row([
-                dbc.Col([
-                    _table_card("Task Details", CHART_ID_TASK_TABLE),
-                ], md=12),
-            ], className="mb-4"),
+                dbc.Row([
+                    dbc.Col([
+                        _table_card("Task Details", CHART_ID_TASK_TABLE),
+                    ], md=12),
+                ], className="mb-4"),
+            ]),
 
             # Content Metadata header section
             dbc.Row([
@@ -127,17 +131,19 @@ def build_layout() -> html.Div:
             ], className="mb-3"),
 
             # Content Metadata charts
-            dbc.Row([
-                dbc.Col([
-                    _chart_card("Original Language", CHART_ID_METADATA_ORIGINAL_LANGUAGE),
-                ], md=4),
-                dbc.Col([
-                    _chart_card("Was dialogue Provided?", CHART_ID_METADATA_DIALOGUE),
-                ], md=4),
-                dbc.Col([
-                    _chart_card("Genre", CHART_ID_METADATA_GENRE),
-                ], md=4),
-            ], className="mb-4 chart-density-row"),
+            dcc.Loading([
+                dbc.Row([
+                    dbc.Col([
+                        _chart_card("Original Language", CHART_ID_METADATA_ORIGINAL_LANGUAGE),
+                    ], md=4),
+                    dbc.Col([
+                        _chart_card("Was dialogue Provided?", CHART_ID_METADATA_DIALOGUE),
+                    ], md=4),
+                    dbc.Col([
+                        _chart_card("Genre", CHART_ID_METADATA_GENRE),
+                    ], md=4),
+                ], className="mb-4 chart-density-row"),
+            ]),
 
             # Error Details header section
             dbc.Row([
@@ -154,28 +160,32 @@ def build_layout() -> html.Div:
             ], className="mb-3"),
 
             # Error Details charts
-            dbc.Row([
-                dbc.Col([
-                    _chart_card("Issues Ratio", CHART_ID_ERROR_RATIO),
-                ], md=6),
-                dbc.Col([
-                    _chart_card("Intervention per Screener Type", CHART_ID_ERROR_BY_SCREENER),
-                ], md=6),
-            ], className="mb-3 chart-density-row"),
-            dbc.Row([
-                dbc.Col([
-                    _chart_card("User Intervention Breakdown", CHART_ID_USER_BREAKDOWN),
-                ], md=6),
-                dbc.Col([
-                    _chart_card("HAMM Intervention Breakdown", CHART_ID_HAMM_BREAKDOWN),
-                ], md=6),
-            ], className="mb-4 chart-density-row"),
+            dcc.Loading([
+                dbc.Row([
+                    dbc.Col([
+                        _chart_card("Issues Ratio", CHART_ID_ERROR_RATIO),
+                    ], md=6),
+                    dbc.Col([
+                        _chart_card("Intervention per Screener Type", CHART_ID_ERROR_BY_SCREENER),
+                    ], md=6),
+                ], className="mb-3 chart-density-row"),
+                dbc.Row([
+                    dbc.Col([
+                        _chart_card("User Intervention Breakdown", CHART_ID_USER_BREAKDOWN),
+                    ], md=6),
+                    dbc.Col([
+                        _chart_card("HAMM Intervention Breakdown", CHART_ID_HAMM_BREAKDOWN),
+                    ], md=6),
+                ], className="mb-4 chart-density-row"),
+            ]),
 
             # Language per Task table
-            dbc.Row([
-                dbc.Col([
-                    _table_card("Language per Task", CHART_ID_LANGUAGE_TABLE),
-                ], md=12),
-            ], className="mb-4"),
+            dcc.Loading([
+                dbc.Row([
+                    dbc.Col([
+                        _table_card("Language per Task", CHART_ID_LANGUAGE_TABLE),
+                    ], md=12),
+                ], className="mb-4"),
+            ]),
         ]),  # End MantineProvider
     ], className="page-container")

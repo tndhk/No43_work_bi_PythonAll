@@ -8,7 +8,7 @@ import pandas as pd
 from dash import callback, Input, Output, html
 
 from src.data.parquet_reader import ParquetReader
-from src.charts.empty_states import create_empty_figure
+from src.charts.empty_states import create_empty_figure, create_error_figure
 from src.utils.callback_helpers import ensure_list, register_clear_callbacks
 from src.components.cards import create_kpi_card
 from ._constants import (
@@ -262,21 +262,21 @@ def update_dashboard(
 
     except Exception as exc:
         error_msg = html.P(f"Error loading data: {exc}", className="text-danger")
-        empty_fig = create_empty_figure(message="Error loading data")
+        error_fig = create_error_figure(error=str(exc))
         return (
             error_msg,
             error_msg,
             error_msg,
             error_msg,
-            empty_fig,
+            error_fig,
             error_msg,
-            empty_fig,
-            empty_fig,
-            empty_fig,
-            empty_fig,
-            empty_fig,
-            empty_fig,
-            empty_fig,
+            error_fig,
+            error_fig,
+            error_fig,
+            error_fig,
+            error_fig,
+            error_fig,
+            error_fig,
             error_msg,
         )
 

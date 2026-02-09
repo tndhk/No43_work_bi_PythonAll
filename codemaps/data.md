@@ -14,7 +14,6 @@ Analysis Scope: `src/data/`, `src/core/`, `src/utils/`, `src/exceptions.py`, dat
 - Filtering and registry
   - `src/data/filter_engine.py`: category/date filters + filter application
   - `src/data/data_source_registry.py`: chart-to-dataset resolver from `data_sources.yml`
-  - `src/data/data_loader.py`: chart-level dataset loader wrapper
 - Parsing and typing helpers
   - `src/data/csv_parser.py`: CSV parsing with encoding detection
   - `src/data/type_inferrer.py`: schema inference and type application
@@ -22,7 +21,7 @@ Analysis Scope: `src/data/`, `src/core/`, `src/utils/`, `src/exceptions.py`, dat
 - Utility modules
   - `src/utils/data_helpers.py`: `safe_load_filter_options`, `strip_timezone`, `resolve_single_dataset_id`
   - `src/utils/filter_helpers.py`: filter construction utilities
-  - `src/utils/callback_helpers.py`: `register_clear_callbacks`
+  - `src/utils/callback_helpers.py`: `register_clear_callbacks`, `ensure_list`
 - Diagnostics and exceptions
   - `src/data/dataset_summarizer.py`
   - `src/exceptions.py`: `DatasetFileNotFoundError`
@@ -43,10 +42,10 @@ src/data/filter_engine.py
   -> used by src/pages/*/_data_loader.py, src/utils/filter_helpers.py, src/utils/data_helpers.py
 
 src/data/data_source_registry.py
-  -> used by src/data/data_loader.py, src/pages/*/_layout.py, src/pages/*/_callbacks.py, src/utils/data_helpers.py
+  -> used by src/pages/*/_layout.py, src/pages/*/_callbacks.py, src/utils/data_helpers.py
 
 src/utils/callback_helpers.py
-  -> used by src/pages/*/_callbacks.py (register_clear_callbacks)
+  -> used by src/pages/*/_callbacks.py (register_clear_callbacks, ensure_list)
 
 src/utils/data_helpers.py
   -> used by src/pages/*/_data_loader.py (safe_load_filter_options, strip_timezone)

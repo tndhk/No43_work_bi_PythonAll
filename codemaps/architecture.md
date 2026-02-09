@@ -52,7 +52,7 @@ backend/scripts/*
 - Data layer: `ParquetReader`, `get_dataset_id`/`resolve_dataset_id`, `get_cached_dataset`, `apply_filters`
 - UI builders: `build_chart`, `build_table`, `create_*_filter`, `create_kpi_card`, `create_kpi_card_with_delta`
 - Chart types: `bar`, `line`, `pie`, `stacked_bar`, `scatter`, `area`, `horizontal_bar`
-- Callback helpers: `register_clear_callbacks`
+- Callback helpers: `register_clear_callbacks`, `ensure_list`
 - Data helpers: `safe_load_filter_options`, `strip_timezone`, `resolve_single_dataset_id`
 - ETL: `BaseETL`, `CsvETL`, `DomoApiETL`, `resolve_csv_path`, script `main()` functions
 
