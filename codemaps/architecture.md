@@ -1,6 +1,6 @@
 # Architecture Codemap
 
-Freshness (UTC): 2026-02-08T07:50:11Z
+Freshness (UTC): 2026-02-09T12:00:00Z
 Analysis Scope: `app.py`, `src/`, `backend/`
 
 ## High-Level Structure
@@ -22,6 +22,7 @@ Browser
       -> src/components/* (filters/cards/sidebar)
       -> src/data/* + src/core/cache.py (dataset load/filter)
       -> src/charts/* (figure/table build)
+      -> src/utils/* (callback_helpers, data_helpers, filter_helpers)
     -> S3/MinIO via src/data/s3_client.py + src/data/parquet_reader.py
 
 backend/scripts/*
@@ -37,6 +38,7 @@ backend/scripts/*
   - `src.data.parquet_reader`, `src.core.cache`, `src.data.filter_engine`, `src.data.data_source_registry`
   - `src.charts.chart_builder`, `src.charts.table_builder`, `src.charts.empty_states`
   - `src.components.filters`, `src.components.cards`
+  - `src.utils.callback_helpers`, `src.utils.data_helpers`
 - `backend/etl/*` imports:
   - shared base `backend.etl.base_etl`
   - transformation helpers `src.data.csv_parser`, `src.data.type_inferrer`
@@ -47,7 +49,10 @@ backend/scripts/*
 
 - App/runtime: `create_layout`, `register_*_callbacks`, `init_login_manager`, `init_cache`
 - Data layer: `ParquetReader`, `get_dataset_id`/`resolve_dataset_id`, `get_cached_dataset`, `apply_filters`
-- UI builders: `build_chart`, `build_table`, `create_*_filter`, `create_kpi_card`
+- UI builders: `build_chart`, `build_table`, `create_*_filter`, `create_kpi_card`, `create_kpi_card_with_delta`
+- Chart types: `bar`, `line`, `pie`, `stacked_bar`, `scatter`, `area`, `horizontal_bar`
+- Callback helpers: `register_clear_callbacks`
+- Data helpers: `safe_load_filter_options`, `strip_timezone`, `resolve_single_dataset_id`
 - ETL: `BaseETL`, `CsvETL`, `DomoApiETL`, `resolve_csv_path`, script `main()` functions
 
 ## Notes

@@ -1,6 +1,6 @@
 # Data Codemap
 
-Freshness (UTC): 2026-02-08T07:50:11Z
+Freshness (UTC): 2026-02-09T12:00:00Z
 Analysis Scope: `src/data/`, `src/core/`, `src/utils/`, `src/exceptions.py`, data consumers in pages/backend
 
 ## Data Layer Structure
@@ -19,8 +19,11 @@ Analysis Scope: `src/data/`, `src/core/`, `src/utils/`, `src/exceptions.py`, dat
   - `src/data/csv_parser.py`: CSV parsing with encoding detection
   - `src/data/type_inferrer.py`: schema inference and type application
   - `src/data/models.py`: `ColumnSchema`
-- Utility and diagnostics
-  - `src/utils/data_helpers.py`, `src/utils/filter_helpers.py`
+- Utility modules
+  - `src/utils/data_helpers.py`: `safe_load_filter_options`, `strip_timezone`, `resolve_single_dataset_id`
+  - `src/utils/filter_helpers.py`: filter construction utilities
+  - `src/utils/callback_helpers.py`: `register_clear_callbacks`
+- Diagnostics and exceptions
   - `src/data/dataset_summarizer.py`
   - `src/exceptions.py`: `DatasetFileNotFoundError`
 
@@ -41,6 +44,12 @@ src/data/filter_engine.py
 
 src/data/data_source_registry.py
   -> used by src/data/data_loader.py, src/pages/*/_layout.py, src/pages/*/_callbacks.py, src/utils/data_helpers.py
+
+src/utils/callback_helpers.py
+  -> used by src/pages/*/_callbacks.py (register_clear_callbacks)
+
+src/utils/data_helpers.py
+  -> used by src/pages/*/_data_loader.py (safe_load_filter_options, strip_timezone)
 ```
 
 ## Architecture Relationships
@@ -51,3 +60,5 @@ src/data/data_source_registry.py
   - page `_data_loader.py` -> `build_filter_set_from_map()` / `FilterSet` -> `apply_filters()`
 - ETL write path:
   - backend ETL (`BaseETL.load`) writes Parquet to same S3 namespace consumed by `ParquetReader`
+- Callback helpers:
+  - `register_clear_callbacks()` eliminates boilerplate for filter clear buttons

@@ -5,6 +5,27 @@
 - S3/Parquetからデータ取得
 - Flask-Login + セッションベースのフォーム認証（`src/auth/`）
 
+## ドキュメント参照ガイド
+
+作業内容に応じて、以下のドキュメントを参照すること。
+
+| 作業内容 | 参照先 | 備考 |
+|----------|--------|------|
+| プロジェクト全体把握 | `codemaps/architecture.md` | 依存関係、データフロー、コンポーネント構成 |
+| 新規ダッシュボードページ作成 | `docs/CONTRIB.md` sec.7 + `codemaps/frontend.md` | 手順とUIコンポーネント一覧 |
+| ETL追加・修正 | `docs/CONTRIB.md` sec.8 + `codemaps/backend.md` | 設定ファイル構成とETLクラス |
+| データ層の理解 | `codemaps/data.md` | フィルタ、キャッシュ、データローダー |
+| 運用・トラブルシュート | `docs/RUNBOOK.md` | デプロイ、ETL実行、障害対応 |
+| 技術仕様確認 | `docs/tech-spec.md` | チャート構築API、データ変換仕様 |
+| 環境構築・コマンド一覧 | `docs/CONTRIB.md` sec.2-3 | セットアップ、テスト、ETLコマンド |
+
+### docs/ vs codemaps/ の役割
+
+- `docs/`: 手順書・仕様書（人間が読む運用ドキュメント）
+- `codemaps/`: コード構造マップ（AIがコードベースを把握するための参照資料）
+
+codemapsは実装変更時に更新すること（`doc-updater` サブエージェント活用を推奨）。
+
 ## ページ設計ポリシー
 
 ### 2層ポリシー
@@ -15,87 +36,9 @@
 | Tier 1 | コールバックなし かつ データ読込なし | 単一ファイル | `dashboard_home.py` |
 | Tier 2 | コールバックあり または データ読込あり | パッケージ形式 | `cursor_usage/`, `apac_dot_due_date/` |
 
-### パッケージ形式のカノニカル構造
+### パッケージ構造とファイル役割
 
-```
-src/pages/<page_name>/
-├── __init__.py          # 必須: Dash登録 + build_layout参照 + コールバックインポート
-├── _constants.py        # 必須: DASHBOARD_ID, DATASET_ID, ID_PREFIX, COLUMN_MAP, TABLE_SPECS, CHART_SPECS
-├── _data_loader.py      # 必須: load_filter_options(), load_and_filter_data()
-├── _layout.py           # 必須: build_layout()
-├── _callbacks.py        # 必須: コールバック関数群（薄いオーケストレータ）
-├── _filters.py          # 条件付き必須: フィルタUI構築（フィルタ5個以上の場合）
-├── data_sources.yml     # 必須: チャートID -> データセットIDマッピング
-├── SPEC.md              # 必須: ユーザー向け設計書（日本語）
-├── _utils.py            # オプション: ヘルパー関数
-└── _chart_builders.py   # オプション: カスタム集計・描画ロジック
-```
-
-#### ファイル別の役割
-
-**_constants.py**
-- 必須定数: `DASHBOARD_ID`, `ID_PREFIX`
-- `DATASET_ID`: レガシー/フォールバック用。実行時のデータセット解決は `data_sources.yml` 経由で `resolve_dataset_id()` を使用。後方互換性とテストフィクスチャーのため保持
-- `COLUMN_MAP`: 必須（トップレベルのdict、または複数データセットページではDatasetConfig内にネスト）
-- チャート/テーブル定義: `TABLE_SPECS` (dict[str, TableSpec]), `CHART_SPECS` (dict[str, ChartSpec])、または個別変数として定義（`COST_TREND_SPEC`, `DETAIL_TABLE_SPEC`等）
-- Specは `src.charts.specs` からインポート
-- フィルタクリアペア: `CLEAR_PAIRS` (list[tuple[str, str]]) - 推奨: `_constants.py`に定義。インライン定義も可
-- 複数データセットの場合: `COLUMN_MAP`等をDatasetConfigなどにネストして定義可（apac_dot_due_date 参照）
-
-**_data_loader.py**
-- フィルタオプション取得: `load_filter_options()`
-- データ読込・フィルタリング: `load_and_filter_data()`
-- データ変換ロジック（集計前の整形など）
-
-**_callbacks.py**
-- 薄いオーケストレータ層（ビジネスロジックは最小限）
-- フィルタ入力受取 -> data_loader呼出 -> chart_builders呼出 -> 戻り値返却
-- クリアコールバック: `register_clear_callbacks(CLEAR_PAIRS)` を末尾で呼ぶ（CLEAR_PAIRSは `_constants.py` で定義推奨）
-- 共通empty_statesを使用: `create_empty_figure()`, `create_empty_table()`, `create_error_figure()`
-
-**_chart_builders.py**（オプション）
-- カスタム集計ロジック（pivot, groupby, 複雑な計算など）
-- 共通ビルダーで対応できないカスタム描画
-- 共通ビルダーを活用: `build_table(df, spec)`, `build_chart(df, spec)`
-- Spec定義は `_constants.py` に配置（このファイルには置かない）
-
-#### 共通基盤の使用
-
-利用可能な共通基盤:
-
-```python
-# チャート/テーブル構築（全ページで使用）
-from src.charts.table_builder import build_table
-from src.charts.chart_builder import build_chart
-from src.charts.specs import TableSpec, ChartSpec
-
-# 空状態・エラー状態（全ページで使用）
-from src.charts.empty_states import (
-    create_empty_figure,
-    create_empty_table,
-    create_error_figure,
-)
-
-# コールバックヘルパー（全ページで使用）
-from src.utils.callback_helpers import register_clear_callbacks
-
-# データソース解決（全ページで使用）
-from src.data.data_source_registry import resolve_dataset_id
-
-# UIコンポーネント（全ページで使用）
-from src.components.filters import (
-    create_category_filter,
-    create_date_range_filter,
-    create_slicer_filter,
-)
-
-# データヘルパー（新規ページで利用可能）
-from src.utils.data_helpers import (
-    safe_load_filter_options,
-    strip_timezone,
-    resolve_single_dataset_id,
-)
-```
+パッケージ形式のカノニカル構造、ファイル別の役割、共通基盤の使用については `docs/CONTRIB.md` sec.6 を参照。
 
 ### レイアウト構築ルール
 
@@ -134,13 +77,8 @@ dbc.Card([
 - 理由: 複数ページ間でのID衝突を防止
 
 ### 新規ページ追加手順
-1. パッケージディレクトリ作成: `src/pages/<page_name>/`
-2. 必須ファイル作成: `__init__.py`, `_constants.py`, `_data_loader.py`, `_layout.py`, `_callbacks.py`, `data_sources.yml`, `SPEC.md`
-3. `app.py` に明示的インポート追加: `import src.pages.<page_name>  # noqa: F401`
-   - 理由: Dashのスキャナーが `__init__.py` を `_` 始まりとしてスキップするため
-   - パッケージ内の `__init__.py` では `dash.register_page(__name__, ..., layout=layout)` のようにレイアウト関数を明示的に渡すこと
-4. テスト作成: 最低限 `test_constants.py`, `test_data_loader.py`, `test_data_sources.py`。推奨: `test_callbacks.py`, `test_layout.py`
-   - `tests/conftest.py` のグローバルモックを前提とする
+
+詳細な手順は `docs/CONTRIB.md` sec.7 を参照。
 
 ## 開発メモ
 

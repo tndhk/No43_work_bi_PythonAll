@@ -1,6 +1,6 @@
 # Plotly Dash BI Dashboard 技術仕様書 v0.2
 
-Last Updated: 2026-02-08
+Last Updated: 2026-02-09
 
 ## このドキュメントについて
 

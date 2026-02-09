@@ -56,3 +56,6 @@ class ChartSpec:
     barmode: str | None = None
     labels: dict[str, str] | None = None
     show_legend: bool = True
+    orientation: str = "v"  # "v" for vertical (default), "h" for horizontal bars
+    text_template: str | None = None  # Data labels template (e.g., "%{y:.1f}")
+    hover_template: str | None = None  # Hover tooltip template (e.g., "%{x}<br>%{y:.2f}")

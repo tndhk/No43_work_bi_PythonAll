@@ -1,6 +1,6 @@
 # System Architecture
 
-Last Updated: 2026-02-08 (rev.4)
+Last Updated: 2026-02-09 (rev.5)
 
 ## High-Level Architecture
 

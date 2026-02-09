@@ -1,6 +1,6 @@
 # 開発者ガイド (CONTRIB)
 
-最終更新: 2026-02-08
+最終更新: 2026-02-09
 
 ## 1. 前提条件
 
@@ -290,6 +290,23 @@ from src.charts.empty_states import (
 
 # コールバックヘルパー
 from src.utils.callback_helpers import register_clear_callbacks
+
+# データソース解決
+from src.data.data_source_registry import resolve_dataset_id
+
+# UIコンポーネント
+from src.components.filters import (
+    create_category_filter,
+    create_date_range_filter,
+    create_slicer_filter,
+)
+
+# データヘルパー（新規ページで利用可能）
+from src.utils.data_helpers import (
+    safe_load_filter_options,
+    strip_timezone,
+    resolve_single_dataset_id,
+)
 ```
 
 ## 7. 新規ダッシュボードページの追加手順
