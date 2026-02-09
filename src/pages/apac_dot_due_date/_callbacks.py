@@ -22,13 +22,8 @@ from ._constants import (
     TABLE_SPECS,
     CTRL_ID_NUM_PERCENT,
     CTRL_ID_BREAKDOWN,
-    CTRL_ID_CLEAR_MONTH,
-    CTRL_ID_CLEAR_PRC,
-    CTRL_ID_CLEAR_AREA,
-    CTRL_ID_CLEAR_CATEGORY,
-    CTRL_ID_CLEAR_VENDOR,
-    CTRL_ID_CLEAR_AMP_AV,
-    CTRL_ID_CLEAR_ORDER_TYPE,
+    CLEAR_PAIRS,
+    CLEAR_PAIR_PRC,
     FILTER_ID_MONTH,
     FILTER_ID_PRC,
     FILTER_ID_AREA,
@@ -216,17 +211,10 @@ def update_dashboard(
 # ---------------------------------------------------------------------------
 
 # Multi-select filters: reset to empty list
-register_clear_callbacks([
-    (FILTER_ID_MONTH, CTRL_ID_CLEAR_MONTH),
-    (FILTER_ID_AREA, CTRL_ID_CLEAR_AREA),
-    (FILTER_ID_CATEGORY, CTRL_ID_CLEAR_CATEGORY),
-    (FILTER_ID_VENDOR, CTRL_ID_CLEAR_VENDOR),
-    (FILTER_ID_AMP_AV, CTRL_ID_CLEAR_AMP_AV),
-    (FILTER_ID_ORDER_TYPE, CTRL_ID_CLEAR_ORDER_TYPE),
-])
+register_clear_callbacks(CLEAR_PAIRS)
 
 # PRC is single-select: reset to None
 register_clear_callbacks(
-    [(FILTER_ID_PRC, CTRL_ID_CLEAR_PRC)],
+    [CLEAR_PAIR_PRC],
     default_value=None,
 )

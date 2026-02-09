@@ -36,6 +36,23 @@ COLUMN_MAP: dict[str, str] = {
     "kind": "Kind",
 }
 
+# ----- Control IDs (Clear buttons) -----
+CTRL_ID_CLEAR_MODEL: str = f"{ID_PREFIX}ctrl-clear-model"
+CTRL_ID_CLEAR_USER: str = f"{ID_PREFIX}ctrl-clear-user"
+CTRL_ID_CLEAR_KIND: str = f"{ID_PREFIX}ctrl-clear-kind"
+
+# Filter IDs (for reference in clear pairs)
+FILTER_ID_MODEL: str = f"{ID_PREFIX}filter-model"
+FILTER_ID_USER: str = f"{ID_PREFIX}filter-user"
+FILTER_ID_KIND: str = f"{ID_PREFIX}filter-kind"
+
+# Clear button to filter mapping (used by register_clear_callbacks)
+CLEAR_PAIRS: list[tuple[str, str]] = [
+    (FILTER_ID_MODEL, CTRL_ID_CLEAR_MODEL),
+    (FILTER_ID_USER, CTRL_ID_CLEAR_USER),
+    (FILTER_ID_KIND, CTRL_ID_CLEAR_KIND),
+]
+
 # ---------------------------------------------------------------------------
 # Chart / Table Specs (declarative definitions)
 # ---------------------------------------------------------------------------

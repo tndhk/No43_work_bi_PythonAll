@@ -13,6 +13,10 @@ from ._constants import (
     CHART_ID_MODEL_DISTRIBUTION,
     CHART_ID_DATA_TABLE,
     ID_PREFIX,
+    COST_TREND_SPEC,
+    TOKEN_EFFICIENCY_SPEC,
+    MODEL_DISTRIBUTION_SPEC,
+    DETAIL_TABLE_SPEC,
 )
 from ._data_loader import load_filter_options, resolve_dataset_id_for_dashboard
 
@@ -87,25 +91,44 @@ def build_layout():
         # Charts Row 1
         dbc.Row([
             dbc.Col([
-                dcc.Graph(id=CHART_ID_COST_TREND),
+                dbc.Card([
+                    dbc.CardHeader(COST_TREND_SPEC.title, className="card-header"),
+                    dbc.CardBody([
+                        dcc.Graph(id=CHART_ID_COST_TREND),
+                    ]),
+                ]),
             ], md=12),
         ], className="mb-4"),
 
         # Charts Row 2
         dbc.Row([
             dbc.Col([
-                dcc.Graph(id=CHART_ID_TOKEN_EFFICIENCY),
+                dbc.Card([
+                    dbc.CardHeader(TOKEN_EFFICIENCY_SPEC.title, className="card-header"),
+                    dbc.CardBody([
+                        dcc.Graph(id=CHART_ID_TOKEN_EFFICIENCY),
+                    ]),
+                ]),
             ], md=6),
             dbc.Col([
-                dcc.Graph(id=CHART_ID_MODEL_DISTRIBUTION),
+                dbc.Card([
+                    dbc.CardHeader(MODEL_DISTRIBUTION_SPEC.title, className="card-header"),
+                    dbc.CardBody([
+                        dcc.Graph(id=CHART_ID_MODEL_DISTRIBUTION),
+                    ]),
+                ]),
             ], md=6),
         ], className="mb-4"),
 
         # Data Table
         dbc.Row([
             dbc.Col([
-                html.H3("Detailed Data", className="mb-3"),
-                html.Div(id=CHART_ID_DATA_TABLE),
+                dbc.Card([
+                    dbc.CardHeader(DETAIL_TABLE_SPEC.title, className="card-header"),
+                    dbc.CardBody([
+                        html.Div(id=CHART_ID_DATA_TABLE),
+                    ]),
+                ]),
             ], md=12),
         ]),
     ], className="page-container")
