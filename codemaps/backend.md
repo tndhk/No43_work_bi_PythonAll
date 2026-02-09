@@ -1,6 +1,6 @@
 # Backend Codemap
 
-Freshness (UTC): 2026-02-08T07:50:11Z
+Freshness (UTC): 2026-02-09T12:00:00Z
 Analysis Scope: `backend/`, plus backend dependencies in `src/`
 
 ## Backend Modules

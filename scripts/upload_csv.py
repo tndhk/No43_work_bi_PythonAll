@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""CSV upload CLI tool.
+"""Single CSV file upload CLI tool.
+
+This script uploads a single CSV file directly to S3 as a Parquet dataset.
+For batch processing of multiple datasets, use backend/scripts/load_csv.py instead.
 
 Usage:
     python scripts/upload_csv.py <csv_file> --dataset-id <id> [--partition-col <col>]
@@ -8,6 +11,10 @@ Arguments:
     csv_file          CSV file path
     --dataset-id      Dataset ID (S3 key)
     --partition-col   Date column name for partitioning (optional, single file if omitted)
+
+Example:
+    python scripts/upload_csv.py data.csv --dataset-id my-dataset
+    python scripts/upload_csv.py data.csv --dataset-id my-dataset --partition-col created_at
 """
 import argparse
 import sys

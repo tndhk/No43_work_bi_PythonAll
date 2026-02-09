@@ -35,3 +35,6 @@
 - 2026-02-08: Slicerの標準化は `create_slicer_filter` に clear UI を集約し、各ページで clear callback だけ追加する構成が最小変更で横展開しやすい。- 2026-02-08: AGENTS.md で Markdown太字と絵文字が禁止。ドキュメント更新時も `**` と emoji を使わない。
 - 2026-02-08: ドキュメント更新はリポジトリで確認できる運用だけを記載し、未確認インフラ前提はTBD明記が必要。
 - 2026-02-08: ドキュメント刷新時、既存RUNBOOKに未確認クラウド前提が混在していたため、Compose運用ベースに置換しTBDを明記すると整合が保てる。
+- 2026-02-09: Dashページのチャート/テーブルは全て `dbc.Card` で囲むのが必須ルール。灰色背景（`--bg-base`）との対比で視認性向上、フィルターエリアとのデザイン統一。`hamm_overview` で実装し、`dash-bi-workflow` と `CLAUDE.md` にデフォルトルールとして記載。
+- 2026-02-09: hamm_overview ページにフィルタ追加する際の修正順序: _constants.py (ID定義) → _data_loader.py (FILTER_COLUMN_MAP + load_filter_options) → _filters.py (UI作成) → _callbacks.py (Input + filter_pairs) → _layout.py (通常は自動配置)。この順序で依存関係が構成される。
+- 2026-02-09: 3ダッシュボード共通化レビュー完了。cursor_usageにdbc.Card wrap、CLEAR_PAIRS、_chart_builders.py分離を追加。apac_dot_due_dateのCLEAR_PAIRSを_constants.pyに移動。hamm_overviewパターンが標準構成となった。

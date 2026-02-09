@@ -1,6 +1,6 @@
 # System Architecture
 
-Last Updated: 2026-02-08 (rev.4)
+Last Updated: 2026-02-09 (rev.5)
 
 ## High-Level Architecture
 
@@ -45,110 +45,16 @@ Last Updated: 2026-02-08 (rev.4)
 
 ## Component Architecture
 
-### src/ Directory Structure
+詳細なディレクトリ構造は [CONTRIB.md](CONTRIB.md) セクション6 を参照。
 
-```
-src/
-+-- auth/                       # Authentication Layer (Flask-Login)
-|   +-- __init__.py
-|   +-- flask_login_setup.py   # Flask-Login initialization, User model
-|   +-- providers.py           # AuthProvider protocol, FormAuthProvider
-|   +-- login_layout.py        # Login page UI
-|   +-- login_callbacks.py     # Login form callbacks
-|   +-- layout_callbacks.py    # Auth-aware layout switching
-|
-+-- data/                      # Data Access Layer
-|   +-- config.py             # Settings & Environment variables (Pydantic)
-|   +-- s3_client.py          # S3 client (boto3 wrapper)
-|   +-- parquet_reader.py     # Parquet file reading & partitioning
-|   +-- csv_parser.py         # CSV parsing & encoding detection
-|   +-- type_inferrer.py      # Column type inference
-|   +-- dataset_summarizer.py # Data profiling & statistics
-|   +-- filter_engine.py      # Filter logic (categorical, date range)
-|   +-- models.py             # Pydantic models for type safety
-|
-+-- charts/                   # Visualization Layer
-|   +-- chart_builder.py     # Shared: DataFrame + ChartSpec -> go.Figure (bar/line/pie/stacked_bar)
-|   +-- table_builder.py     # Shared: DataFrame + TableSpec -> DataTable
-|   +-- empty_states.py      # Empty/error state placeholders (create_empty_figure, etc.)
-|   +-- specs.py             # ChartSpec, TableSpec (frozen dataclass definitions)
-|   +-- plotly_theme.py       # Plotly Warm Professional Light theme
-|   +-- templates.py          # Legacy chart templates (render_*_chart)
-|
-+-- core/                     # Infrastructure
-|   +-- cache.py             # TTL Cache initialization (flask-caching)
-|   +-- logging.py           # Structured logging (structlog)
-|
-+-- utils/                    # Shared Utility Modules
-|   +-- data_helpers.py      # Data transformation helpers
-|   +-- filter_helpers.py    # Filter building helpers (build_filter_set_from_map)
-|   +-- callback_helpers.py  # register_clear_callbacks() for bulk clear-filter wiring
-|
-+-- pages/                    # Dashboard Pages (Dash Pages API)
-|   +-- __init__.py
-|   +-- dashboard_home.py    # Home page (card grid)
-|   +-- cursor_usage/        # Cursor Usage dashboard (modularized)
-|   |   +-- __init__.py      # Page registration + layout()
-|   |   +-- _constants.py    # DATASET_ID, ID_PREFIX, COLUMN_MAP
-|   |   +-- _data_loader.py  # Data loading & filtering
-|   |   +-- _layout.py       # Page layout builder
-|   |   +-- _callbacks.py    # Dash callbacks (KPIs, charts, table)
-|   +-- apac_dot_due_date/   # APAC DOT Due Date dashboard (modularized)
-|   |   +-- __init__.py      # Page registration + layout()
-|   |   +-- _constants.py    # DATASET_ID, COLUMN_MAP, DatasetConfig
-|   |   +-- _data_loader.py  # Data loading & filtering
-|   |   +-- _filters.py      # Filter UI builder (slicer + category)
-|   |   +-- _layout.py       # Page layout builder
-|   |   +-- _callbacks.py    # Dash callbacks
-|   |   +-- charts/
-|   |       +-- __init__.py
-|   |       +-- _ch00_reference_table.py  # Pivot table builder
-|   +-- hamm_overview/       # HAMM Overview dashboard (modularized)
-|       +-- __init__.py      # Page registration + layout()
-|       +-- _constants.py    # DATASET_ID, ID_PREFIX, COLUMN_MAP, filter/chart IDs
-|       +-- _data_loader.py  # Data loading, filtering, cadence column generation
-|       +-- _filters.py      # Filter UI builder (slicer + category + cadence chip)
-|       +-- _layout.py       # Page layout builder (MantineProvider)
-|       +-- _callbacks.py    # Dash callbacks (volume table/chart, task table, slicer clears)
-|
-+-- components/              # Reusable UI Components
-|   +-- __init__.py
-|   +-- sidebar.py          # Left navigation sidebar
-|   +-- sidebar_callbacks.py # Sidebar callbacks (logout, etc.)
-|   +-- filters.py          # Filter selection components
-|   +-- cards.py            # KPI card components
-|
-+-- layout.py               # Main layout (auth-aware container)
-+-- exceptions.py           # Custom exception classes
-```
-
-### backend/ Directory Structure
-
-```
-backend/
-+-- config/              # ETL Configuration
-|   +-- domo_datasets.yaml  # DOMO DataSet definitions
-|   +-- csv_datasets.yaml   # CSV DataSet definitions
-|   +-- README.md           # Configuration guide
-|
-+-- data_sources/        # External Data Sources (stubs)
-|   +-- __init__.py
-|
-+-- etl/                 # ETL Pipeline Scripts
-|   +-- base_etl.py     # Abstract base ETL class (extract/transform/load)
-|   +-- etl_api.py      # API -> Parquet transformation
-|   +-- etl_s3.py       # S3 -> Parquet transformation
-|   +-- etl_rds.py      # RDS -> Parquet transformation
-|   +-- etl_csv.py      # CSV -> Parquet transformation
-|   +-- etl_domo.py     # DOMO API -> Parquet (OAuth2 auth)
-|   +-- masking.py      # HMAC-SHA256 masking utility (apply_hmac_masking)
-|   +-- resolve_csv_path.py  # CSV file path resolution utility
-|
-+-- scripts/             # ETL Management Scripts
-    +-- load_domo.py         # DOMO dataset loader (YAML config)
-    +-- load_csv.py          # CSV dataset loader (YAML config, generic)
-    +-- clear_dataset.py     # Dataset deletion utility
-```
+主要なコンポーネントレイヤー:
+- `src/auth/`: 認証レイヤー（Flask-Login）
+- `src/data/`: データアクセスレイヤー（S3, Parquet, フィルタ）
+- `src/charts/`: 可視化レイヤー（チャート・テーブルビルダー、Spec定義）
+- `src/pages/`: ダッシュボードページ（Dash Pages API）
+- `src/components/`: 再利用可能UIコンポーネント（サイドバー、フィルタ、KPIカード）
+- `backend/etl/`: ETLパイプライン（BaseETL、各種ETL実装）
+- `backend/config/`: ETL設定ファイル（YAML）
 
 ## Data Flow
 
@@ -221,7 +127,9 @@ src/pages/cursor_usage/__init__.py
 +-- _callbacks (side-effect import for @callback registration)
     +-- _data_loader.load_and_filter_data
     +-- src.components.cards
-    +-- src.charts.templates (render_line_chart, render_bar_chart, render_pie_chart)
+    +-- src.charts.chart_builder (build_chart)
+    +-- src.charts.table_builder (build_table)
+    +-- src.charts.empty_states
 
 src/pages/apac_dot_due_date/__init__.py
 +-- _layout.build_layout
@@ -345,23 +253,15 @@ Per-page Authorization
 
 ## Technology Stack Summary
 
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| Frontend | Plotly Dash + Bootstrap | Interactive dashboards |
-| UI Components | Dash Bootstrap Components | Responsive UI |
-| UI Components | Dash Mantine Components | Chip/Slicer filters (Cadence等) |
-| Server | Flask (Gunicorn) | WSGI server |
-| Authentication | Flask-Login (Form) | User verification |
-| Caching | flask-caching | Performance optimization |
-| Data Processing | Pandas, PyArrow | DataFrame operations |
-| Data Storage | Parquet (S3) | Columnar storage |
-| Cloud Storage | boto3 | AWS S3 integration |
-| Visualization | Plotly | Interactive charts |
-| Theme | Warm Professional Light | CSS custom properties |
-| Logging | structlog | Structured logging |
-| ETL Framework | Custom (base_etl.py) | Data transformation |
-| LLM (Phase 2) | Vertex AI SDK | Gemini integration |
-| Type Checking | Pydantic | Data validation |
+技術スタックの詳細は [tech-spec.md](tech-spec.md) セクション1 を参照。
+
+主要な技術:
+- Frontend: Plotly Dash 4.x + Dash Bootstrap Components + Dash Mantine Components
+- Server: Flask (Gunicorn) + Flask-Login
+- Data: Pandas, PyArrow, boto3 (S3/Parquet)
+- Visualization: Plotly (Warm Professional Light theme)
+- Infrastructure: flask-caching (TTL), structlog (構造化ログ)
+- ETL: Custom framework (BaseETL)
 
 ## Deployment Architecture
 

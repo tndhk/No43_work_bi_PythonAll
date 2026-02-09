@@ -166,3 +166,19 @@ TABLE_SPECS: dict[str, TableSpec] = {
         page_size=20,
     ),
 }
+
+
+# ---------------------------------------------------------------------------
+# Clear-filter callback pairs (filter_id, clear_button_id)
+# ---------------------------------------------------------------------------
+CLEAR_PAIRS: list[tuple[str, str]] = [
+    (FILTER_ID_MONTH, CTRL_ID_CLEAR_MONTH),
+    (FILTER_ID_AREA, CTRL_ID_CLEAR_AREA),
+    (FILTER_ID_CATEGORY, CTRL_ID_CLEAR_CATEGORY),
+    (FILTER_ID_VENDOR, CTRL_ID_CLEAR_VENDOR),
+    (FILTER_ID_AMP_AV, CTRL_ID_CLEAR_AMP_AV),
+    (FILTER_ID_ORDER_TYPE, CTRL_ID_CLEAR_ORDER_TYPE),
+]
+
+# PRC clear pair (single-select, uses default_value=None)
+CLEAR_PAIR_PRC: tuple[str, str] = (FILTER_ID_PRC, CTRL_ID_CLEAR_PRC)

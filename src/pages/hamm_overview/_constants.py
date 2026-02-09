@@ -10,6 +10,10 @@ ID_PREFIX: str = "hamm-"
 CHART_ID_VOLUME_TABLE: str = f"{ID_PREFIX}volume-table"
 CHART_ID_VOLUME_CHART: str = f"{ID_PREFIX}volume-chart"
 CHART_ID_TASK_TABLE: str = f"{ID_PREFIX}task-table"
+CHART_ID_ERROR_RATIO: str = f"{ID_PREFIX}error-ratio"
+CHART_ID_ERROR_BY_SCREENER: str = f"{ID_PREFIX}error-by-screener"
+CHART_ID_USER_BREAKDOWN: str = f"{ID_PREFIX}user-breakdown"
+CHART_ID_HAMM_BREAKDOWN: str = f"{ID_PREFIX}hamm-breakdown"
 
 # Filter IDs
 FILTER_ID_REGION: str = f"{ID_PREFIX}filter-region"
@@ -67,6 +71,7 @@ COLUMN_MAP: dict[str, str] = {
     "genre": "genre_name",
     "error_code": "error code",
     "error_type": "error user vs system",
+    "error_description": "error description",
     "video_duration": "video_duration",
     "audio_details": "audio location",
 }
@@ -146,4 +151,47 @@ TASK_TABLE_SPEC: TableSpec = TableSpec(
         "Completed / Err",
         "Total Duration",
     ],
+)
+
+# Error Details Chart Specs
+ERROR_RATIO_SPEC: ChartSpec = ChartSpec(
+    title="Issues Ratio (HAMM vs Human Intervention)",
+    chart_type="pie",
+    x_column="error_type",
+    y_columns=["count"],
+    height=400,
+)
+
+ERROR_BY_SCREENER_SPEC: ChartSpec = ChartSpec(
+    title="Intervention per Screener Type",
+    chart_type="stacked_bar",
+    x_column="video_type_description",
+    y_columns=["User", "HAMM"],
+    color_map={
+        "User": "#e57f7f",
+        "HAMM": "#5f8fc7",
+    },
+    height=400,
+)
+
+USER_BREAKDOWN_SPEC: ChartSpec = ChartSpec(
+    title="User Intervention Breakdown",
+    chart_type="bar",
+    x_column="error_description",
+    y_columns=["count"],
+    color_map={
+        "count": "#e57f7f",
+    },
+    height=400,
+)
+
+HAMM_BREAKDOWN_SPEC: ChartSpec = ChartSpec(
+    title="HAMM Intervention Breakdown",
+    chart_type="bar",
+    x_column="error_description",
+    y_columns=["count"],
+    color_map={
+        "count": "#5f8fc7",
+    },
+    height=400,
 )

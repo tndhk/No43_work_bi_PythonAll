@@ -14,6 +14,10 @@ from ._constants import (
     CHART_ID_VOLUME_TABLE,
     CHART_ID_VOLUME_CHART,
     CHART_ID_TASK_TABLE,
+    CHART_ID_ERROR_RATIO,
+    CHART_ID_ERROR_BY_SCREENER,
+    CHART_ID_USER_BREAKDOWN,
+    CHART_ID_HAMM_BREAKDOWN,
     FILTER_ID_REGION,
     FILTER_ID_YEAR,
     FILTER_ID_MONTH,
@@ -33,12 +37,20 @@ from ._data_loader import (
     load_and_filter_data,
     build_volume_summary,
     prepare_task_display_df,
+    build_issues_ratio,
+    build_intervention_by_screener,
+    build_user_intervention_breakdown,
+    build_hamm_intervention_breakdown,
     FILTER_COLUMN_MAP,
 )
 from ._chart_builders import (
     build_volume_table,
     build_volume_chart,
     build_task_table,
+    build_error_ratio_chart,
+    build_error_by_screener_chart,
+    build_user_breakdown_chart,
+    build_hamm_breakdown_chart,
 )
 
 
@@ -58,6 +70,10 @@ def _strip_sort_column(df: pd.DataFrame) -> pd.DataFrame:
     Output(CHART_ID_VOLUME_TABLE, "children"),
     Output(CHART_ID_VOLUME_CHART, "figure"),
     Output(CHART_ID_TASK_TABLE, "children"),
+    Output(CHART_ID_ERROR_RATIO, "figure"),
+    Output(CHART_ID_ERROR_BY_SCREENER, "figure"),
+    Output(CHART_ID_USER_BREAKDOWN, "figure"),
+    Output(CHART_ID_HAMM_BREAKDOWN, "figure"),
     Input(FILTER_ID_REGION, "value"),
     Input(FILTER_ID_YEAR, "value"),
     Input(FILTER_ID_MONTH, "value"),
@@ -124,12 +140,40 @@ def update_dashboard(
         task_display_df = prepare_task_display_df(df)
         _, task_table = build_task_table(task_display_df)
 
-        return volume_table, volume_chart, task_table
+        # Error analysis
+        issues_ratio_df = build_issues_ratio(df)
+        intervention_by_screener_df = build_intervention_by_screener(df)
+        user_breakdown_df = build_user_intervention_breakdown(df)
+        hamm_breakdown_df = build_hamm_intervention_breakdown(df)
+
+        # Build error charts
+        error_ratio_fig = build_error_ratio_chart(issues_ratio_df)
+        error_by_screener_fig = build_error_by_screener_chart(intervention_by_screener_df)
+        user_breakdown_fig = build_user_breakdown_chart(user_breakdown_df)
+        hamm_breakdown_fig = build_hamm_breakdown_chart(hamm_breakdown_df)
+
+        return (
+            volume_table,
+            volume_chart,
+            task_table,
+            error_ratio_fig,
+            error_by_screener_fig,
+            user_breakdown_fig,
+            hamm_breakdown_fig,
+        )
 
     except Exception as exc:
         error_msg = html.P(f"Error loading data: {exc}", className="text-danger")
         empty_fig = create_empty_figure(message="Error loading data")
-        return error_msg, empty_fig, error_msg
+        return (
+            error_msg,
+            empty_fig,
+            error_msg,
+            empty_fig,
+            empty_fig,
+            empty_fig,
+            empty_fig,
+        )
 
 
 # ---------------------------------------------------------------------------

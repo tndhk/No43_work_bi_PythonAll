@@ -8,9 +8,8 @@ from dash import callback, Input, Output
 
 from src.data.parquet_reader import ParquetReader
 from src.components.cards import create_kpi_card
-from src.charts.chart_builder import build_chart
-from src.charts.table_builder import build_table
 from src.charts.empty_states import create_empty_figure, create_error_figure, create_empty_table
+from src.utils.callback_helpers import register_clear_callbacks
 from ._constants import (
     CHART_ID_KPI_TOTAL_COST,
     CHART_ID_KPI_TOTAL_TOKENS,
@@ -21,12 +20,15 @@ from ._constants import (
     CHART_ID_DATA_TABLE,
     COLUMN_MAP,
     ID_PREFIX,
-    COST_TREND_SPEC,
-    TOKEN_EFFICIENCY_SPEC,
-    MODEL_DISTRIBUTION_SPEC,
-    DETAIL_TABLE_SPEC,
+    CLEAR_PAIRS,
 )
 from ._data_loader import load_and_filter_data, resolve_dataset_id_for_dashboard
+from ._chart_builders import (
+    build_daily_cost_trend,
+    build_token_efficiency_chart,
+    build_model_distribution_chart,
+    build_detail_table,
+)
 
 
 @callback(
@@ -87,10 +89,8 @@ def update_dashboard(start_date, end_date, model_values, user_values, kind_value
                 create_empty_table(),
             )
 
-        date_col = COLUMN_MAP["date"]
         cost_col = COLUMN_MAP["cost"]
         total_tokens_col = COLUMN_MAP["total_tokens"]
-        model_col = COLUMN_MAP["model"]
 
         # Calculate KPIs
         total_cost = filtered_df[cost_col].sum()
@@ -102,35 +102,13 @@ def update_dashboard(start_date, end_date, model_values, user_values, kind_value
         kpi_tokens = create_kpi_card("Total Tokens", f"{total_tokens:,}")
         kpi_requests = create_kpi_card("Request Count", f"{request_count:,}")
 
-        # Chart 1: Daily Cost Trend
-        daily_cost = filtered_df.groupby(filtered_df[date_col].dt.date)[cost_col].sum().reset_index()
-        daily_cost.columns = [date_col, cost_col]
-        daily_cost = daily_cost.sort_values(date_col)
+        # Build charts using chart_builders
+        cost_trend_fig = build_daily_cost_trend(filtered_df)
+        efficiency_fig = build_token_efficiency_chart(filtered_df)
+        distribution_fig = build_model_distribution_chart(filtered_df)
 
-        cost_trend_fig = build_chart(daily_cost, COST_TREND_SPEC)
-
-        # Chart 2: Token Efficiency by Model
-        model_stats = filtered_df.groupby(model_col).agg({
-            total_tokens_col: "sum",
-            cost_col: "sum",
-        }).reset_index()
-        model_stats["TokensPerCost"] = model_stats[total_tokens_col] / model_stats[cost_col]
-        model_stats = model_stats.sort_values("TokensPerCost", ascending=False)
-
-        efficiency_fig = build_chart(model_stats, TOKEN_EFFICIENCY_SPEC)
-
-        # Chart 3: Model Distribution
-        model_dist = filtered_df.groupby(model_col)[cost_col].sum().reset_index()
-        model_dist.columns = [model_col, cost_col]
-
-        distribution_fig = build_chart(model_dist, MODEL_DISTRIBUTION_SPEC)
-
-        # Data Table
-        display_df = filtered_df.copy()
-        display_df[date_col] = display_df[date_col].dt.strftime("%Y-%m-%d %H:%M")
-        display_df = display_df.head(100)
-
-        _, table_component = build_table(display_df, DETAIL_TABLE_SPEC)
+        # Build data table
+        _, table_component = build_detail_table(filtered_df)
 
         return (
             kpi_cost,
@@ -155,3 +133,9 @@ def update_dashboard(start_date, end_date, model_values, user_values, kind_value
             error_fig,
             create_empty_table(message=f"Error loading data: {str(e)}"),
         )
+
+
+# ---------------------------------------------------------------------------
+# Clear-filter callbacks (registered via shared helper)
+# ---------------------------------------------------------------------------
+register_clear_callbacks(CLEAR_PAIRS)

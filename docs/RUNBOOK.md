@@ -1,6 +1,6 @@
 # 運用ガイド (RUNBOOK)
 
-最終更新: 2026-02-08
+最終更新: 2026-02-09
 
 このRUNBOOKは、現行リポジトリで確認できる手順のみを記載する。
 クラウド本番基盤（ECS/EKS/VMなど）の標準手順は、このリポジトリ内に定義がないため [TBD]。
@@ -72,21 +72,13 @@ python3 backend/scripts/load_csv.py --all
 
 ## 4. ETL運用手順
 
+ETLコマンドの詳細な一覧は [CONTRIB.md](CONTRIB.md) セクション3 を参照。
+
 ### 4.1 DOMO ETL
 
-```bash
-# 登録データセット一覧
-python3 backend/scripts/load_domo.py --list
-
-# ドライラン（実行なし確認）
-python3 backend/scripts/load_domo.py --all --dry-run
-
-# 全有効データセット実行
-python3 backend/scripts/load_domo.py --all
-
-# 特定データセットのみ
-python3 backend/scripts/load_domo.py --dataset "APAC DOT join Due Date change(first time)"
-```
+運用時の確認ポイント:
+- 実行前にドライランで確認: `python3 backend/scripts/load_domo.py --all --dry-run`
+- 登録データセット一覧確認: `python3 backend/scripts/load_domo.py --list`
 
 現在の登録データセット (3件):
 - APAC DOT join Due Date change(first time) -> apac-dot-due-date (除外フィルタ: exclude_flg)
@@ -95,33 +87,25 @@ python3 backend/scripts/load_domo.py --dataset "APAC DOT join Due Date change(fi
 
 ### 4.2 CSV ETL
 
-```bash
-# 登録データセット一覧
-python3 backend/scripts/load_csv.py --list
-
-# ドライラン
-python3 backend/scripts/load_csv.py --all --dry-run
-
-# 全有効データセット実行
-python3 backend/scripts/load_csv.py --all
-
-# 特定データセットのみ
-python3 backend/scripts/load_csv.py --dataset "Cursor Usage Events"
-
-# カスタム設定ファイルを指定
-python3 backend/scripts/load_csv.py --config path/to/config.yaml --all
-```
+運用時の確認ポイント:
+- 実行前にドライランで確認: `python3 backend/scripts/load_csv.py --all --dry-run`
+- 登録データセット一覧確認: `python3 backend/scripts/load_csv.py --list`
 
 現在の登録データセット (1件):
 - Cursor Usage Events -> cursor-usage (backend/data_sources/team-usage-events-*.csv)
 
 ### 4.3 データセット再投入
 
+既存データを削除してから再投入する手順:
+
 ```bash
-# 既存データを削除してから再投入
+# 既存データを削除
 python3 backend/scripts/clear_dataset.py <dataset_id>
+
+# DOMOデータセットの場合
 python3 backend/scripts/load_domo.py --dataset "<dataset_name>"
-# CSVの場合:
+
+# CSVデータセットの場合
 python3 backend/scripts/load_csv.py --dataset "<dataset_name>"
 ```
 

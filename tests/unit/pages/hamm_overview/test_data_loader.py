@@ -18,6 +18,7 @@ def _make_sample_df() -> pd.DataFrame:
         "genre_name": ["Crime", "Drama"],
         "error code": ["E1", "E2"],
         "error user vs system": ["User", "System"],
+        "error description": ["Requested audio track does not exist", "SRT file truncated"],
         "video_duration": ["00:10:00", "00:20:00"],
         "audio location": ["Full mix", "Separate audio"],
     })
@@ -368,6 +369,12 @@ def _make_prepared_df() -> pd.DataFrame:
         "genre_name": ["Crime", "Drama", "Crime", "Drama"],
         "error code": ["E1", "E2", "E1", "E2"],
         "error user vs system": ["User", "System", "User", "System"],
+        "error description": [
+            "Requested audio track does not exist",
+            "SRT file truncated",
+            "File upload failed",
+            "Network error",
+        ],
         "video_duration": ["00:10:00", "00:20:00", "00:15:00", "00:25:00"],
         "audio location": ["Full mix", "Separate audio", "Full mix", "Separate audio"],
     })
@@ -403,6 +410,11 @@ def _make_task_df() -> pd.DataFrame:
         "genre_name": ["Crime", "Drama", "Crime"],
         "error code": ["E1", "E2", "E1"],
         "error user vs system": ["User", "System", "User"],
+        "error description": [
+            "Requested audio track does not exist",
+            "SRT file truncated",
+            "File upload failed",
+        ],
         "video_duration": ["00:10:00", "00:20:00", "00:30:00"],
         "audio location": ["Full mix", "Separate audio", "Stereo"],
     })
@@ -483,6 +495,7 @@ class TestPrepareTaskDisplayDf:
             "genre_name": ["Crime"],
             "error code": ["E1"],
             "error user vs system": ["User"],
+            "error description": ["Requested audio track does not exist"],
             "video_duration": ["00:45:00"],
             "audio location": ["Stereo"],
         })
@@ -595,6 +608,7 @@ class TestPrepareTaskDisplayDf:
             "genre_name": ["Crime"],
             "error code": ["E1"],
             "error user vs system": ["User"],
+            "error description": ["Requested audio track does not exist"],
             "video_duration": ["00:45:00"],
             "audio location": ["Stereo"],
         })
@@ -1081,6 +1095,7 @@ class TestPrepareTaskDisplayDfTotalDurationVectorized:
             "genre_name": ["Crime"] * 4,
             "error code": ["E1"] * 4,
             "error user vs system": ["User"] * 4,
+            "error description": ["Requested audio track does not exist"] * 4,
             "video_duration": ["00:10:00"] * 4,
             "audio location": ["Stereo"] * 4,
         })
@@ -1091,3 +1106,219 @@ class TestPrepareTaskDisplayDfTotalDurationVectorized:
         assert durations[1] == "26:15:30"
         assert durations[2] == "00:00:45"
         assert durations[3] == ""
+
+
+# ---------------------------------------------------------------------------
+# Error Details aggregation function tests
+# ---------------------------------------------------------------------------
+
+def _make_error_analysis_df() -> pd.DataFrame:
+    """Create a DataFrame for error analysis tests."""
+    return pd.DataFrame({
+        "id": ["1", "2", "3", "4", "5", "6"],
+        "title": ["A", "B", "C", "D", "E", "F"],
+        "status": ["Completed"] * 6,
+        "created_at": pd.to_datetime([
+            "2026-01-05 10:00:00",
+            "2026-01-06 10:00:00",
+            "2026-01-07 10:00:00",
+            "2026-01-08 10:00:00",
+            "2026-01-09 10:00:00",
+            "2026-01-10 10:00:00",
+        ]),
+        "completed_at": pd.to_datetime([
+            "2026-01-06 10:00:00",
+            "2026-01-07 10:00:00",
+            "2026-01-08 10:00:00",
+            "2026-01-09 10:00:00",
+            "2026-01-10 10:00:00",
+            "2026-01-11 10:00:00",
+        ]),
+        "notification_company_name": ["APAC"] * 6,
+        "video_type_description": ["Prelim", "ERV", "Prelim", "ERV", "Prelim", "ERV"],
+        "original_language_name": ["Japanese"] * 6,
+        "was dialogue provided?": ["Yes"] * 6,
+        "genre_name": ["Crime"] * 6,
+        "error code": ["E1", "E2", "E1", "E3", "E1", "E2"],
+        "error user vs system": ["User", "HAMM", "User", "HAMM", "User", "HAMM"],
+        "error description": [
+            "Requested audio track does not exist",
+            "SRT file truncated",
+            "Requested audio track does not exist",
+            "Network error",
+            "File upload failed",
+            "SRT file truncated",
+        ],
+        "video_duration": ["00:10:00"] * 6,
+        "audio location": ["Full mix"] * 6,
+    })
+
+
+class TestBuildIssuesRatio:
+    """build_issues_ratio should count User vs HAMM records."""
+
+    def test_importable(self):
+        from src.pages.hamm_overview._data_loader import build_issues_ratio
+        assert callable(build_issues_ratio)
+
+    def test_counts_user_and_hamm(self):
+        from src.pages.hamm_overview._data_loader import build_issues_ratio, _prepare_base_df
+        df = _make_error_analysis_df()
+        df = _prepare_base_df(df)
+        result = build_issues_ratio(df)
+        
+        assert len(result) == 2
+        assert set(result["error_type"].tolist()) == {"User", "HAMM"}
+        user_count = result[result["error_type"] == "User"]["count"].iloc[0]
+        hamm_count = result[result["error_type"] == "HAMM"]["count"].iloc[0]
+        assert user_count == 3
+        assert hamm_count == 3
+
+    def test_filters_out_non_user_hamm(self):
+        from src.pages.hamm_overview._data_loader import build_issues_ratio, _prepare_base_df
+        df = _make_error_analysis_df()
+        df.loc[0, "error user vs system"] = "System"  # Change first to System
+        df = _prepare_base_df(df)
+        result = build_issues_ratio(df)
+        
+        # Should only have User and HAMM, not System
+        assert len(result) == 2
+        assert "System" not in result["error_type"].tolist()
+
+    def test_empty_when_no_user_hamm(self):
+        from src.pages.hamm_overview._data_loader import build_issues_ratio, _prepare_base_df
+        df = _make_error_analysis_df()
+        df["error user vs system"] = "System"  # All System
+        df = _prepare_base_df(df)
+        result = build_issues_ratio(df)
+        
+        assert len(result) == 0
+        assert list(result.columns) == ["error_type", "count"]
+
+
+class TestBuildInterventionByScreener:
+    """build_intervention_by_screener should aggregate by screener type and error type."""
+
+    def test_importable(self):
+        from src.pages.hamm_overview._data_loader import build_intervention_by_screener
+        assert callable(build_intervention_by_screener)
+
+    def test_pivots_correctly(self):
+        from src.pages.hamm_overview._data_loader import build_intervention_by_screener, _prepare_base_df
+        df = _make_error_analysis_df()
+        df = _prepare_base_df(df)
+        result = build_intervention_by_screener(df)
+        
+        assert "video_type_description" in result.columns
+        assert "User" in result.columns
+        assert "HAMM" in result.columns
+        
+        # Prelim: 3 records (2 User, 1 HAMM)
+        prelim_row = result[result["video_type_description"] == "Prelim"].iloc[0]
+        assert prelim_row["User"] == 2
+        assert prelim_row["HAMM"] == 1
+        
+        # ERV: 3 records (1 User, 2 HAMM)
+        erv_row = result[result["video_type_description"] == "ERV"].iloc[0]
+        assert erv_row["User"] == 1
+        assert erv_row["HAMM"] == 2
+
+    def test_empty_when_no_user_hamm(self):
+        from src.pages.hamm_overview._data_loader import build_intervention_by_screener, _prepare_base_df
+        df = _make_error_analysis_df()
+        df["error user vs system"] = "System"  # All System
+        df = _prepare_base_df(df)
+        result = build_intervention_by_screener(df)
+        
+        assert len(result) == 0
+        assert list(result.columns) == ["video_type_description", "User", "HAMM"]
+
+
+class TestBuildUserInterventionBreakdown:
+    """build_user_intervention_breakdown should filter User and group by error description."""
+
+    def test_importable(self):
+        from src.pages.hamm_overview._data_loader import build_user_intervention_breakdown
+        assert callable(build_user_intervention_breakdown)
+
+    def test_filters_to_user_only(self):
+        from src.pages.hamm_overview._data_loader import build_user_intervention_breakdown, _prepare_base_df
+        df = _make_error_analysis_df()
+        df = _prepare_base_df(df)
+        result = build_user_intervention_breakdown(df)
+        
+        assert "error_description" in result.columns
+        assert "count" in result.columns
+        
+        # Should only have User errors (3 records)
+        assert len(result) == 3
+        assert result["count"].sum() == 3
+        
+        # Check specific error descriptions
+        desc_counts = result.set_index("error_description")["count"].to_dict()
+        assert desc_counts["Requested audio track does not exist"] == 2
+        assert desc_counts["File upload failed"] == 1
+
+    def test_sorted_by_count_descending(self):
+        from src.pages.hamm_overview._data_loader import build_user_intervention_breakdown, _prepare_base_df
+        df = _make_error_analysis_df()
+        df = _prepare_base_df(df)
+        result = build_user_intervention_breakdown(df)
+        
+        counts = result["count"].tolist()
+        assert counts == sorted(counts, reverse=True)
+
+    def test_empty_when_no_user(self):
+        from src.pages.hamm_overview._data_loader import build_user_intervention_breakdown, _prepare_base_df
+        df = _make_error_analysis_df()
+        df["error user vs system"] = "HAMM"  # All HAMM
+        df = _prepare_base_df(df)
+        result = build_user_intervention_breakdown(df)
+        
+        assert len(result) == 0
+        assert list(result.columns) == ["error_description", "count"]
+
+
+class TestBuildHammInterventionBreakdown:
+    """build_hamm_intervention_breakdown should filter HAMM and group by error description."""
+
+    def test_importable(self):
+        from src.pages.hamm_overview._data_loader import build_hamm_intervention_breakdown
+        assert callable(build_hamm_intervention_breakdown)
+
+    def test_filters_to_hamm_only(self):
+        from src.pages.hamm_overview._data_loader import build_hamm_intervention_breakdown, _prepare_base_df
+        df = _make_error_analysis_df()
+        df = _prepare_base_df(df)
+        result = build_hamm_intervention_breakdown(df)
+        
+        assert "error_description" in result.columns
+        assert "count" in result.columns
+        
+        # Should only have HAMM errors (3 records)
+        assert len(result) == 2  # 2 unique error descriptions
+        assert result["count"].sum() == 3
+        
+        # Check specific error descriptions
+        desc_counts = result.set_index("error_description")["count"].to_dict()
+        assert desc_counts["SRT file truncated"] == 2
+        assert desc_counts["Network error"] == 1
+
+    def test_sorted_by_count_descending(self):
+        from src.pages.hamm_overview._data_loader import build_hamm_intervention_breakdown, _prepare_base_df
+        df = _make_error_analysis_df()
+        df = _prepare_base_df(df)
+        result = build_hamm_intervention_breakdown(df)
+        
+        counts = result["count"].tolist()
+        assert counts == sorted(counts, reverse=True)
+
+    def test_empty_when_no_hamm(self):
+        from src.pages.hamm_overview._data_loader import build_hamm_intervention_breakdown, _prepare_base_df
+        df = _make_error_analysis_df()
+        df["error user vs system"] = "User"  # All User
+        df = _prepare_base_df(df)
+        result = build_hamm_intervention_breakdown(df)
+        
+        assert len(result) == 0
+        assert list(result.columns) == ["error_description", "count"]

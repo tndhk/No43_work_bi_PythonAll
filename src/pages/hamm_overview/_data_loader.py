@@ -14,6 +14,10 @@ from ._constants import (
     CHART_ID_VOLUME_TABLE,
     CHART_ID_VOLUME_CHART,
     CHART_ID_TASK_TABLE,
+    CHART_ID_ERROR_RATIO,
+    CHART_ID_ERROR_BY_SCREENER,
+    CHART_ID_USER_BREAKDOWN,
+    CHART_ID_HAMM_BREAKDOWN,
     TASK_TABLE_SPEC,
     DERIVED_YEAR,
     DERIVED_MONTH,
@@ -47,6 +51,10 @@ def resolve_dataset_id_for_dashboard() -> str:
         CHART_ID_VOLUME_TABLE,
         CHART_ID_VOLUME_CHART,
         CHART_ID_TASK_TABLE,
+        CHART_ID_ERROR_RATIO,
+        CHART_ID_ERROR_BY_SCREENER,
+        CHART_ID_USER_BREAKDOWN,
+        CHART_ID_HAMM_BREAKDOWN,
     ]
     dataset_ids = {resolve_dataset_id(DASHBOARD_ID, chart_id) for chart_id in chart_ids}
     if len(dataset_ids) != 1:
@@ -468,3 +476,150 @@ def prepare_task_display_df(df: pd.DataFrame) -> pd.DataFrame:
     )
 
     return output_df
+
+
+# ---------------------------------------------------------------------------
+# Error Details aggregation functions
+# ---------------------------------------------------------------------------
+
+def build_issues_ratio(df: pd.DataFrame) -> pd.DataFrame:
+    """Build User vs HAMM ratio for pie chart.
+    
+    Args:
+        df: Pre-filtered DataFrame (already through _prepare_base_df).
+    
+    Returns:
+        DataFrame with columns: error_type, count
+    """
+    error_type_col = COLUMN_MAP["error_type"]
+    
+    # Filter to only User and HAMM
+    filtered_df = df[df[error_type_col].isin(["User", "HAMM"])].copy()
+    filtered_df = filtered_df[filtered_df[COLUMN_MAP["status"]].isin(["Invalid", "Error"])]
+    if len(filtered_df) == 0:
+        return pd.DataFrame(columns=["error_type", "count"])
+    
+    ratio_df = (
+        filtered_df.groupby(error_type_col)[COLUMN_MAP["id"]]
+        .nunique()
+        .reset_index(name="count")
+    )
+    
+    ratio_df = ratio_df.rename(columns={error_type_col: "error_type"})
+    
+    return ratio_df
+
+
+def build_intervention_by_screener(df: pd.DataFrame) -> pd.DataFrame:
+    """Build Screener Type vs User/HAMM intervention counts for stacked bar chart.
+    
+    Args:
+        df: Pre-filtered DataFrame (already through _prepare_base_df).
+    
+    Returns:
+        DataFrame with columns: video_type_description, User, HAMM
+    """
+    error_type_col = COLUMN_MAP["error_type"]
+    content_type_col = COLUMN_MAP["content_type"]
+    
+    # Filter to only User and HAMM
+    filtered_df = df[df[error_type_col].isin(["User", "HAMM"])].copy()
+    filtered_df = filtered_df[filtered_df[COLUMN_MAP["status"]].isin(["Invalid", "Error"])]
+    if len(filtered_df) == 0:
+        return pd.DataFrame(columns=["video_type_description", "User", "HAMM"])
+    
+    # Group by content_type and error_type, then pivot
+    summary = (
+        filtered_df.groupby([content_type_col, error_type_col])[COLUMN_MAP["id"]]
+        .nunique()
+        .reset_index(name="count")
+    )
+    
+    pivot_df = summary.pivot_table(
+        index=content_type_col,
+        columns=error_type_col,
+        values="count",
+        fill_value=0,
+    ).reset_index()
+    
+    pivot_df = pivot_df.rename(columns={content_type_col: "video_type_description"})
+    
+    # Ensure User and HAMM columns exist
+    if "User" not in pivot_df.columns:
+        pivot_df["User"] = 0
+    if "HAMM" not in pivot_df.columns:
+        pivot_df["HAMM"] = 0
+    
+    return pivot_df[["video_type_description", "User", "HAMM"]]
+
+
+def build_user_intervention_breakdown(df: pd.DataFrame) -> pd.DataFrame:
+    """Build User error breakdown by error description for bar chart.
+    
+    重要: 関数内で error_type = "User" で事前フィルタ必須
+    
+    Args:
+        df: Pre-filtered DataFrame (already through _prepare_base_df).
+    
+    Returns:
+        DataFrame with columns: error_description, count
+    """
+    error_type_col = COLUMN_MAP["error_type"]
+    error_desc_col = COLUMN_MAP["error_description"]
+    
+    # Filter to only User records
+    user_df = df[df[error_type_col] == "User"].copy()
+    user_df = user_df[user_df[COLUMN_MAP["status"]].isin(["Invalid", "Error"])]
+    
+    if len(user_df) == 0:
+        return pd.DataFrame(columns=["error_description", "count"])
+    
+    # Group by error description
+    breakdown_df = (
+        user_df.groupby(error_desc_col)[COLUMN_MAP["id"]]
+        .nunique()
+        .reset_index(name="count")
+    )
+    
+    breakdown_df = breakdown_df.rename(columns={error_desc_col: "error_description"})
+    
+    # Sort by count descending
+    breakdown_df = breakdown_df.sort_values("count", ascending=False)
+    
+    return breakdown_df
+
+
+def build_hamm_intervention_breakdown(df: pd.DataFrame) -> pd.DataFrame:
+    """Build HAMM error breakdown by error description for bar chart.
+    
+    重要: 関数内で error_type = "HAMM" で事前フィルタ必須
+    
+    Args:
+        df: Pre-filtered DataFrame (already through _prepare_base_df).
+    
+    Returns:
+        DataFrame with columns: error_description, count
+    """
+    error_type_col = COLUMN_MAP["error_type"]
+    error_desc_col = COLUMN_MAP["error_description"]
+    
+    # Filter to only HAMM records
+    hamm_df = df[df[error_type_col] == "HAMM"].copy()
+    hamm_df = hamm_df[hamm_df[COLUMN_MAP["status"]].isin(["Invalid", "Error"])]
+    
+    if len(hamm_df) == 0:
+        return pd.DataFrame(columns=["error_description", "count"])
+    
+    # Group by error description
+    breakdown_df = (
+        hamm_df.groupby(error_desc_col)[COLUMN_MAP["id"]]
+        .nunique()
+        .reset_index(name="count")
+    )
+    
+    breakdown_df = breakdown_df.rename(columns={error_desc_col: "error_description"})
+    
+    # Sort by count descending
+    breakdown_df = breakdown_df.sort_values("count", ascending=False)
+    
+    return breakdown_df

@@ -78,14 +78,9 @@ table {
 }
 
 .text-muted {
-  color: var(--text-muted);
+  color: var(--text-muted) !important;
 }
 
 .text-accent {
   color: var(--accent-primary);
-}
-
-/* Override Bootstrap text utilities */
-.text-muted {
-  color: var(--text-muted) !important;
 }

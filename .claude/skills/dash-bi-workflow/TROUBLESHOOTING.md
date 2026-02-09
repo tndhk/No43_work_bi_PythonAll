@@ -89,16 +89,19 @@ Dash 4.0でセキュリティ上の理由から `dangerously_allow_html` 属性�
 
 ### 解決方法
 
-テーブル表示には `dash_table.DataTable` を直接使用します：
+テーブル表示には `dash_table.DataTable` または `build_table()` を使用します：
 
 ```python
+# 推奨: build_table + TableSpec
+from src.charts.table_builder import build_table
+from src.charts.specs import TableSpec
+
+spec = TableSpec(title="Data Table", columns=[...])
+table_component = build_table(df, spec)
+
+# 代替: dash_table.DataTable を直接使用
 import dash_table
 
-# ❌ 使えない（Dash 4.xではエラー）
-from src.charts.templates import render_table
-table_component = render_table(df)
-
-# ✅ 正しい方法
 table_component = dash_table.DataTable(
     data=df.to_dict("records"),
     columns=[{"name": c, "id": c} for c in df.columns],
@@ -113,9 +116,6 @@ table_component = dash_table.DataTable(
 
 1. エラーメッセージから該当コンポーネントを特定
    - `html.Div` に `dangerously_allow_html` を渡している箇所を探す
-
-2. `src/charts/templates.py` の `render_table` 関数を確認
-   - この関数はDash 4.xでは使用できない
 
 3. すべてのテーブル表示を `dash_table.DataTable` に置き換える
 
