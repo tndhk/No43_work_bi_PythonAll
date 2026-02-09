@@ -71,7 +71,7 @@ src/pages/<page_name>/
 
 ### 2-2. `_constants.py` - 定数・定義ファイル
 
-参考実装: [`src/pages/cursor_usage/_constants.py`](../../src/pages/cursor_usage/_constants.py)
+参考実装: [`src/pages/hamm_overview/_constants.py`](../../src/pages/hamm_overview/_constants.py)
 
 主要な構成要素:
 
@@ -79,9 +79,24 @@ src/pages/<page_name>/
 - `DATASET_ID`: レガシー/フォールバック用データセットID
 - `ID_PREFIX`: コンポーネントID名前空間（他ページとの衝突防止）
 - `CHART_ID_*`: 各チャート/テーブルのID定義
+- `FILTER_ID_*`: 各フィルタのID定義
+- `CTRL_ID_CLEAR_*`: 各クリアボタンのID定義
 - `COLUMN_MAP`: 論理名 → DataFrameカラム名のマッピング
+- `DERIVED_*`: 派生カラム名（`_year`, `_month` 等、データ加工で追加するカラム）
 - `CLEAR_PAIRS`: クリアボタンのペア定義 `[(filter_id, clear_button_id)]`
 - `ChartSpec` / `TableSpec`: チャート・テーブルの宣言的定義
+
+#### ID命名規則
+
+コンポーネントIDは以下の命名規則に従います:
+
+| 種別 | プレフィックス | 例 |
+|------|---------------|-----|
+| チャート/テーブル | `CHART_ID_*` | `CHART_ID_VOLUME_TABLE`, `CHART_ID_ERROR_RATIO` |
+| フィルタ | `FILTER_ID_*` | `FILTER_ID_REGION`, `FILTER_ID_YEAR` |
+| クリアボタン | `CTRL_ID_CLEAR_*` | `CTRL_ID_CLEAR_REGION`, `CTRL_ID_CLEAR_YEAR` |
+
+全てのIDには `ID_PREFIX` を付与し、他ページとの衝突を防止します。
 
 コード例（抜粋）:
 
@@ -92,6 +107,29 @@ DASHBOARD_ID: str = "your_dashboard"
 DATASET_ID: str = "your-dataset-id"
 ID_PREFIX: str = "yd-"
 
+# Chart IDs
+CHART_ID_MAIN_TABLE: str = f"{ID_PREFIX}main-table"
+CHART_ID_MAIN_CHART: str = f"{ID_PREFIX}main-chart"
+
+# Filter IDs
+FILTER_ID_REGION: str = f"{ID_PREFIX}filter-region"
+FILTER_ID_YEAR: str = f"{ID_PREFIX}filter-year"
+
+# Per-slicer clear control IDs
+CTRL_ID_CLEAR_REGION: str = f"{ID_PREFIX}ctrl-clear-region"
+CTRL_ID_CLEAR_YEAR: str = f"{ID_PREFIX}ctrl-clear-year"
+
+# Clear callback pairs: (filter_id, clear_button_id)
+CLEAR_PAIRS: list[tuple[str, str]] = [
+    (FILTER_ID_REGION, CTRL_ID_CLEAR_REGION),
+    (FILTER_ID_YEAR, CTRL_ID_CLEAR_YEAR),
+]
+
+# Derived column names (created during data processing)
+DERIVED_YEAR: str = "_year"
+DERIVED_MONTH: str = "_month"
+
+# Mapping from logical keys to DataFrame column names
 COLUMN_MAP: dict[str, str] = {
     "date": "Date",
     "category": "Category",
@@ -117,7 +155,7 @@ charts:
 
 ### 2-4. `_data_loader.py` - データ読込・フィルタリング
 
-参考実装: [`src/pages/cursor_usage/_data_loader.py`](../../src/pages/cursor_usage/_data_loader.py)
+参考実装: [`src/pages/hamm_overview/_data_loader.py`](../../src/pages/hamm_overview/_data_loader.py)
 
 このファイルは以下の関数を提供します:
 
@@ -125,7 +163,22 @@ charts:
 2. `load_filter_options()`: フィルタの選択肢を読み込み（カテゴリ、日付範囲等）
 3. `load_and_filter_data()`: データ読込とフィルタリングを実行
 
-主要な処理:
+#### FILTER_COLUMN_MAP パターン
+
+`COLUMN_MAP` に派生カラムを追加した `FILTER_COLUMN_MAP` を定義し、フィルタリング時に使用します:
+
+```python
+from ._constants import COLUMN_MAP, DERIVED_YEAR, DERIVED_MONTH
+
+# Extend COLUMN_MAP with derived columns for filter_set_from_map compatibility
+FILTER_COLUMN_MAP: dict[str, str] = {
+    **COLUMN_MAP,
+    "year": DERIVED_YEAR,
+    "month": DERIVED_MONTH,
+}
+```
+
+#### 主要な処理
 
 ```python
 from src.data.parquet_reader import ParquetReader
@@ -133,28 +186,56 @@ from src.core.cache import get_cached_dataset
 from src.data.filter_engine import apply_filters
 from src.utils.filter_helpers import build_filter_set_from_map
 
-def load_filter_options(reader: ParquetReader, dataset_id: str) -> dict:
-    """フィルタオプションを読み込み"""
-    df = get_cached_dataset(reader, dataset_id)
+def _prepare_base_df(df: pd.DataFrame) -> pd.DataFrame:
+    """データの前処理（timezone除去、派生カラム追加）"""
+    df = df.copy()
     
     # Timezone除去（Parquetは UTC-aware で返す）
     df[date_col] = pd.to_datetime(df[date_col], utc=True).dt.tz_convert(None)
     
-    # ユニーク値抽出
-    categories = sorted(df[category_col].dropna().unique().tolist())
-    # ...
+    # 派生カラム追加
+    df[DERIVED_YEAR] = df[date_col].dt.strftime("%Y")
+    df[DERIVED_MONTH] = df[date_col].dt.strftime("%b")
+    
+    return df
 
-def load_and_filter_data(reader, dataset_id, start_date, end_date, categories):
-    """データ読込とフィルタリング"""
+def load_filter_options(reader: ParquetReader, dataset_id: str) -> dict:
+    """フィルタオプションを読み込み"""
     df = get_cached_dataset(reader, dataset_id)
+    df = _prepare_base_df(df)
+    
+    # ユニーク値抽出
+    return {
+        "years": sorted(df[DERIVED_YEAR].dropna().unique().tolist()),
+        "months": df[DERIVED_MONTH].dropna().unique().tolist(),
+        "categories": sorted(df[category_col].dropna().unique().tolist()),
+        # ...
+    }
+
+def load_and_filter_data(
+    reader: ParquetReader,
+    dataset_id: str,
+    column_map: dict[str, str],
+    filter_pairs: list[tuple[str, list]],
+) -> pd.DataFrame:
+    """データ読込とフィルタリング
+    
+    Args:
+        reader: ParquetReader instance
+        dataset_id: Dataset ID to load
+        column_map: FILTER_COLUMN_MAP (includes derived columns)
+        filter_pairs: List of (logical_key, values) tuples from callback
+    """
+    df = get_cached_dataset(reader, dataset_id)
+    df = _prepare_base_df(df)
     
     # build_filter_set_from_map でFilterSet構築
-    filter_map = {
-        "date": (date_col, start_date, end_date),
-        "category": (category_col, categories),
-    }
-    filters = build_filter_set_from_map(filter_map)
+    filter_map = {}
+    for key, values in filter_pairs:
+        if values:
+            filter_map[key] = (column_map[key], values)
     
+    filters = build_filter_set_from_map(filter_map)
     return apply_filters(df, filters)
 ```
 
@@ -162,16 +243,40 @@ def load_and_filter_data(reader, dataset_id, start_date, end_date, categories):
 
 ### 2-5. `_filters.py` - フィルタUI構築（5個以上のフィルタがある場合）
 
-参考実装: [`src/pages/apac_dot_due_date/_filters.py`](../../src/pages/apac_dot_due_date/_filters.py)
+参考実装: [`src/pages/hamm_overview/_filters.py`](../../src/pages/hamm_overview/_filters.py)
 
 フィルタが5個未満の場合は、`_layout.py`に直接記述することも可能です。
 
-主要な構造:
+#### Slicer フィルタとクリアボタン
+
+`create_slicer_filter()` には `clear_button_id` パラメータがあり、ヘッダー内にクリアボタンを統合できます:
 
 ```python
+from src.components.filters import create_slicer_filter
+from ._constants import FILTER_ID_REGION, CTRL_ID_CLEAR_REGION
+
+create_slicer_filter(
+    filter_id=FILTER_ID_REGION,
+    column_name="Region",
+    options=opts["regions"],
+    clear_button_id=CTRL_ID_CLEAR_REGION,  # ヘッダーにクリアボタン追加
+)
+```
+
+#### 主要な構造
+
+```python
+from dash import html
+import dash_bootstrap_components as dbc
 from src.components.filters import (
-    create_date_range_filter,
+    create_category_filter,
     create_slicer_filter,
+)
+from ._constants import (
+    FILTER_ID_REGION,
+    FILTER_ID_YEAR,
+    CTRL_ID_CLEAR_REGION,
+    CTRL_ID_CLEAR_YEAR,
 )
 
 def build_filter_layout(opts: dict) -> list:
@@ -183,17 +288,28 @@ def build_filter_layout(opts: dict) -> list:
     Returns:
         html.Div のリスト
     """
-    filter_row = html.Div([
-        dbc.Col([create_date_range_filter(...)], md=6),
-        dbc.Col([create_slicer_filter(...)], md=6),
-    ], className="mb-3")
+    # Row 1: Primary filters
+    primary_row = html.Div([
+        create_slicer_filter(
+            filter_id=FILTER_ID_REGION,
+            column_name="Region",
+            options=opts["regions"],
+            clear_button_id=CTRL_ID_CLEAR_REGION,
+        ),
+        create_slicer_filter(
+            filter_id=FILTER_ID_YEAR,
+            column_name="Year",
+            options=opts["years"],
+            clear_button_id=CTRL_ID_CLEAR_YEAR,
+        ),
+    ], className="mb-3 filter-row")
     
-    return [filter_row]
+    return [primary_row]
 ```
 
 ### 2-6. `_layout.py` - レイアウト構築
 
-参考実装: [`src/pages/cursor_usage/_layout.py`](../../src/pages/cursor_usage/_layout.py)
+参考実装: [`src/pages/hamm_overview/_layout.py`](../../src/pages/hamm_overview/_layout.py)
 
 主要な処理フロー:
 
@@ -273,17 +389,40 @@ dbc.Row([
 
 ### 2-7. `_callbacks.py` - コールバック実装
 
-参考実装: [`src/pages/cursor_usage/_callbacks.py`](../../src/pages/cursor_usage/_callbacks.py)
+参考実装: [`src/pages/hamm_overview/_callbacks.py`](../../src/pages/hamm_overview/_callbacks.py)
 
 薄いオーケストレータ層として実装します:
 
 1. フィルタ入力を受け取る
-2. `load_and_filter_data()` でデータ取得
-3. 集計・計算を実行
-4. `build_chart()` / `build_table()` で描画
-5. 空状態・エラー状態は共通関数を使用
+2. `filter_pairs` リストを構築
+3. `load_and_filter_data()` でデータ取得
+4. 集計・計算を実行
+5. `build_chart()` / `build_table()` で描画
+6. 空状態・エラー状態は共通関数を使用
 
-基本パターン:
+#### filter_pairs パターン
+
+コールバック内で `filter_pairs` リストを構築し、`load_and_filter_data()` に渡します:
+
+```python
+def _ensure_list(value) -> list:
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return value
+    return [value]
+
+filter_pairs = [
+    ("region", _ensure_list(region_values)),
+    ("year", _ensure_list(year_values)),
+    ("month", _ensure_list(month_values)),
+    ("content_type", _ensure_list(content_type_values)),
+]
+
+df = load_and_filter_data(reader, dataset_id, FILTER_COLUMN_MAP, filter_pairs)
+```
+
+#### 基本パターン
 
 ```python
 from dash import callback, Input, Output
@@ -291,40 +430,41 @@ from src.charts.chart_builder import build_chart
 from src.charts.table_builder import build_table
 from src.charts.empty_states import create_empty_figure, create_empty_table
 from src.utils.callback_helpers import register_clear_callbacks
+from ._data_loader import FILTER_COLUMN_MAP, load_and_filter_data
 
 @callback(
-    [Output(CHART_ID_KPI, "children"),
-     Output(CHART_ID_CHART, "figure"),
-     Output(CHART_ID_TABLE, "children")],
-    [Input(f"{ID_PREFIX}filter-date", "start_date"),
-     Input(f"{ID_PREFIX}filter-date", "end_date"),
-     Input(f"{ID_PREFIX}filter-category", "value")],
+    Output(CHART_ID_TABLE, "children"),
+    Output(CHART_ID_CHART, "figure"),
+    Input(FILTER_ID_REGION, "value"),
+    Input(FILTER_ID_YEAR, "value"),
+    Input(FILTER_ID_MONTH, "value"),
 )
-def update_dashboard(start_date, end_date, categories):
+def update_dashboard(region_values, year_values, month_values):
     """ダッシュボード更新コールバック"""
+    reader = ParquetReader()
+    dataset_id = resolve_dataset_id_for_dashboard()
+    
+    filter_pairs = [
+        ("region", _ensure_list(region_values)),
+        ("year", _ensure_list(year_values)),
+        ("month", _ensure_list(month_values)),
+    ]
+    
     try:
-        # データ読込・フィルタリング
-        filtered_df = load_and_filter_data(...)
+        df = load_and_filter_data(reader, dataset_id, FILTER_COLUMN_MAP, filter_pairs)
         
-        if len(filtered_df) == 0:
-            return (create_kpi_card("Total", "0"),
-                    create_empty_figure(),
-                    create_empty_table())
-        
-        # 集計
-        total = filtered_df["value"].sum()
+        if len(df) == 0:
+            return create_empty_table(), create_empty_figure()
         
         # 描画（Spec使用）
-        kpi = create_kpi_card("Total", f"{total:,.2f}")
-        chart_fig = build_chart(filtered_df, CHART_SPEC)
-        _, table = build_table(filtered_df, TABLE_SPEC)
+        _, table = build_table(df, TABLE_SPEC)
+        chart_fig = build_chart(df, CHART_SPEC)
         
-        return (kpi, chart_fig, table)
+        return table, chart_fig
         
-    except Exception as e:
-        return (create_kpi_card("Error", "—"),
-                create_error_figure(error=str(e)),
-                create_empty_table())
+    except Exception as exc:
+        error_msg = html.P(f"Error loading data: {exc}", className="text-danger")
+        return error_msg, create_empty_figure(message="Error loading data")
 
 # クリアボタン登録
 register_clear_callbacks(CLEAR_PAIRS)
@@ -332,26 +472,28 @@ register_clear_callbacks(CLEAR_PAIRS)
 
 ### 2-8. `__init__.py` - Dash登録
 
-参考実装: [`src/pages/cursor_usage/__init__.py`](../../src/pages/cursor_usage/__init__.py)
+参考実装: [`src/pages/hamm_overview/__init__.py`](../../src/pages/hamm_overview/__init__.py)
 
 ```python
 """Your Dashboard page."""
 import dash
-from ._layout import build_layout
 
-def layout():
-    return build_layout()
+from ._layout import build_layout
+from . import _callbacks  # noqa: F401
+
 
 dash.register_page(
     __name__,
     path="/your-dashboard",
     name="Your Dashboard",
     order=1,
-    layout=layout
+    layout=build_layout,
 )
-
-from . import _callbacks  # noqa: F401, E402
 ```
+
+注意点:
+- `layout=build_layout` と関数参照を渡す（関数呼び出しではない）
+- `_callbacks` のインポートは `register_page` の前でも後でもよいが、明示的にインポートすること
 
 ### 2-9. `SPEC.md` - ユーザー向け設計書
 
@@ -374,6 +516,32 @@ from . import _callbacks  # noqa: F401, E402
 ```python
 import src.pages.your_dashboard  # noqa: F401
 ```
+
+---
+
+## フィルタ追加時の修正順序
+
+既存のダッシュボードに新しいフィルタを追加する場合、以下の順序で修正します:
+
+1. `_constants.py`: ID定義を追加
+   - `FILTER_ID_*`: フィルタID
+   - `CTRL_ID_CLEAR_*`: クリアボタンID（Slicerの場合）
+   - `CLEAR_PAIRS`: クリアペアに追加
+
+2. `_data_loader.py`: データ処理を追加
+   - `FILTER_COLUMN_MAP`: 派生カラムの場合は追加
+   - `load_filter_options()`: フィルタオプションの抽出を追加
+
+3. `_filters.py`: UI作成を追加
+   - `build_filter_layout()`: フィルタUIを追加
+
+4. `_callbacks.py`: コールバック入力を追加
+   - `Input()`: 新しいフィルタのInputを追加
+   - `filter_pairs`: 新しいフィルタのペアを追加
+
+5. `_layout.py`: 通常は自動配置（`build_filter_layout()` 経由）
+
+この順序で依存関係が構成されるため、逆順で修正するとインポートエラーが発生します。
 
 ---
 
@@ -513,6 +681,9 @@ CSS変更後はブラウザでハードリロード（Cmd+Shift+R / Ctrl+Shift+F
 - [ ] ドロップダウン/DatePickerが正しく前面に表示される
 - [ ] Docker環境でassetsがマウントされている
 - [ ] ハードリロード（Cmd+Shift+R / Ctrl+Shift+F5）でCSSが反映される
+- [ ] 全てのID定数が `_constants.py` に定義されている（`FILTER_ID_*`, `CHART_ID_*`, `CTRL_ID_CLEAR_*`）
+- [ ] `CLEAR_PAIRS` にSlicerフィルタのクリアペアが全て登録されている
+- [ ] `register_clear_callbacks(CLEAR_PAIRS)` が `_callbacks.py` 末尾で呼ばれている
 
 ---
 
