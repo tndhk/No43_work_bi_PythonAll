@@ -47,11 +47,11 @@ def build_volume_table(df: pd.DataFrame) -> tuple[str, Any]:
 
 
 def build_volume_chart(df: pd.DataFrame) -> go.Figure:
-    """Render volume summary DataFrame via shared build_chart + custom layout.
+    """Render volume summary DataFrame via shared build_chart + compact layout.
 
     Delegates trace creation and theme application to the shared
-    ``build_chart`` infrastructure, then applies page-specific layout
-    overrides (margin, legend orientation, axis titles).
+    ``build_chart`` infrastructure, then applies ``apply_compact_chart_layout``
+    for page-specific layout overrides (margin, legend orientation, axis titles).
 
     Args:
         df: Volume summary DataFrame with Start Date, Completed, Invalid columns.
@@ -61,15 +61,14 @@ def build_volume_chart(df: pd.DataFrame) -> go.Figure:
     """
     fig = build_chart(df, VOLUME_CHART_SPEC)
 
-    # Page-specific layout overrides (applied after theme)
-    fig.update_layout(
-        margin={"l": 30, "r": 10, "t": 20, "b": 60},
-        legend={"orientation": "h", "y": -0.2},
-        xaxis_title="",
-        yaxis_title="",
-    )
+    if len(fig.data) > 0:
+        fig.update_traces(textposition="inside")
 
-    return fig
+    return apply_compact_chart_layout(
+        fig,
+        margin={"l": 30, "r": 10, "t": 8, "b": 60},
+        legend={"orientation": "h", "y": -0.25},
+    )
 
 
 def build_task_table(df: pd.DataFrame) -> tuple[str, Any]:
@@ -112,51 +111,88 @@ def build_language_table(df: pd.DataFrame) -> tuple[str, Any]:
 # ---------------------------------------------------------------------------
 
 def build_error_ratio_chart(df: pd.DataFrame) -> go.Figure:
-    """Render User vs HAMM ratio via shared build_chart.
-    
+    """Render User vs HAMM ratio via shared build_chart + compact layout.
+
     Args:
         df: DataFrame with columns: error_type, count
-    
+
     Returns:
         A themed go.Figure with pie chart, or empty-state figure.
     """
-    return build_chart(df, ERROR_RATIO_SPEC)
+    fig = build_chart(df, ERROR_RATIO_SPEC)
+
+    if len(fig.data) > 0:
+        fig.update_traces(
+            textinfo="label+value+percent",
+            textposition="inside",
+        )
+
+    return apply_compact_chart_layout(
+        fig,
+        margin={"l": 8, "r": 8, "t": 8, "b": 34},
+        legend={"orientation": "h", "x": 0.0, "y": -0.06},
+    )
 
 
 def build_error_by_screener_chart(df: pd.DataFrame) -> go.Figure:
-    """Render Screener Type vs User/HAMM intervention via shared build_chart.
-    
+    """Render Screener Type vs User/HAMM intervention via shared build_chart + compact layout.
+
     Args:
         df: DataFrame with columns: video_type_description, User, HAMM
-    
+
     Returns:
         A themed go.Figure with stacked bar chart, or empty-state figure.
     """
-    return build_chart(df, ERROR_BY_SCREENER_SPEC)
+    fig = build_chart(df, ERROR_BY_SCREENER_SPEC)
+
+    if len(fig.data) > 0:
+        fig.update_traces(textposition="inside")
+
+    return apply_compact_chart_layout(
+        fig,
+        margin={"l": 16, "r": 70, "t": 8, "b": 30},
+        legend={
+            "orientation": "v",
+            "x": 1.02,
+            "xanchor": "left",
+            "y": 0.5,
+            "yanchor": "middle",
+        },
+    )
 
 
 def build_user_breakdown_chart(df: pd.DataFrame) -> go.Figure:
-    """Render User intervention breakdown via shared build_chart.
-    
+    """Render User intervention breakdown via shared build_chart + compact layout.
+
     Args:
         df: DataFrame with columns: error_description, count
-    
+
     Returns:
         A themed go.Figure with bar chart, or empty-state figure.
     """
-    return build_chart(df, USER_BREAKDOWN_SPEC)
+    fig = build_chart(df, USER_BREAKDOWN_SPEC)
+
+    return apply_compact_chart_layout(
+        fig,
+        margin={"l": 24, "r": 8, "t": 8, "b": 44},
+    )
 
 
 def build_hamm_breakdown_chart(df: pd.DataFrame) -> go.Figure:
-    """Render HAMM intervention breakdown via shared build_chart.
-    
+    """Render HAMM intervention breakdown via shared build_chart + compact layout.
+
     Args:
         df: DataFrame with columns: error_description, count
-    
+
     Returns:
         A themed go.Figure with bar chart, or empty-state figure.
     """
-    return build_chart(df, HAMM_BREAKDOWN_SPEC)
+    fig = build_chart(df, HAMM_BREAKDOWN_SPEC)
+
+    return apply_compact_chart_layout(
+        fig,
+        margin={"l": 24, "r": 8, "t": 8, "b": 44},
+    )
 
 
 

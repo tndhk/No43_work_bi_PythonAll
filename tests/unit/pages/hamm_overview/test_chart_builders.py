@@ -152,7 +152,7 @@ class TestBuildVolumeTable:
         from src.pages.hamm_overview._chart_builders import build_volume_table
 
         _, table = build_volume_table(volume_df)
-        assert table.style_cell.get("padding") == "4px 6px"
+        assert table.style_cell.get("padding") == "2px 4px"
 
     def test_style_header_font_size(self, volume_df):
         from src.pages.hamm_overview._chart_builders import build_volume_table
@@ -277,11 +277,11 @@ class TestBuildVolumeChart:
         fig = build_volume_chart(volume_df)
         assert fig.layout.barmode == "stack"
 
-    def test_height_is_400(self, volume_df):
+    def test_height_is_460(self, volume_df):
         from src.pages.hamm_overview._chart_builders import build_volume_chart
 
         fig = build_volume_chart(volume_df)
-        assert fig.layout.height == 400
+        assert fig.layout.height == 460
 
     def test_completed_marker_color(self, volume_df):
         from src.pages.hamm_overview._chart_builders import build_volume_chart
@@ -304,8 +304,9 @@ class TestBuildVolumeChart:
         fig = build_volume_chart(volume_df)
         assert fig.layout.margin.l == 30
         assert fig.layout.margin.r == 10
-        assert fig.layout.margin.t == 20
+        assert fig.layout.margin.t == 8
         assert fig.layout.margin.b == 60
+        assert fig.layout.title.text is None
 
     def test_custom_legend_orientation(self, volume_df):
         """Custom legend orientation should be applied after build_chart."""
@@ -313,7 +314,15 @@ class TestBuildVolumeChart:
 
         fig = build_volume_chart(volume_df)
         assert fig.layout.legend.orientation == "h"
-        assert fig.layout.legend.y == -0.2
+        assert fig.layout.legend.y == -0.25
+
+    def test_textposition_inside(self, volume_df):
+        """Bar traces should have textposition='inside' for compact display."""
+        from src.pages.hamm_overview._chart_builders import build_volume_chart
+
+        fig = build_volume_chart(volume_df)
+        bar_traces = [t for t in fig.data if isinstance(t, go.Bar)]
+        assert all(t.textposition == "inside" for t in bar_traces)
 
     def test_theme_is_applied(self, volume_df):
         """Theme template should be applied by shared build_chart."""
@@ -398,7 +407,7 @@ class TestBuildTaskTable:
         from src.pages.hamm_overview._chart_builders import build_task_table
 
         _, table = build_task_table(task_display_df)
-        assert table.style_cell.get("padding") == "4px 6px"
+        assert table.style_cell.get("padding") == "2px 4px"
 
     def test_style_header_font_size(self, task_display_df):
         from src.pages.hamm_overview._chart_builders import build_task_table
@@ -591,6 +600,213 @@ class TestBuildLanguageTable:
             mock_bt.assert_called_once()
             call_args = mock_bt.call_args
             assert call_args[0][1] is LANGUAGE_TABLE_SPEC
+
+
+# ---------------------------------------------------------------------------
+# Error Details chart builder tests
+# ---------------------------------------------------------------------------
+
+class TestErrorChartBuilders:
+    """Tests for error-related chart builders that delegate to shared build_chart.
+
+    Each builder produces a go.Figure with apply_compact_chart_layout applied,
+    resulting in title.text=None and tight top margin (margin.t=8).
+    """
+
+    # -- build_error_ratio_chart ------------------------------------------------
+
+    def test_build_error_ratio_chart_returns_figure(self):
+        from src.pages.hamm_overview._chart_builders import build_error_ratio_chart
+
+        df = pd.DataFrame({
+            "error_type": ["User", "HAMM"],
+            "count": [15, 25],
+        })
+        fig = build_error_ratio_chart(df)
+        assert isinstance(fig, go.Figure)
+
+    def test_build_error_ratio_chart_title_is_none(self):
+        from src.pages.hamm_overview._chart_builders import build_error_ratio_chart
+
+        df = pd.DataFrame({
+            "error_type": ["User", "HAMM"],
+            "count": [15, 25],
+        })
+        fig = build_error_ratio_chart(df)
+        assert fig.layout.title.text is None
+
+    def test_build_error_ratio_chart_margin(self):
+        from src.pages.hamm_overview._chart_builders import build_error_ratio_chart
+
+        df = pd.DataFrame({
+            "error_type": ["User", "HAMM"],
+            "count": [15, 25],
+        })
+        fig = build_error_ratio_chart(df)
+        assert fig.layout.margin.l == 8
+        assert fig.layout.margin.r == 8
+        assert fig.layout.margin.t == 8
+        assert fig.layout.margin.b == 34
+
+    def test_build_error_ratio_chart_legend(self):
+        from src.pages.hamm_overview._chart_builders import build_error_ratio_chart
+
+        df = pd.DataFrame({
+            "error_type": ["User", "HAMM"],
+            "count": [15, 25],
+        })
+        fig = build_error_ratio_chart(df)
+        assert fig.layout.legend.orientation == "h"
+        assert fig.layout.legend.x == 0.0
+        assert fig.layout.legend.y == -0.06
+
+    def test_build_error_ratio_chart_textinfo(self):
+        from src.pages.hamm_overview._chart_builders import build_error_ratio_chart
+
+        df = pd.DataFrame({
+            "error_type": ["User", "HAMM"],
+            "count": [15, 25],
+        })
+        fig = build_error_ratio_chart(df)
+        pie_traces = [t for t in fig.data if isinstance(t, go.Pie)]
+        assert len(pie_traces) >= 1
+        assert pie_traces[0].textinfo == "label+value+percent"
+        assert pie_traces[0].textposition == "inside"
+
+    # -- build_error_by_screener_chart ------------------------------------------
+
+    def test_build_error_by_screener_chart_returns_figure(self):
+        from src.pages.hamm_overview._chart_builders import build_error_by_screener_chart
+
+        df = pd.DataFrame({
+            "video_type_description": ["ERV", "Prelim"],
+            "User": [5, 8],
+            "HAMM": [10, 12],
+        })
+        fig = build_error_by_screener_chart(df)
+        assert isinstance(fig, go.Figure)
+
+    def test_build_error_by_screener_chart_title_is_none(self):
+        from src.pages.hamm_overview._chart_builders import build_error_by_screener_chart
+
+        df = pd.DataFrame({
+            "video_type_description": ["ERV", "Prelim"],
+            "User": [5, 8],
+            "HAMM": [10, 12],
+        })
+        fig = build_error_by_screener_chart(df)
+        assert fig.layout.title.text is None
+
+    def test_build_error_by_screener_chart_margin(self):
+        from src.pages.hamm_overview._chart_builders import build_error_by_screener_chart
+
+        df = pd.DataFrame({
+            "video_type_description": ["ERV", "Prelim"],
+            "User": [5, 8],
+            "HAMM": [10, 12],
+        })
+        fig = build_error_by_screener_chart(df)
+        assert fig.layout.margin.l == 16
+        assert fig.layout.margin.r == 70
+        assert fig.layout.margin.t == 8
+        assert fig.layout.margin.b == 30
+
+    def test_build_error_by_screener_chart_legend(self):
+        from src.pages.hamm_overview._chart_builders import build_error_by_screener_chart
+
+        df = pd.DataFrame({
+            "video_type_description": ["ERV", "Prelim"],
+            "User": [5, 8],
+            "HAMM": [10, 12],
+        })
+        fig = build_error_by_screener_chart(df)
+        assert fig.layout.legend.orientation == "v"
+        assert fig.layout.legend.x == 1.02
+        assert fig.layout.legend.xanchor == "left"
+        assert fig.layout.legend.y == 0.5
+        assert fig.layout.legend.yanchor == "middle"
+
+    def test_build_error_by_screener_chart_textposition(self):
+        from src.pages.hamm_overview._chart_builders import build_error_by_screener_chart
+
+        df = pd.DataFrame({
+            "video_type_description": ["ERV", "Prelim"],
+            "User": [5, 8],
+            "HAMM": [10, 12],
+        })
+        fig = build_error_by_screener_chart(df)
+        bar_traces = [t for t in fig.data if isinstance(t, go.Bar)]
+        assert all(t.textposition == "inside" for t in bar_traces)
+
+    # -- build_user_breakdown_chart ---------------------------------------------
+
+    def test_build_user_breakdown_chart_returns_figure(self):
+        from src.pages.hamm_overview._chart_builders import build_user_breakdown_chart
+
+        df = pd.DataFrame({
+            "error_description": ["Missing subtitle", "Wrong timing"],
+            "count": [7, 3],
+        })
+        fig = build_user_breakdown_chart(df)
+        assert isinstance(fig, go.Figure)
+
+    def test_build_user_breakdown_chart_title_is_none(self):
+        from src.pages.hamm_overview._chart_builders import build_user_breakdown_chart
+
+        df = pd.DataFrame({
+            "error_description": ["Missing subtitle", "Wrong timing"],
+            "count": [7, 3],
+        })
+        fig = build_user_breakdown_chart(df)
+        assert fig.layout.title.text is None
+
+    def test_build_user_breakdown_chart_margin(self):
+        from src.pages.hamm_overview._chart_builders import build_user_breakdown_chart
+
+        df = pd.DataFrame({
+            "error_description": ["Missing subtitle", "Wrong timing"],
+            "count": [7, 3],
+        })
+        fig = build_user_breakdown_chart(df)
+        assert fig.layout.margin.l == 24
+        assert fig.layout.margin.r == 8
+        assert fig.layout.margin.t == 8
+        assert fig.layout.margin.b == 44
+
+    # -- build_hamm_breakdown_chart ---------------------------------------------
+
+    def test_build_hamm_breakdown_chart_returns_figure(self):
+        from src.pages.hamm_overview._chart_builders import build_hamm_breakdown_chart
+
+        df = pd.DataFrame({
+            "error_description": ["Audio sync", "Format error"],
+            "count": [4, 6],
+        })
+        fig = build_hamm_breakdown_chart(df)
+        assert isinstance(fig, go.Figure)
+
+    def test_build_hamm_breakdown_chart_title_is_none(self):
+        from src.pages.hamm_overview._chart_builders import build_hamm_breakdown_chart
+
+        df = pd.DataFrame({
+            "error_description": ["Audio sync", "Format error"],
+            "count": [4, 6],
+        })
+        fig = build_hamm_breakdown_chart(df)
+        assert fig.layout.title.text is None
+
+    def test_build_hamm_breakdown_chart_margin(self):
+        from src.pages.hamm_overview._chart_builders import build_hamm_breakdown_chart
+
+        df = pd.DataFrame({
+            "error_description": ["Audio sync", "Format error"],
+            "count": [4, 6],
+        })
+        fig = build_hamm_breakdown_chart(df)
+        assert fig.layout.margin.l == 24
+        assert fig.layout.margin.r == 8
+        assert fig.layout.margin.t == 8
+        assert fig.layout.margin.b == 44
 
 
 class TestContentMetadataChartBuilders:

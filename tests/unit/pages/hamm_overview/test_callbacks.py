@@ -79,8 +79,8 @@ class TestBuildVolumeTableStyleCell:
     def test_style_cell_padding(self, volume_df):
         _, table = build_volume_table(volume_df)
         style_cell = table.style_cell
-        assert style_cell.get("padding") == "4px 6px", (
-            f"style_cell padding should be '4px 6px', got {style_cell.get('padding')!r}"
+        assert style_cell.get("padding") == "2px 4px", (
+            f"style_cell padding should be '2px 4px', got {style_cell.get('padding')!r}"
         )
 
 
@@ -126,8 +126,8 @@ class TestBuildTaskTableStyleCell:
     def test_style_cell_padding(self, task_df):
         _, table = build_task_table(task_df)
         style_cell = table.style_cell
-        assert style_cell.get("padding") == "4px 6px", (
-            f"style_cell padding should be '4px 6px', got {style_cell.get('padding')!r}"
+        assert style_cell.get("padding") == "2px 4px", (
+            f"style_cell padding should be '2px 4px', got {style_cell.get('padding')!r}"
         )
 
 

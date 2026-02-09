@@ -317,7 +317,7 @@ class TestContentMetadataSection:
             lambda c: isinstance(c, dbc.Card)
             and "chart-density-card" in (getattr(c, "className", None) or ""),
         )
-        assert len(cards) == 3, f"Expected 3 metadata cards, got {len(cards)}"
+        assert len(cards) == 8, f"Expected 8 density cards (3 metadata + 1 volume + 4 error), got {len(cards)}"
 
     def test_content_metadata_graphs_have_class_and_config(self, layout):
         expected_ids = {
@@ -342,6 +342,121 @@ class TestContentMetadataSection:
 # ---------------------------------------------------------------------------
 # Language Table layout presence (RED -- not yet implemented)
 # ---------------------------------------------------------------------------
+
+class TestVolumeSectionDensity:
+    """Volume Chart card must have chart-density classes and config."""
+
+    def test_volume_chart_has_density_graph_class(self, layout):
+        """The Volume Chart dcc.Graph must have className='chart-density-graph'."""
+        from src.pages.hamm_overview._constants import CHART_ID_VOLUME_CHART
+
+        graphs = find_components(
+            layout,
+            lambda c: isinstance(c, dcc.Graph)
+            and getattr(c, "id", None) == CHART_ID_VOLUME_CHART,
+        )
+        assert len(graphs) == 1, f"Expected 1 Volume Chart graph, got {len(graphs)}"
+        class_name = getattr(graphs[0], "className", "") or ""
+        assert "chart-density-graph" in class_name, (
+            f"Volume Chart graph should have 'chart-density-graph' class, got '{class_name}'"
+        )
+
+    def test_volume_chart_has_config(self, layout):
+        """The Volume Chart dcc.Graph must have config with displayModeBar=False and responsive=True."""
+        from src.pages.hamm_overview._constants import CHART_ID_VOLUME_CHART
+
+        graphs = find_components(
+            layout,
+            lambda c: isinstance(c, dcc.Graph)
+            and getattr(c, "id", None) == CHART_ID_VOLUME_CHART,
+        )
+        assert len(graphs) == 1, f"Expected 1 Volume Chart graph, got {len(graphs)}"
+        config = getattr(graphs[0], "config", None) or {}
+        assert config.get("displayModeBar") is False, (
+            f"Volume Chart config.displayModeBar should be False, got {config.get('displayModeBar')}"
+        )
+        assert config.get("responsive") is True, (
+            f"Volume Chart config.responsive should be True, got {config.get('responsive')}"
+        )
+
+
+class TestErrorDetailsDensity:
+    """Error Details charts must have chart-density classes and config."""
+
+    _ERROR_CHART_IDS = [
+        "hamm-error-ratio",
+        "hamm-error-by-screener",
+        "hamm-user-breakdown",
+        "hamm-hamm-breakdown",
+    ]
+
+    def test_error_charts_have_density_graph_class(self, layout):
+        """All 4 Error Detail dcc.Graph components must have className='chart-density-graph'."""
+        for chart_id in self._ERROR_CHART_IDS:
+            graphs = find_components(
+                layout,
+                lambda c, cid=chart_id: isinstance(c, dcc.Graph)
+                and getattr(c, "id", None) == cid,
+            )
+            assert len(graphs) == 1, f"Expected 1 graph with id='{chart_id}', got {len(graphs)}"
+            class_name = getattr(graphs[0], "className", "") or ""
+            assert "chart-density-graph" in class_name, (
+                f"Graph '{chart_id}' should have 'chart-density-graph' class, got '{class_name}'"
+            )
+
+    def test_error_charts_have_config(self, layout):
+        """All 4 Error Detail dcc.Graph components must have config with displayModeBar=False and responsive=True."""
+        for chart_id in self._ERROR_CHART_IDS:
+            graphs = find_components(
+                layout,
+                lambda c, cid=chart_id: isinstance(c, dcc.Graph)
+                and getattr(c, "id", None) == cid,
+            )
+            assert len(graphs) == 1, f"Expected 1 graph with id='{chart_id}', got {len(graphs)}"
+            config = getattr(graphs[0], "config", None) or {}
+            assert config.get("displayModeBar") is False, (
+                f"Graph '{chart_id}' config.displayModeBar should be False, got {config.get('displayModeBar')}"
+            )
+            assert config.get("responsive") is True, (
+                f"Graph '{chart_id}' config.responsive should be True, got {config.get('responsive')}"
+            )
+
+    def test_error_details_rows_have_density_row_class(self, layout):
+        """The 2 Error Details dbc.Row containers must have 'chart-density-row' in className."""
+        rows = find_components(
+            layout,
+            lambda c: isinstance(c, dbc.Row)
+            and "chart-density-row" in (getattr(c, "className", None) or ""),
+        )
+        # Content Metadata has 1 density row, Error Details should add 2 more = 3 total
+        assert len(rows) >= 3, (
+            f"Expected at least 3 chart-density-row rows (1 metadata + 2 error), got {len(rows)}"
+        )
+
+    def test_error_details_cards_have_density_card_class(self, layout):
+        """The 4 Error Details dbc.Card containers must have 'chart-density-card' in className."""
+        # We find all density cards and verify the error ones specifically
+        error_chart_ids = set(self._ERROR_CHART_IDS)
+        error_density_cards = []
+
+        all_density_cards = find_components(
+            layout,
+            lambda c: isinstance(c, dbc.Card)
+            and "chart-density-card" in (getattr(c, "className", None) or ""),
+        )
+        for card in all_density_cards:
+            graphs_in_card = find_components(
+                card,
+                lambda c: isinstance(c, dcc.Graph)
+                and getattr(c, "id", None) in error_chart_ids,
+            )
+            if graphs_in_card:
+                error_density_cards.append(card)
+
+        assert len(error_density_cards) == 4, (
+            f"Expected 4 Error Details cards with 'chart-density-card' class, got {len(error_density_cards)}"
+        )
+
 
 class TestLanguageTableInLayout:
     """Layout must contain a placeholder for CHART_ID_LANGUAGE_TABLE."""

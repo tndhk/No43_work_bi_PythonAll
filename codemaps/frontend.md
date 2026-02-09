@@ -52,11 +52,12 @@ app.py
     - `ChartSpec`: title, chart_type, x/y columns, color_map, height, barmode, labels, orientation, text_template, hover_template
     - `TableSpec`: title, styles, column_display, column_order, sort_action, page_size, filter_action
   - `src/charts/plotly_theme.py`: `apply_theme` for consistent styling
-  - Reusable readability pattern (reference: `src/pages/hamm_overview/`)
-    - `_layout.py`: set `dcc.Graph` className + `config={"displayModeBar": False, "responsive": True}`
+  - `src/charts/layout_helpers.py`: `apply_compact_chart_layout(fig, margin, legend)` -- removes title, axis labels, sets uniform text; used by all chart builders that render inside `dbc.Card`
+  - Reusable Chart Density pattern (reference: `src/pages/hamm_overview/`)
+    - `_layout.py`: set `dcc.Graph` className=`"chart-density-graph"` + `config={"displayModeBar": False, "responsive": True}`; wrap card with className=`"chart-density-card"`; wrap row with className=`"chart-density-row"`
     - `_constants.py`: define `ChartSpec` defaults (`height`, `show_legend`, `text_template`)
-    - `_chart_builders.py`: apply post-`build_chart` layout normalization (`title=None`, margins, legend placement)
-    - `assets/*.css`: apply scoped spacing rules by section class (avoid global `.card` overrides)
+    - `_chart_builders.py`: use `apply_compact_chart_layout()` from `src/charts/layout_helpers` for consistent margins and title removal (replaces manual `fig.update_layout()` calls)
+    - `assets/05-charts.css`: apply scoped spacing rules via `.chart-density-*` classes (avoid global `.card` overrides)
 
 ## Architecture Relationships
 

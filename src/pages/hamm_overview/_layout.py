@@ -86,16 +86,20 @@ def build_layout() -> html.Div:
                         dbc.CardHeader("Volume Table", className="card-header"),
                         dbc.CardBody([
                             html.Div(id=CHART_ID_VOLUME_TABLE),
-                        ]),
+                        ], className="p-1"),
                     ]),
                 ], md=6),
                 dbc.Col([
                     dbc.Card([
                         dbc.CardHeader("Volume Chart", className="card-header"),
                         dbc.CardBody([
-                            dcc.Graph(id=CHART_ID_VOLUME_CHART),
-                        ]),
-                    ]),
+                            dcc.Graph(
+                                id=CHART_ID_VOLUME_CHART,
+                                className="chart-density-graph",
+                                config={"displayModeBar": False, "responsive": True},
+                            ),
+                        ], className="p-1"),
+                    ], className="chart-density-card"),
                 ], md=6),
             ], className="mb-4"),
 
@@ -105,7 +109,7 @@ def build_layout() -> html.Div:
                         dbc.CardHeader("Task Details", className="card-header"),
                         dbc.CardBody([
                             html.Div(id=CHART_ID_TASK_TABLE),
-                        ]),
+                        ], className="p-1"),
                     ]),
                 ], md=12),
             ], className="mb-4"),
@@ -130,7 +134,7 @@ def build_layout() -> html.Div:
                                 className="chart-density-graph",
                                 config={"displayModeBar": False, "responsive": True},
                             ),
-                        ]),
+                        ], className="p-1"),
                     ], className="chart-density-card"),
                 ], md=4),
                 dbc.Col([
@@ -142,7 +146,7 @@ def build_layout() -> html.Div:
                                 className="chart-density-graph",
                                 config={"displayModeBar": False, "responsive": True},
                             ),
-                        ]),
+                        ], className="p-1"),
                     ], className="chart-density-card"),
                 ], md=4),
                 dbc.Col([
@@ -154,7 +158,7 @@ def build_layout() -> html.Div:
                                 className="chart-density-graph",
                                 config={"displayModeBar": False, "responsive": True},
                             ),
-                        ]),
+                        ], className="p-1"),
                     ], className="chart-density-card"),
                 ], md=4),
             ], className="mb-4 chart-density-row"),
@@ -179,37 +183,53 @@ def build_layout() -> html.Div:
                     dbc.Card([
                         dbc.CardHeader("Issues Ratio", className="card-header"),
                         dbc.CardBody([
-                            dcc.Graph(id=CHART_ID_ERROR_RATIO),
-                        ]),
-                    ]),
+                            dcc.Graph(
+                                id=CHART_ID_ERROR_RATIO,
+                                className="chart-density-graph",
+                                config={"displayModeBar": False, "responsive": True},
+                            ),
+                        ], className="p-1"),
+                    ], className="chart-density-card"),
                 ], md=6),
                 dbc.Col([
                     dbc.Card([
                         dbc.CardHeader("Intervention per Screener Type", className="card-header"),
                         dbc.CardBody([
-                            dcc.Graph(id=CHART_ID_ERROR_BY_SCREENER),
-                        ]),
-                    ]),
+                            dcc.Graph(
+                                id=CHART_ID_ERROR_BY_SCREENER,
+                                className="chart-density-graph",
+                                config={"displayModeBar": False, "responsive": True},
+                            ),
+                        ], className="p-1"),
+                    ], className="chart-density-card"),
                 ], md=6),
-            ], className="mb-3"),
+            ], className="mb-3 chart-density-row"),
             dbc.Row([
                 dbc.Col([
                     dbc.Card([
                         dbc.CardHeader("User Intervention Breakdown", className="card-header"),
                         dbc.CardBody([
-                            dcc.Graph(id=CHART_ID_USER_BREAKDOWN),
-                        ]),
-                    ]),
+                            dcc.Graph(
+                                id=CHART_ID_USER_BREAKDOWN,
+                                className="chart-density-graph",
+                                config={"displayModeBar": False, "responsive": True},
+                            ),
+                        ], className="p-1"),
+                    ], className="chart-density-card"),
                 ], md=6),
                 dbc.Col([
                     dbc.Card([
                         dbc.CardHeader("HAMM Intervention Breakdown", className="card-header"),
                         dbc.CardBody([
-                            dcc.Graph(id=CHART_ID_HAMM_BREAKDOWN),
-                        ]),
-                    ]),
+                            dcc.Graph(
+                                id=CHART_ID_HAMM_BREAKDOWN,
+                                className="chart-density-graph",
+                                config={"displayModeBar": False, "responsive": True},
+                            ),
+                        ], className="p-1"),
+                    ], className="chart-density-card"),
                 ], md=6),
-            ], className="mb-4"),
+            ], className="mb-4 chart-density-row"),
 
             # Language per Task table
             dbc.Row([
@@ -218,7 +238,7 @@ def build_layout() -> html.Div:
                         dbc.CardHeader("Language per Task", className="card-header"),
                         dbc.CardBody([
                             html.Div(id=CHART_ID_LANGUAGE_TABLE),
-                        ]),
+                        ], className="p-1"),
                     ]),
                 ], md=12),
             ], className="mb-4"),

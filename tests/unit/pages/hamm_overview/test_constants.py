@@ -141,7 +141,7 @@ class TestVolumeTableSpec:
 
     def test_volume_table_spec_style_cell_padding(self):
         from src.pages.hamm_overview._constants import VOLUME_TABLE_SPEC
-        assert VOLUME_TABLE_SPEC.style_cell["padding"] == "4px 6px"
+        assert VOLUME_TABLE_SPEC.style_cell["padding"] == "2px 4px"
 
     def test_volume_table_spec_style_cell_font_size(self):
         from src.pages.hamm_overview._constants import VOLUME_TABLE_SPEC
@@ -201,7 +201,7 @@ class TestVolumeChartSpec:
 
     def test_volume_chart_spec_height(self):
         from src.pages.hamm_overview._constants import VOLUME_CHART_SPEC
-        assert VOLUME_CHART_SPEC.height == 400
+        assert VOLUME_CHART_SPEC.height == 460
 
 
 class TestTaskTableSpec:
@@ -214,7 +214,7 @@ class TestTaskTableSpec:
 
     def test_task_table_spec_style_cell_padding(self):
         from src.pages.hamm_overview._constants import TASK_TABLE_SPEC
-        assert TASK_TABLE_SPEC.style_cell["padding"] == "4px 6px"
+        assert TASK_TABLE_SPEC.style_cell["padding"] == "2px 4px"
 
     def test_task_table_spec_style_cell_font_size(self):
         from src.pages.hamm_overview._constants import TASK_TABLE_SPEC
@@ -263,6 +263,32 @@ class TestContentMetadataChartSpecs:
         assert GENRE_SPEC.height == 460
         assert GENRE_SPEC.text_template == "%{y}"
         assert GENRE_SPEC.show_legend is False
+
+
+class TestErrorChartSpecs:
+    def test_error_ratio_spec(self):
+        from src.pages.hamm_overview._constants import ERROR_RATIO_SPEC
+        assert ERROR_RATIO_SPEC.height == 460
+        assert ERROR_RATIO_SPEC.show_legend is True
+        assert ERROR_RATIO_SPEC.chart_type == "pie"
+
+    def test_error_by_screener_spec(self):
+        from src.pages.hamm_overview._constants import ERROR_BY_SCREENER_SPEC
+        assert ERROR_BY_SCREENER_SPEC.height == 460
+        assert ERROR_BY_SCREENER_SPEC.text_template == "%{y}"
+        assert ERROR_BY_SCREENER_SPEC.chart_type == "stacked_bar"
+
+    def test_user_breakdown_spec(self):
+        from src.pages.hamm_overview._constants import USER_BREAKDOWN_SPEC
+        assert USER_BREAKDOWN_SPEC.height == 460
+        assert USER_BREAKDOWN_SPEC.text_template == "%{y}"
+        assert USER_BREAKDOWN_SPEC.show_legend is False
+
+    def test_hamm_breakdown_spec(self):
+        from src.pages.hamm_overview._constants import HAMM_BREAKDOWN_SPEC
+        assert HAMM_BREAKDOWN_SPEC.height == 460
+        assert HAMM_BREAKDOWN_SPEC.text_template == "%{y}"
+        assert HAMM_BREAKDOWN_SPEC.show_legend is False
 
 
 # ---------------------------------------------------------------------------
@@ -366,3 +392,24 @@ class TestLanguageTableSpec:
     def test_language_table_spec_page_size(self):
         from src.pages.hamm_overview._constants import LANGUAGE_TABLE_SPEC
         assert LANGUAGE_TABLE_SPEC.page_size == 20
+
+
+class TestCompactHeaderWrapping:
+    """All compact table headers should allow text wrapping (2-line headers)."""
+
+    def test_volume_table_header_allows_wrapping(self):
+        from src.pages.hamm_overview._constants import VOLUME_TABLE_SPEC
+        assert VOLUME_TABLE_SPEC.style_header.get("whiteSpace") == "normal"
+
+    def test_task_table_header_allows_wrapping(self):
+        from src.pages.hamm_overview._constants import TASK_TABLE_SPEC
+        assert TASK_TABLE_SPEC.style_header.get("whiteSpace") == "normal"
+
+    def test_language_table_header_allows_wrapping(self):
+        from src.pages.hamm_overview._constants import LANGUAGE_TABLE_SPEC
+        assert LANGUAGE_TABLE_SPEC.style_header.get("whiteSpace") == "normal"
+
+    def test_cell_data_remains_nowrap(self):
+        """Data cells must still be nowrap to keep row height compact."""
+        from src.pages.hamm_overview._constants import VOLUME_TABLE_SPEC
+        assert VOLUME_TABLE_SPEC.style_cell.get("whiteSpace") == "nowrap"

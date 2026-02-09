@@ -342,26 +342,28 @@ from src.utils.data_helpers import (
 
 パッケージ形式が必要な理由: Dashのページスキャナーが `__init__.py` を `_` 始まりとしてスキップするため、`app.py` での明示的インポートが必須。
 
-### 7.1 チャート視認性の再利用パターン（DOMO比較で有効）
+### 7.1 チャート視認性の再利用パターン（Chart Density）
 
-`hamm_overview` の Content Metadata で有効だった改善を、他ページへ横展開するための標準手順。
+`hamm_overview` で確立したチャート密度最適化パターン。新規ページのチャート構築時は以下の手順に従う。
+
+共通ヘルパー: `src/charts/layout_helpers.py` の `apply_compact_chart_layout()` を使用する。この関数は Plotly Figure に対してタイトル除去、マージン設定、軸タイトル除去、テキスト均一化を一括適用する。手動で `fig.update_layout()` を書く必要はない。
 
 実装チェックリスト:
-- [ ] `dbc.CardHeader` を使う場合、Plotlyのタイトルは消す（`title={"text": None}`）
+- [ ] `dbc.CardHeader` を使う場合、Plotlyのタイトルは消す（`apply_compact_chart_layout()` が自動処理）
 - [ ] `dcc.Graph` に `config={"displayModeBar": False, "responsive": True}` を設定
 - [ ] 単一系列バーは `show_legend=False`
 - [ ] 積み上げバーは `text_template="%{y}"` と `textposition="inside"` を組み合わせる
 - [ ] `ChartSpec.height` を用途別に明示し、描画面積を確保する
-- [ ] CSSはセクションclassでスコープし、全ページ共通classに直接影響させない
+- [ ] CSSクラスは `chart-density-*` プレフィックスでスコープし、全ページ共通classに直接影響させない
 
 責務分担:
 
 | ファイル | 役割 | 例 |
 |---------|------|----|
-| `_layout.py` | `dcc.Graph` config とスコープclass付与 | `className="xx-metadata-graph"` |
+| `_layout.py` | `dcc.Graph` config と `chart-density-*` class付与 | `className="chart-density-graph"` |
 | `_constants.py` | `ChartSpec` の高さ・凡例・ラベル方針 | `show_legend=False`, `text_template="%{y}"` |
-| `_chart_builders.py` | `build_chart()` 後の最終レイアウト調整 | `title=None`, `margin`, `legend` |
-| `assets/*.css` | セクション限定の余白最適化 | `.xx-row .xx-card .card-body { ... }` |
+| `_chart_builders.py` | `apply_compact_chart_layout()` でマージン・凡例を調整 | `src/charts/layout_helpers` からインポート |
+| `assets/05-charts.css` | `.chart-density-*` による余白最適化 | `.chart-density-row .chart-density-card .card-body { ... }` |
 
 最小雛形:
 
@@ -374,13 +376,13 @@ dbc.Row([
             dbc.CardBody([
                 dcc.Graph(
                     id=CHART_ID_GENRE,
-                    className="page-metadata-graph",
+                    className="chart-density-graph",
                     config={"displayModeBar": False, "responsive": True},
                 ),
             ]),
-        ], className="page-metadata-card"),
+        ], className="chart-density-card"),
     ], md=4),
-], className="mb-4 page-metadata-row")
+], className="mb-4 chart-density-row")
 ```
 
 ```python
@@ -398,23 +400,47 @@ GENRE_SPEC = ChartSpec(
 
 ```python
 # _chart_builders.py
-def _apply_chart_readability(fig):
-    fig.update_layout(
-        title={"text": None},
+from src.charts.layout_helpers import apply_compact_chart_layout
+
+def build_genre_chart(df):
+    fig = build_chart(df, GENRE_SPEC)
+    return apply_compact_chart_layout(
+        fig,
         margin={"l": 24, "r": 8, "t": 8, "b": 44},
-        xaxis_title="",
-        yaxis_title="",
     )
-    return fig
+```
+
+`apply_compact_chart_layout()` は以下を自動適用する:
+- `title={"text": None}` -- CardHeader と重複しないようタイトル除去
+- `xaxis_title=""`, `yaxis_title=""` -- 軸タイトル除去
+- `uniformtext_minsize=11`, `uniformtext_mode="hide"` -- テキストの均一化
+- `legend` -- 引数で渡した場合のみ凡例配置をオーバーライド
+
+凡例配置が必要なチャート（積み上げバー、パイ等）では `legend` 引数を渡す:
+
+```python
+# 積み上げバーの例（横凡例）
+return apply_compact_chart_layout(
+    fig,
+    margin={"l": 30, "r": 10, "t": 8, "b": 60},
+    legend={"orientation": "h", "y": -0.25},
+)
+
+# パイチャートの例
+return apply_compact_chart_layout(
+    fig,
+    margin={"l": 8, "r": 8, "t": 8, "b": 34},
+    legend={"orientation": "h", "x": 0.0, "y": -0.06},
+)
 ```
 
 ```css
 /* assets/05-charts.css */
-.page-metadata-row .page-metadata-card .card-body {
+.chart-density-row .chart-density-card .card-body {
   padding: 0.25rem;
 }
 
-.page-metadata-row .page-metadata-graph {
+.chart-density-row .chart-density-graph {
   min-height: 460px;
 }
 ```

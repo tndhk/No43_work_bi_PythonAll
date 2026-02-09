@@ -106,14 +106,15 @@ SORT_START_COL: str = "_sort_start_dt"
 # Compact table styling shared by volume and task tables
 _COMPACT_CELL: dict = {
     "textAlign": "left",
-    "padding": "4px 6px",
+    "padding": "2px 4px",
     "fontSize": "0.75rem",
     "whiteSpace": "nowrap",
 }
 _COMPACT_HEADER: dict = {
     "fontWeight": "bold",
     "fontSize": "0.75rem",
-    "padding": "4px 6px",
+    "padding": "2px 4px",
+    "whiteSpace": "normal",
 }
 
 # ---------------------------------------------------------------------------
@@ -150,7 +151,7 @@ VOLUME_CHART_SPEC: ChartSpec = ChartSpec(
         INVALID_LABEL: "#9ca3af",
     },
     text_template="%{y}",
-    height=400,
+    height=460,
 )
 
 TASK_TABLE_SPEC: TableSpec = TableSpec(
@@ -180,7 +181,8 @@ ERROR_RATIO_SPEC: ChartSpec = ChartSpec(
     chart_type="pie",
     x_column="error_type",
     y_columns=["count"],
-    height=400,
+    height=460,
+    show_legend=True,
 )
 
 ERROR_BY_SCREENER_SPEC: ChartSpec = ChartSpec(
@@ -192,7 +194,8 @@ ERROR_BY_SCREENER_SPEC: ChartSpec = ChartSpec(
         "User": "#e57f7f",
         "HAMM": "#5f8fc7",
     },
-    height=400,
+    text_template="%{y}",
+    height=460,
 )
 
 USER_BREAKDOWN_SPEC: ChartSpec = ChartSpec(
@@ -203,7 +206,9 @@ USER_BREAKDOWN_SPEC: ChartSpec = ChartSpec(
     color_map={
         "count": "#e57f7f",
     },
-    height=400,
+    text_template="%{y}",
+    height=460,
+    show_legend=False,
 )
 
 HAMM_BREAKDOWN_SPEC: ChartSpec = ChartSpec(
@@ -214,7 +219,9 @@ HAMM_BREAKDOWN_SPEC: ChartSpec = ChartSpec(
     color_map={
         "count": "#5f8fc7",
     },
-    height=400,
+    text_template="%{y}",
+    height=460,
+    show_legend=False,
 )
 
 # Content Metadata Chart Specs
