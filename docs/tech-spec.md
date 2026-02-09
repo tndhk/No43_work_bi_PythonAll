@@ -27,7 +27,7 @@ Dash アプリは S3 のクリーンデータを読んで可視化するだけ�
 
 | 項目 | 技術 | バージョン | 理由 |
 |------|------|-----------|------|
-| フレームワーク | Plotly Dash | >=2.14.0 | インタラクティブダッシュボード |
+| フレームワーク | Plotly Dash | >=4.0.0 | インタラクティブダッシュボード |
 | UIコンポーネント | Dash Bootstrap Components | >=1.5.0 | Bootstrap統合 |
 | 認証（ローカル） | Flask-Login | >=0.6.3 | フォームログイン（FormAuthProvider） |
 | 認証（本番） | SAML | - | 会社の IdP と連携（Phase 3） |
@@ -75,23 +75,13 @@ Dash アプリは S3 のクリーンデータを読んで可視化するだけ�
 
 ### 2.1 環境変数
 
-```bash
-# S3
-S3_ENDPOINT=http://localhost:9000  # ローカルのみ（MinIO）
-S3_REGION=ap-northeast-1
-S3_BUCKET=bi-datasets
-S3_ACCESS_KEY=minioadmin  # ローカルのみ
-S3_SECRET_KEY=minioadmin  # ローカルのみ
+環境変数の詳細な一覧と設定方法は [CONTRIB.md](CONTRIB.md) セクション4 を参照。
 
-# 認証（ローカル開発）
-BASIC_AUTH_USERNAME=admin
-BASIC_AUTH_PASSWORD=changeme
-
-# Vertex AI（Phase 2）
-# GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
-# VERTEX_AI_PROJECT=your-project-id
-# VERTEX_AI_LOCATION=asia-northeast1
-```
+主要な環境変数:
+- S3接続: `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`
+- 認証: `BASIC_AUTH_USERNAME`, `BASIC_AUTH_PASSWORD`
+- DOMO ETL: `DOMO_CLIENT_ID`, `DOMO_CLIENT_SECRET`
+- マスキング: `ETL_MASKING_SECRET`
 
 ---
 
@@ -185,52 +175,99 @@ partitions_to_read = [
 
 ---
 
-## 4. チャートテンプレート
+## 4. チャート構築
 
-### 4.1 利用可能なチャートタイプ
+### 4.1 標準API（推奨）
 
-`src/charts/templates.py` で提供される汎用チャートテンプレート関数:
+チャートとテーブルは宣言的Spec（`ChartSpec`, `TableSpec`）とビルダー関数（`build_chart`, `build_table`）を使用して構築する。
 
-| タイプ | 関数名 | 説明 | パラメータ |
-|--------|--------|------|-----------|
-| bar | `render_bar_chart()` | 棒グラフ | `x_column`, `y_column` |
-| line | `render_line_chart()` | 折れ線グラフ | `x_column`, `y_column` |
-| pie | `render_pie_chart()` | 円グラフ | `names_column`, `values_column` |
-
-その他の表示形式は専用コンポーネントを使用:
-- **Summary Number (KPIカード)**: `src/components/cards.py` の `create_kpi_card()` を使用
-- **Table**: `dash.dash_table.DataTable` を直接使用
-- **Pivot Table**: ページ固有の実装（例: `src/pages/apac_dot_due_date/charts/_ch00_reference_table.py`）
-
-### 4.2 チャートテンプレートの使い方
+#### チャート構築
 
 ```python
-from src.charts.templates import render_bar_chart, render_line_chart, render_pie_chart
+from src.charts.chart_builder import build_chart
+from src.charts.specs import ChartSpec
 
-# 棒グラフの例
-figure = render_bar_chart(
-    dataset=df,
-    filters=None,
-    params={"x_column": "category", "y_column": "amount"}
+# ChartSpecを定義
+spec = ChartSpec(
+    title="売上推移",
+    chart_type="bar",  # bar, line, pie, stacked_bar
+    x_column="date",
+    y_columns=["sales"],
+    height=400,
+    labels={"x": "日付", "y": "売上"},
 )
+
+# DataFrameからチャートを生成
+figure = build_chart(df, spec)
 
 # Dashコンポーネントに配置
 dcc.Graph(figure=figure)
 ```
 
-すべてのチャート関数は以下のシグネチャに従う:
+#### テーブル構築
 
 ```python
-def render_*_chart(
-    dataset: pd.DataFrame,
-    filters: Optional[Dict[str, Any]] = None,
-    params: Optional[Dict[str, Any]] = None,
-) -> go.Figure
+from src.charts.table_builder import build_table
+from src.charts.specs import TableSpec
+
+# TableSpecを定義
+spec = TableSpec(
+    title="詳細一覧",
+    style_table={"overflowX": "auto"},
+    style_cell={"textAlign": "left"},
+    style_header={"backgroundColor": "rgb(230, 230, 230)", "fontWeight": "bold"},
+    style_data_conditional=[],
+    column_display={"col1": "列1", "col2": "列2"},
+    column_order=["col1", "col2"],
+    page_size=10,
+)
+
+# DataFrameからテーブルを生成
+title, table_component = build_table(df, spec)
+
+# Dashコンポーネントに配置
+html.Div([
+    html.H5(title),
+    table_component,
+])
 ```
 
-- `dataset`: 可視化するDataFrame
-- `filters`: フィルタパラメータ（現在は未使用、将来拡張用）
-- `params`: チャート固有のパラメータ（列名など）
+#### 空状態・エラー状態
+
+```python
+from src.charts.empty_states import (
+    create_empty_figure,
+    create_empty_table,
+    create_error_figure,
+)
+
+# データがない場合の空状態
+empty_fig = create_empty_figure(message="データがありません", height=400)
+empty_table = create_empty_table()
+error_fig = create_error_figure(message="エラーが発生しました", height=400)
+```
+
+### 4.2 利用可能なチャートタイプ
+
+| タイプ | `chart_type` 値 | 説明 |
+|--------|----------------|------|
+| bar | `"bar"` | 棒グラフ |
+| line | `"line"` | 折れ線グラフ |
+| pie | `"pie"` | 円グラフ |
+| stacked_bar | `"stacked_bar"` | 積み上げ棒グラフ |
+
+### 4.3 その他の表示形式
+
+- KPIカード: `src/components/cards.py` の `create_kpi_card()` を使用
+- カスタム集計・描画: ページ固有の `_chart_builders.py` で実装（例: `src/pages/apac_dot_due_date/charts/_ch00_reference_table.py`）
+
+### 4.4 レガシーテンプレート（後方互換のため残存）
+
+`src/charts/templates.py` の `render_bar_chart()`, `render_line_chart()`, `render_pie_chart()` 関数は後方互換のため残存しているが、新規実装では使用しないこと。
+
+理由:
+- Dash 4.x では `dangerously_allow_html` が廃止され、レガシーラッパーは非推奨
+- 新規実装では `build_chart()` + `ChartSpec` を使用すること
 
 ---
 
