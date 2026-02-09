@@ -5,6 +5,7 @@ charts:
   hamm-kpi-total-erv: hamm-dashboard
   hamm-kpi-total-prelim: hamm-dashboard
   hamm-task-table: hamm-dashboard
+  hamm-language-table: hamm-dashboard
   hamm-error-ratio: hamm-dashboard
   hamm-error-by-screener: hamm-dashboard
   hamm-user-breakdown: hamm-dashboard

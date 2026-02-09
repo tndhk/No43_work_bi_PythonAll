@@ -63,12 +63,13 @@ class TestBuildLayout:
         ):
             from src.pages.cursor_usage._layout import build_layout
             from dash import html
-            from tests.helpers.dash_test_utils import find_component
+            from tests.helpers.dash_test_utils import find_components_by_type
 
             result = build_layout()
-            h1 = find_component(result, html.H1)
+            h1_list = find_components_by_type(result, html.H1)
 
-            assert h1 is not None
+            assert len(h1_list) > 0
+            h1 = h1_list[0]
             assert "Cursor Usage" in h1.children
 
     def test_build_layout_contains_filters(self, mock_filter_options, mock_reader):

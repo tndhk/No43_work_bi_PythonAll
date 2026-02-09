@@ -17,6 +17,7 @@ from ._constants import (
     CHART_ID_KPI_TOTAL_ERV,
     CHART_ID_KPI_TOTAL_PRELIM,
     CHART_ID_TASK_TABLE,
+    CHART_ID_LANGUAGE_TABLE,
     CHART_ID_ERROR_RATIO,
     CHART_ID_ERROR_BY_SCREENER,
     CHART_ID_USER_BREAKDOWN,
@@ -25,6 +26,7 @@ from ._constants import (
     CHART_ID_METADATA_DIALOGUE,
     CHART_ID_METADATA_GENRE,
     TASK_TABLE_SPEC,
+    LANGUAGE_TABLE_SPEC,
     DERIVED_YEAR,
     DERIVED_MONTH,
     DERIVED_FISCAL_YEAR,
@@ -60,6 +62,7 @@ def resolve_dataset_id_for_dashboard() -> str:
         CHART_ID_KPI_TOTAL_ERV,
         CHART_ID_KPI_TOTAL_PRELIM,
         CHART_ID_TASK_TABLE,
+        CHART_ID_LANGUAGE_TABLE,
         CHART_ID_ERROR_RATIO,
         CHART_ID_ERROR_BY_SCREENER,
         CHART_ID_USER_BREAKDOWN,
@@ -480,6 +483,51 @@ def prepare_task_display_df(df: pd.DataFrame) -> pd.DataFrame:
     output_df["Job Created"] = display_df["Job Created"]
     output_df["Completed / Err"] = display_df["Completed / Err"]
     output_df["Total Duration"] = display_df["Total Duration"]
+
+    # Sort by Task ID (as numeric)
+    output_df = output_df.sort_values(
+        by="Task ID",
+        key=lambda x: pd.to_numeric(x, errors="coerce").fillna(0),
+    )
+
+    return output_df
+
+
+def prepare_language_display_df(df: pd.DataFrame) -> pd.DataFrame:
+    """Transform raw data into a display-ready DataFrame for the language table.
+
+    Performs the following transformations:
+    1. Select and rename columns from COLUMN_MAP to display names
+    2. Replace NaN values in Additional Languages with "N/A"
+    3. Sort by Task ID numerically
+
+    Args:
+        df: Pre-filtered DataFrame (already through _prepare_base_df or raw).
+
+    Returns:
+        A display-ready DataFrame with columns matching LANGUAGE_TABLE_SPEC.column_order.
+    """
+    if df.empty:
+        return pd.DataFrame(columns=LANGUAGE_TABLE_SPEC.column_order)
+
+    table_columns = {
+        "Task ID": COLUMN_MAP["id"],
+        "Task Name": COLUMN_MAP["title"],
+        "Content Type": COLUMN_MAP["content_type"],
+        "Status": COLUMN_MAP["status"],
+        "Language Count": COLUMN_MAP["language_count"],
+        "Additional Languages": COLUMN_MAP["additional_languages"],
+    }
+
+    output_df = pd.DataFrame(
+        {
+            display_name: df[column_name]
+            for display_name, column_name in table_columns.items()
+        }
+    )
+
+    output_df["Task ID"] = output_df["Task ID"].astype(str)
+    output_df["Additional Languages"] = output_df["Additional Languages"].fillna("N/A")
 
     # Sort by Task ID (as numeric)
     output_df = output_df.sort_values(

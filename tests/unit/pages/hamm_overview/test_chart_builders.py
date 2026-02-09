@@ -502,6 +502,97 @@ class TestBuildTaskTable:
             assert call_args[0][1] is TASK_TABLE_SPEC
 
 
+# ---------------------------------------------------------------------------
+# build_language_table tests (RED -- not yet implemented)
+# ---------------------------------------------------------------------------
+
+class TestBuildLanguageTable:
+    """build_language_table should delegate to shared build_table and return (title, component)."""
+
+    @pytest.fixture()
+    def language_display_df(self) -> pd.DataFrame:
+        """Pre-transformed display DataFrame for build_language_table."""
+        return pd.DataFrame(
+            {
+                "Task ID": ["100", "200"],
+                "Task Name": ["Task A", "Task B"],
+                "Content Type": ["ERV", "Prelim"],
+                "Status": ["Completed", "Error"],
+                "Language Count": [3, 1],
+                "Additional Languages": ["French, German", "N/A"],
+            }
+        )
+
+    @pytest.fixture()
+    def empty_language_display_df(self) -> pd.DataFrame:
+        """Empty display DataFrame for empty-state tests."""
+        return pd.DataFrame(
+            columns=[
+                "Task ID",
+                "Task Name",
+                "Content Type",
+                "Status",
+                "Language Count",
+                "Additional Languages",
+            ]
+        )
+
+    def test_importable(self):
+        from src.pages.hamm_overview._chart_builders import build_language_table
+        assert callable(build_language_table)
+
+    def test_returns_tuple(self, language_display_df):
+        from src.pages.hamm_overview._chart_builders import build_language_table
+
+        result = build_language_table(language_display_df)
+        assert isinstance(result, tuple), (
+            f"Expected tuple, got {type(result).__name__}"
+        )
+        assert len(result) == 2
+
+    def test_tuple_title(self, language_display_df):
+        from src.pages.hamm_overview._chart_builders import build_language_table
+
+        title, _ = build_language_table(language_display_df)
+        assert isinstance(title, str)
+
+    def test_tuple_component_is_datatable(self, language_display_df):
+        from src.pages.hamm_overview._chart_builders import build_language_table
+
+        _, component = build_language_table(language_display_df)
+        assert isinstance(component, dash_table.DataTable), (
+            f"Expected DataTable, got {type(component).__name__}"
+        )
+
+    def test_empty_df_returns_tuple(self, empty_language_display_df):
+        from src.pages.hamm_overview._chart_builders import build_language_table
+
+        result = build_language_table(empty_language_display_df)
+        assert isinstance(result, tuple)
+        assert len(result) == 2
+
+    def test_empty_df_component_is_html_p(self, empty_language_display_df):
+        from src.pages.hamm_overview._chart_builders import build_language_table
+
+        _, component = build_language_table(empty_language_display_df)
+        assert isinstance(component, html.P), (
+            f"Expected html.P for empty state, got {type(component).__name__}"
+        )
+
+    def test_delegates_to_shared_build_table(self, language_display_df):
+        """Verify build_language_table delegates to the shared build_table."""
+        from unittest.mock import patch
+        from src.pages.hamm_overview._chart_builders import build_language_table
+        from src.pages.hamm_overview._constants import LANGUAGE_TABLE_SPEC
+
+        with patch("src.pages.hamm_overview._chart_builders.build_table") as mock_bt:
+            mock_bt.return_value = ("Language per Task", "mock_component")
+            result = build_language_table(language_display_df)
+            mock_bt.assert_called_once()
+            call_args = mock_bt.call_args
+            assert call_args[0][1] is LANGUAGE_TABLE_SPEC
+
+
 class TestContentMetadataChartBuilders:
     def test_build_original_language_chart(self):
         from src.pages.hamm_overview._chart_builders import build_original_language_chart

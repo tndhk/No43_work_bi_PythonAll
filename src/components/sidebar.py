@@ -1,5 +1,5 @@
 """Sidebar navigation component."""
-from dash import html, page_registry, dcc
+from dash import html, page_registry
 import dash_bootstrap_components as dbc
 
 

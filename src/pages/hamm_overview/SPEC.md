@@ -99,3 +99,20 @@ Screener Type（Prelim/ERV）別の介入件数を、User/HAMM別に積み上げ
 
 #### HAMM Intervention Breakdown
 HAMM起因エラーの内訳を、エラー内容別に棒グラフで表示します。
+
+### Language per Task（言語別タスク詳細テーブル）
+各タスクの言語構成を一覧表示するテーブルです。タスクごとに、何カ国語対応か、追加言語は何かを確認できます。
+
+カラム:
+- Task ID: タスクの識別番号
+- Task Name: タスクのタイトル
+- Content Type: ビデオタイプ（ERV/Prelim）
+- Status: タスクのステータス（Completed/Invalid等）
+- Language Count: 対応言語数
+- Additional Languages: オリジナル言語以外に追加された言語のリスト
+
+表示の特徴:
+- Status が "Completed" の行は緑色の背景で強調表示されます
+- Content Type が "ERV" または "Prelim" の行はピンク色の背景で強調表示されます
+- Task ID で昇順にソート可能です
+- Additional Languages がない場合は "N/A" と表示されます

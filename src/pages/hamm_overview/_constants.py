@@ -10,6 +10,7 @@ ID_PREFIX: str = "hamm-"
 CHART_ID_VOLUME_TABLE: str = f"{ID_PREFIX}volume-table"
 CHART_ID_VOLUME_CHART: str = f"{ID_PREFIX}volume-chart"
 CHART_ID_TASK_TABLE: str = f"{ID_PREFIX}task-table"
+CHART_ID_LANGUAGE_TABLE: str = f"{ID_PREFIX}language-table"
 CHART_ID_ERROR_RATIO: str = f"{ID_PREFIX}error-ratio"
 CHART_ID_ERROR_BY_SCREENER: str = f"{ID_PREFIX}error-by-screener"
 CHART_ID_USER_BREAKDOWN: str = f"{ID_PREFIX}user-breakdown"
@@ -87,6 +88,8 @@ COLUMN_MAP: dict[str, str] = {
     "error_description": "error description",
     "video_duration": "video_duration",
     "audio_details": "audio location",
+    "language_count": "number of languages",
+    "additional_languages": "additional languages",
 }
 
 # Label constants for volume summary (status-based)
@@ -248,4 +251,35 @@ GENRE_SPEC: ChartSpec = ChartSpec(
         "count": "#7FAECC",
     },
     height=400,
+)
+
+LANGUAGE_TABLE_SPEC: TableSpec = TableSpec(
+    title="Language Details",
+    style_table={"overflowX": "auto"},
+    style_cell=_COMPACT_CELL,
+    style_header=_COMPACT_HEADER,
+    style_data_conditional=[
+        {
+            "if": {"filter_query": '{Status} = "Completed"'},
+            "backgroundColor": "#d4edda",
+        },
+        {
+            "if": {"filter_query": '{Content Type} = "ERV"'},
+            "backgroundColor": "#f8d7da",
+        },
+        {
+            "if": {"filter_query": '{Content Type} = "Prelim"'},
+            "backgroundColor": "#f8d7da",
+        },
+    ],
+    sort_action="native",
+    page_size=20,
+    column_order=[
+        "Task ID",
+        "Task Name",
+        "Content Type",
+        "Status",
+        "Language Count",
+        "Additional Languages",
+    ],
 )

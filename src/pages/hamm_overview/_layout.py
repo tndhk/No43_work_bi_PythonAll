@@ -10,6 +10,7 @@ from ._constants import (
     CHART_ID_VOLUME_TABLE,
     CHART_ID_VOLUME_CHART,
     CHART_ID_TASK_TABLE,
+    CHART_ID_LANGUAGE_TABLE,
     CHART_ID_ERROR_RATIO,
     CHART_ID_ERROR_BY_SCREENER,
     CHART_ID_USER_BREAKDOWN,
@@ -196,6 +197,18 @@ def build_layout() -> html.Div:
                         ]),
                     ]),
                 ], md=6),
+            ], className="mb-4"),
+
+            # Language per Task table
+            dbc.Row([
+                dbc.Col([
+                    dbc.Card([
+                        dbc.CardHeader("Language per Task", className="card-header"),
+                        dbc.CardBody([
+                            html.Div(id=CHART_ID_LANGUAGE_TABLE),
+                        ]),
+                    ]),
+                ], md=12),
             ], className="mb-4"),
         ]),  # End MantineProvider
     ], className="page-container")

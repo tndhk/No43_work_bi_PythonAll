@@ -45,7 +45,6 @@ def build_filter_layout(filter_options: dict) -> list:
     vendors = filter_options["vendors"]
     amp_vs_av = filter_options["amp_vs_av"]
     order_types = filter_options["order_types"]
-    total_count = filter_options["total_count"]
 
     # Row 0: Top controls
     top_row = dbc.Row([

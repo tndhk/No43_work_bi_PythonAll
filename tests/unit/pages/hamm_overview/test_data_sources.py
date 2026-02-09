@@ -16,6 +16,7 @@ def test_data_sources_contains_all_chart_ids():
         const.CHART_ID_KPI_TOTAL_ERV,
         const.CHART_ID_KPI_TOTAL_PRELIM,
         const.CHART_ID_TASK_TABLE,
+        const.CHART_ID_LANGUAGE_TABLE,
         const.CHART_ID_ERROR_RATIO,
         const.CHART_ID_ERROR_BY_SCREENER,
         const.CHART_ID_USER_BREAKDOWN,
@@ -43,6 +44,7 @@ def test_resolve_dataset_id_for_dashboard_uses_all_chart_ids(mock_resolve):
         call(const.DASHBOARD_ID, const.CHART_ID_KPI_TOTAL_ERV),
         call(const.DASHBOARD_ID, const.CHART_ID_KPI_TOTAL_PRELIM),
         call(const.DASHBOARD_ID, const.CHART_ID_TASK_TABLE),
+        call(const.DASHBOARD_ID, const.CHART_ID_LANGUAGE_TABLE),
         call(const.DASHBOARD_ID, const.CHART_ID_ERROR_RATIO),
         call(const.DASHBOARD_ID, const.CHART_ID_ERROR_BY_SCREENER),
         call(const.DASHBOARD_ID, const.CHART_ID_USER_BREAKDOWN),
@@ -53,3 +55,25 @@ def test_resolve_dataset_id_for_dashboard_uses_all_chart_ids(mock_resolve):
     ]
     mock_resolve.assert_has_calls(expected_calls, any_order=True)
     assert mock_resolve.call_count == len(expected_calls)
+
+
+# ---------------------------------------------------------------------------
+# Language Table data source mapping (RED -- not yet implemented)
+# ---------------------------------------------------------------------------
+
+def test_data_sources_contains_language_table():
+    """hamm-language-table must be mapped to hamm-dashboard in data_sources.yml."""
+    load_dashboard_config.cache_clear()
+    config = load_dashboard_config(const.DASHBOARD_ID)
+    chart_ids = set(config["charts"].keys())
+    assert "hamm-language-table" in chart_ids, (
+        f"hamm-language-table not found in data_sources.yml charts. "
+        f"Found: {sorted(chart_ids)}"
+    )
+
+
+def test_language_table_maps_to_hamm_dashboard():
+    """hamm-language-table should map to hamm-dashboard dataset."""
+    load_dashboard_config.cache_clear()
+    config = load_dashboard_config(const.DASHBOARD_ID)
+    assert config["charts"].get("hamm-language-table") == "hamm-dashboard"

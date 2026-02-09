@@ -1120,7 +1120,7 @@ def _make_error_analysis_df() -> pd.DataFrame:
     return pd.DataFrame({
         "id": ["1", "2", "3", "4", "5", "6"],
         "title": ["A", "B", "C", "D", "E", "F"],
-        "status": ["Completed"] * 6,
+        "status": ["Invalid", "Error", "Invalid", "Error", "Invalid", "Error"],
         "created_at": pd.to_datetime([
             "2026-01-05 10:00:00",
             "2026-01-06 10:00:00",
@@ -1216,15 +1216,15 @@ class TestBuildInterventionByScreener:
         assert "User" in result.columns
         assert "HAMM" in result.columns
         
-        # Prelim: 3 records (2 User, 1 HAMM)
+        # Prelim: 3 records (3 User, 0 HAMM)
         prelim_row = result[result["video_type_description"] == "Prelim"].iloc[0]
-        assert prelim_row["User"] == 2
-        assert prelim_row["HAMM"] == 1
-        
-        # ERV: 3 records (1 User, 2 HAMM)
+        assert prelim_row["User"] == 3
+        assert prelim_row["HAMM"] == 0
+
+        # ERV: 3 records (0 User, 3 HAMM)
         erv_row = result[result["video_type_description"] == "ERV"].iloc[0]
-        assert erv_row["User"] == 1
-        assert erv_row["HAMM"] == 2
+        assert erv_row["User"] == 0
+        assert erv_row["HAMM"] == 3
 
     def test_empty_when_no_user_hamm(self):
         from src.pages.hamm_overview._data_loader import build_intervention_by_screener, _prepare_base_df
@@ -1253,10 +1253,10 @@ class TestBuildUserInterventionBreakdown:
         assert "error_description" in result.columns
         assert "count" in result.columns
         
-        # Should only have User errors (3 records)
-        assert len(result) == 3
+        # Should only have User errors (2 unique error descriptions, 3 total records)
+        assert len(result) == 2
         assert result["count"].sum() == 3
-        
+
         # Check specific error descriptions
         desc_counts = result.set_index("error_description")["count"].to_dict()
         assert desc_counts["Requested audio track does not exist"] == 2
@@ -1361,6 +1361,96 @@ def _make_content_metadata_df() -> pd.DataFrame:
         "video_duration": ["00:10:00"] * 7,
         "audio location": ["Full mix"] * 7,
     })
+
+
+# ---------------------------------------------------------------------------
+# prepare_language_display_df tests (RED -- not yet implemented)
+# ---------------------------------------------------------------------------
+
+def _make_language_df() -> pd.DataFrame:
+    """Create a DataFrame simulating post-_prepare_base_df data for language display.
+
+    Columns map to the raw data columns that would exist in the source dataset:
+    - id, title, status, video_type_description
+    - number of languages (raw column for language count)
+    - additional languages (raw column for additional languages)
+    """
+    return pd.DataFrame({
+        "id": ["300", "100", "200"],
+        "title": ["Task C", "Task A", "Task B"],
+        "status": ["Completed", "Completed", "Error"],
+        "video_type_description": ["Prelim", "ERV", "Prelim"],
+        "number of languages": [3, 1, 2],
+        "additional languages": ["French, German", np.nan, "Spanish"],
+    })
+
+
+class TestPrepareLanguageDisplayDf:
+    """prepare_language_display_df should transform raw data into language display DataFrame."""
+
+    def test_importable_from_data_loader(self):
+        """prepare_language_display_df must be importable from _data_loader."""
+        from src.pages.hamm_overview._data_loader import prepare_language_display_df
+        assert callable(prepare_language_display_df)
+
+    def test_empty_df_returns_empty_with_correct_columns(self):
+        """Empty input should return an empty DataFrame with LANGUAGE_TABLE_SPEC column_order."""
+        from src.pages.hamm_overview._data_loader import prepare_language_display_df
+        from src.pages.hamm_overview._constants import LANGUAGE_TABLE_SPEC
+
+        empty_df = _make_language_df().head(0)
+        result = prepare_language_display_df(empty_df)
+
+        assert len(result) == 0
+        assert list(result.columns) == LANGUAGE_TABLE_SPEC.column_order
+
+    def test_columns_are_renamed_correctly(self):
+        """Output columns should match LANGUAGE_TABLE_SPEC.column_order display names."""
+        from src.pages.hamm_overview._data_loader import prepare_language_display_df
+        from src.pages.hamm_overview._constants import LANGUAGE_TABLE_SPEC
+
+        df = _make_language_df()
+        result = prepare_language_display_df(df)
+
+        assert list(result.columns) == LANGUAGE_TABLE_SPEC.column_order
+
+    def test_nan_additional_languages_replaced_with_na_string(self):
+        """NaN values in Additional Languages should be replaced with 'N/A'."""
+        from src.pages.hamm_overview._data_loader import prepare_language_display_df
+
+        df = _make_language_df()
+        result = prepare_language_display_df(df)
+
+        # Row with id=100 has NaN additional_languages; after sort it should
+        # appear first (id=100) and its Additional Languages should be "N/A"
+        row_100 = result[result["Task ID"] == "100"]
+        assert row_100["Additional Languages"].iloc[0] == "N/A"
+
+    def test_sorts_by_task_id_numerically(self):
+        """Rows should be sorted by Task ID as numeric values (100, 200, 300)."""
+        from src.pages.hamm_overview._data_loader import prepare_language_display_df
+
+        df = _make_language_df()  # IDs: 300, 100, 200 (unsorted)
+        result = prepare_language_display_df(df)
+
+        task_ids = result["Task ID"].tolist()
+        assert task_ids == ["100", "200", "300"]
+
+
+class TestResolveDatasetIdIncludesLanguageTable:
+    """resolve_dataset_id_for_dashboard should include hamm-language-table."""
+
+    def test_chart_ids_include_language_table(self):
+        from unittest.mock import patch
+        from src.pages.hamm_overview._data_loader import resolve_dataset_id_for_dashboard
+
+        with patch("src.pages.hamm_overview._data_loader.resolve_dataset_id") as mock_resolve:
+            mock_resolve.return_value = "hamm-dashboard"
+            resolve_dataset_id_for_dashboard()
+
+            # Collect all chart_ids that were passed to resolve_dataset_id
+            called_chart_ids = [call.args[1] for call in mock_resolve.call_args_list]
+            assert "hamm-language-table" in called_chart_ids
 
 
 class TestContentMetadataAggregations:

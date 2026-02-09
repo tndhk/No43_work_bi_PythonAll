@@ -1,8 +1,6 @@
 """Filter engine for applying filters to DataFrames."""
 from dataclasses import dataclass, field
-from typing import Optional
 import pandas as pd
-from datetime import datetime
 
 
 @dataclass(frozen=True)

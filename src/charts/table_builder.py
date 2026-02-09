@@ -10,7 +10,7 @@ from copy import deepcopy
 from typing import Any
 
 import pandas as pd
-from dash import dash_table, html
+from dash import dash_table
 
 from src.charts.empty_states import create_empty_table
 from src.charts.specs import TableSpec

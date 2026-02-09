@@ -39,8 +39,11 @@ class TestColumnMap:
             "genre",
             "error_code",
             "error_type",
+            "error_description",
             "video_duration",
             "audio_details",
+            "language_count",
+            "additional_languages",
         }
         assert set(COLUMN_MAP.keys()) == expected
 
@@ -253,3 +256,106 @@ class TestContentMetadataChartSpecs:
         assert GENRE_SPEC.chart_type == "bar"
         assert GENRE_SPEC.x_column == "genre"
         assert GENRE_SPEC.y_columns == ["count"]
+
+
+# ---------------------------------------------------------------------------
+# Language Table constants (RED -- not yet implemented)
+# ---------------------------------------------------------------------------
+
+class TestColumnMapLanguageKeys:
+    """COLUMN_MAP must include keys for language_count and additional_languages."""
+
+    def test_column_map_has_language_count(self):
+        from src.pages.hamm_overview._constants import COLUMN_MAP
+        assert "language_count" in COLUMN_MAP
+
+    def test_column_map_has_additional_languages(self):
+        from src.pages.hamm_overview._constants import COLUMN_MAP
+        assert "additional_languages" in COLUMN_MAP
+
+
+class TestChartIdLanguageTable:
+    """CHART_ID_LANGUAGE_TABLE must exist and follow ID_PREFIX convention."""
+
+    def test_chart_id_language_table_exists(self):
+        from src.pages.hamm_overview import _constants as const
+        assert hasattr(const, "CHART_ID_LANGUAGE_TABLE")
+
+    def test_chart_id_language_table_has_correct_prefix(self):
+        from src.pages.hamm_overview import _constants as const
+        assert const.CHART_ID_LANGUAGE_TABLE.startswith("hamm-")
+
+    def test_chart_id_language_table_value(self):
+        from src.pages.hamm_overview import _constants as const
+        assert const.CHART_ID_LANGUAGE_TABLE == "hamm-language-table"
+
+
+class TestLanguageTableSpec:
+    """LANGUAGE_TABLE_SPEC must be a TableSpec with correct configuration."""
+
+    def test_language_table_spec_exists(self):
+        from src.pages.hamm_overview._constants import LANGUAGE_TABLE_SPEC
+        from src.charts.specs import TableSpec
+        assert isinstance(LANGUAGE_TABLE_SPEC, TableSpec)
+
+    def test_language_table_spec_column_order(self):
+        from src.pages.hamm_overview._constants import LANGUAGE_TABLE_SPEC
+        expected = [
+            "Task ID",
+            "Task Name",
+            "Content Type",
+            "Status",
+            "Language Count",
+            "Additional Languages",
+        ]
+        assert LANGUAGE_TABLE_SPEC.column_order == expected
+
+    def test_language_table_spec_style_data_conditional_has_3_rules(self):
+        """Should have 3 conditional styling rules:
+        1. Status=Completed -> green background
+        2. Content Type=ERV -> pink background
+        3. Content Type=Prelim -> pink background
+        """
+        from src.pages.hamm_overview._constants import LANGUAGE_TABLE_SPEC
+        assert len(LANGUAGE_TABLE_SPEC.style_data_conditional) == 3
+
+    def test_language_table_spec_completed_green_rule(self):
+        """First rule: Status=Completed rows get green background."""
+        from src.pages.hamm_overview._constants import LANGUAGE_TABLE_SPEC
+        rules = LANGUAGE_TABLE_SPEC.style_data_conditional
+        completed_rules = [
+            r for r in rules
+            if r.get("if", {}).get("filter_query", "") == '{Status} = "Completed"'
+        ]
+        assert len(completed_rules) == 1
+        assert completed_rules[0]["backgroundColor"] == "#d4edda"
+
+    def test_language_table_spec_erv_pink_rule(self):
+        """Content Type=ERV rows get pink background."""
+        from src.pages.hamm_overview._constants import LANGUAGE_TABLE_SPEC
+        rules = LANGUAGE_TABLE_SPEC.style_data_conditional
+        erv_rules = [
+            r for r in rules
+            if r.get("if", {}).get("filter_query", "") == '{Content Type} = "ERV"'
+        ]
+        assert len(erv_rules) == 1
+        assert erv_rules[0]["backgroundColor"] == "#f8d7da"
+
+    def test_language_table_spec_prelim_pink_rule(self):
+        """Content Type=Prelim rows get pink background."""
+        from src.pages.hamm_overview._constants import LANGUAGE_TABLE_SPEC
+        rules = LANGUAGE_TABLE_SPEC.style_data_conditional
+        prelim_rules = [
+            r for r in rules
+            if r.get("if", {}).get("filter_query", "") == '{Content Type} = "Prelim"'
+        ]
+        assert len(prelim_rules) == 1
+        assert prelim_rules[0]["backgroundColor"] == "#f8d7da"
+
+    def test_language_table_spec_sort_action(self):
+        from src.pages.hamm_overview._constants import LANGUAGE_TABLE_SPEC
+        assert LANGUAGE_TABLE_SPEC.sort_action == "native"
+
+    def test_language_table_spec_page_size(self):
+        from src.pages.hamm_overview._constants import LANGUAGE_TABLE_SPEC
+        assert LANGUAGE_TABLE_SPEC.page_size == 20

@@ -15,6 +15,7 @@ from ._constants import (
     CHART_ID_VOLUME_TABLE,
     CHART_ID_VOLUME_CHART,
     CHART_ID_TASK_TABLE,
+    CHART_ID_LANGUAGE_TABLE,
     CHART_ID_ERROR_RATIO,
     CHART_ID_ERROR_BY_SCREENER,
     CHART_ID_USER_BREAKDOWN,
@@ -49,6 +50,7 @@ from ._data_loader import (
     load_and_filter_data,
     build_volume_summary,
     prepare_task_display_df,
+    prepare_language_display_df,
     build_issues_ratio,
     build_intervention_by_screener,
     build_user_intervention_breakdown,
@@ -62,6 +64,7 @@ from ._chart_builders import (
     build_volume_table,
     build_volume_chart,
     build_task_table,
+    build_language_table,
     build_error_ratio_chart,
     build_error_by_screener_chart,
     build_user_breakdown_chart,
@@ -133,6 +136,7 @@ def compute_volume_kpis(filtered_df: pd.DataFrame) -> dict:
     Output(CHART_ID_METADATA_ORIGINAL_LANGUAGE, "figure"),
     Output(CHART_ID_METADATA_DIALOGUE, "figure"),
     Output(CHART_ID_METADATA_GENRE, "figure"),
+    Output(CHART_ID_LANGUAGE_TABLE, "children"),
     Input(FILTER_ID_REGION, "value"),
     Input(FILTER_ID_YEAR, "value"),
     Input(FILTER_ID_MONTH, "value"),
@@ -203,6 +207,9 @@ def update_dashboard(
         task_display_df = prepare_task_display_df(df)
         _, task_table = build_task_table(task_display_df)
 
+        language_display_df = prepare_language_display_df(df)
+        _, language_table = build_language_table(language_display_df)
+
         # Error analysis
         issues_ratio_df = build_issues_ratio(df)
         intervention_by_screener_df = build_intervention_by_screener(df)
@@ -258,6 +265,7 @@ def update_dashboard(
             original_language_fig,
             dialogue_fig,
             genre_fig,
+            language_table,
         )
 
     except Exception as exc:
@@ -277,6 +285,7 @@ def update_dashboard(
             empty_fig,
             empty_fig,
             empty_fig,
+            error_msg,
         )
 
 

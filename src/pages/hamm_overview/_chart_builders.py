@@ -4,6 +4,7 @@ Delegates rendering to shared infrastructure:
 - build_volume_table: build_table(df, VOLUME_TABLE_SPEC) -> (title, DataTable)
 - build_volume_chart: build_chart(df, VOLUME_CHART_SPEC) -> go.Figure (+ custom layout)
 - build_task_table: build_table(df, TASK_TABLE_SPEC) -> (title, DataTable)
+- build_language_table: build_table(df, LANGUAGE_TABLE_SPEC) -> (title, DataTable)
 """
 from __future__ import annotations
 
@@ -18,6 +19,7 @@ from ._constants import (
     VOLUME_TABLE_SPEC,
     VOLUME_CHART_SPEC,
     TASK_TABLE_SPEC,
+    LANGUAGE_TABLE_SPEC,
     ERROR_RATIO_SPEC,
     ERROR_BY_SCREENER_SPEC,
     USER_BREAKDOWN_SPEC,
@@ -84,6 +86,24 @@ def build_task_table(df: pd.DataFrame) -> tuple[str, Any]:
         ``dash_table.DataTable`` or an ``html.P`` empty-state placeholder.
     """
     return build_table(df, TASK_TABLE_SPEC)
+
+
+def build_language_table(df: pd.DataFrame) -> tuple[str, Any]:
+    """Render pre-transformed language display DataFrame via shared build_table.
+
+    Expects a DataFrame already processed with display column names
+    (Task ID, Task Name, Content Type, Status, Language Count,
+    Additional Languages).
+
+    Args:
+        df: Display-ready DataFrame with columns matching
+            LANGUAGE_TABLE_SPEC.column_order.
+
+    Returns:
+        A ``(title, component)`` tuple where component is either a
+        ``dash_table.DataTable`` or an ``html.P`` empty-state placeholder.
+    """
+    return build_table(df, LANGUAGE_TABLE_SPEC)
 
 
 # ---------------------------------------------------------------------------

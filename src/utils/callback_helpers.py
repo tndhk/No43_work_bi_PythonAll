@@ -3,7 +3,7 @@
 Eliminates boilerplate for clear-filter callbacks that are duplicated
 across multiple dashboard pages.
 """
-from typing import Any
+from typing import Any, Callable
 
 import dash
 from dash import callback, Input, Output
@@ -33,7 +33,7 @@ def register_clear_callbacks(
         ...     ("cu-filter-model", "cu-clear-model"),
         ... ])
     """
-    def _make_clear_fn(dv: Any) -> callable:
+    def _make_clear_fn(dv: Any) -> Callable:
         """Create a clear callback that returns *dv* on click."""
         def _clear(n_clicks):
             if not n_clicks:

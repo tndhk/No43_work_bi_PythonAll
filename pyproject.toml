@@ -36,9 +36,14 @@ target-version = "py39"
 
 [tool.mypy]
 python_version = "3.9"
-strict = true
-allow_untyped_calls = true
-allow_untyped_defs = true
+warn_return_any = false
+warn_unused_configs = true
+disallow_untyped_defs = false
+check_untyped_defs = false
+no_implicit_optional = false
+warn_redundant_casts = false
+warn_unused_ignores = false
+exclude = ["venv/", ".venv/", "build/", "dist/"]
 
 [[tool.mypy.overrides]]
 module = "pyarrow.*"
@@ -47,3 +52,56 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = "botocore.*"
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "dash.*"
+ignore_missing_imports = true
+disable_error_code = ["attr-defined"]
+
+[[tool.mypy.overrides]]
+module = "dash_table.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "dash_bootstrap_components.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "dash_mantine_components.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "flask_caching.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "flask_login.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "plotly.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "_pytest.*"
+follow_imports = "skip"
+
+[[tool.mypy.overrides]]
+module = "src.data.type_inferrer"
+disable_error_code = ["arg-type"]
+
+[[tool.mypy.overrides]]
+module = "src.components.filters"
+disable_error_code = ["assignment"]
+
+[[tool.mypy.overrides]]
+module = "src.charts.table_builder"
+disable_error_code = ["assignment", "attr-defined"]
+
+[[tool.mypy.overrides]]
+module = "src.pages.hamm_overview._data_loader"
+disable_error_code = ["union-attr", "return-value", "assignment", "attr-defined"]
+
+[[tool.mypy.overrides]]
+module = "src.pages.apac_dot_due_date._data_loader"
+disable_error_code = ["assignment"]

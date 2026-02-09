@@ -314,3 +314,23 @@ class TestContentMetadataSection:
 
         for expected_id in expected_ids:
             assert expected_id in graph_ids, f"{expected_id} not found in layout"
+
+
+# ---------------------------------------------------------------------------
+# Language Table layout presence (RED -- not yet implemented)
+# ---------------------------------------------------------------------------
+
+class TestLanguageTableInLayout:
+    """Layout must contain a placeholder for CHART_ID_LANGUAGE_TABLE."""
+
+    def test_language_table_id_exists_in_layout(self, layout):
+        """A component with id=CHART_ID_LANGUAGE_TABLE must exist in the layout tree."""
+        from src.pages.hamm_overview._constants import CHART_ID_LANGUAGE_TABLE
+
+        all_components = _find_components(
+            layout,
+            lambda c: getattr(c, "id", None) == CHART_ID_LANGUAGE_TABLE,
+        )
+        assert len(all_components) >= 1, (
+            f"Component with id='{CHART_ID_LANGUAGE_TABLE}' not found in layout"
+        )

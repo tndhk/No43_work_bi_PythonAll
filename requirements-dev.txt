@@ -1,0 +1,13 @@
+# Development and test dependencies
+# Usage: pip install -r requirements.txt -r requirements-dev.txt
+
+# Testing
+pytest>=7.0.0
+pytest-cov>=4.0.0
+moto[s3]>=5.0.0
+
+# Linting
+ruff>=0.4.0
+
+# Type checking
+mypy>=1.9.0

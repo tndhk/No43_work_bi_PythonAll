@@ -12,7 +12,7 @@ def test_api_etl_extract_raises_not_implemented():
     etl = ApiETL()
     
     # When/Then: extract() raises NotImplementedError
-    with pytest.raises(NotImplementedError, match="API ETL not implemented in Phase 1"):
+    with pytest.raises(NotImplementedError, match="API ETL not implemented - skeleton only"):
         etl.extract()
 
 
@@ -35,7 +35,7 @@ def test_rds_etl_extract_raises_not_implemented():
     etl = RdsETL()
     
     # When/Then: extract() raises NotImplementedError
-    with pytest.raises(NotImplementedError, match="RDS ETL not implemented in Phase 1"):
+    with pytest.raises(NotImplementedError, match="RDS ETL not implemented - skeleton only"):
         etl.extract()
 
 
@@ -58,7 +58,7 @@ def test_s3_raw_etl_extract_raises_not_implemented():
     etl = S3RawETL()
     
     # When/Then: extract() raises NotImplementedError
-    with pytest.raises(NotImplementedError, match="S3 Raw ETL not implemented in Phase 1"):
+    with pytest.raises(NotImplementedError, match="S3 Raw ETL not implemented - skeleton only"):
         etl.extract()
 
 

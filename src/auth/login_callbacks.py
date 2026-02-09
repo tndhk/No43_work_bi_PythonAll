@@ -1,6 +1,6 @@
 """Login and logout callbacks."""
 from dash import Input, Output, State, html, callback_context
-from flask_login import login_user, logout_user
+from flask_login import login_user
 
 from src.auth.providers import get_auth_provider
 
