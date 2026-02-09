@@ -9,6 +9,26 @@ filterwarnings = [
     "ignore::Warning:boto3.compat",
     "ignore::DeprecationWarning:dash.development.base_component",
 ]
+addopts = "--cov=src --cov=backend --cov-report=term-missing"
+
+[tool.coverage.run]
+source = ["src", "backend"]
+omit = [
+    "*/__pycache__/*",
+    "*/tests/*",
+    "*/.venv/*",
+]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+]
+show_missing = true
+skip_empty = true
 
 [tool.ruff]
 line-length = 100
