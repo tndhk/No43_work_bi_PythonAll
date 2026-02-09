@@ -94,11 +94,15 @@ def build_layout():
                 dbc.Card([
                     dbc.CardHeader(COST_TREND_SPEC.title, className="card-header"),
                     dbc.CardBody([
-                        dcc.Graph(id=CHART_ID_COST_TREND),
+                        dcc.Graph(
+                            id=CHART_ID_COST_TREND,
+                            className="chart-density-graph",
+                            config={"displayModeBar": False, "responsive": True},
+                        ),
                     ]),
-                ]),
+                ], className="chart-density-card"),
             ], md=12),
-        ], className="mb-4"),
+        ], className="mb-4 chart-density-row"),
 
         # Charts Row 2
         dbc.Row([
@@ -106,19 +110,27 @@ def build_layout():
                 dbc.Card([
                     dbc.CardHeader(TOKEN_EFFICIENCY_SPEC.title, className="card-header"),
                     dbc.CardBody([
-                        dcc.Graph(id=CHART_ID_TOKEN_EFFICIENCY),
+                        dcc.Graph(
+                            id=CHART_ID_TOKEN_EFFICIENCY,
+                            className="chart-density-graph",
+                            config={"displayModeBar": False, "responsive": True},
+                        ),
                     ]),
-                ]),
+                ], className="chart-density-card"),
             ], md=6),
             dbc.Col([
                 dbc.Card([
                     dbc.CardHeader(MODEL_DISTRIBUTION_SPEC.title, className="card-header"),
                     dbc.CardBody([
-                        dcc.Graph(id=CHART_ID_MODEL_DISTRIBUTION),
+                        dcc.Graph(
+                            id=CHART_ID_MODEL_DISTRIBUTION,
+                            className="chart-density-graph",
+                            config={"displayModeBar": False, "responsive": True},
+                        ),
                     ]),
-                ]),
+                ], className="chart-density-card"),
             ], md=6),
-        ], className="mb-4"),
+        ], className="mb-4 chart-density-row"),
 
         # Data Table
         dbc.Row([

@@ -342,6 +342,94 @@ from src.utils.data_helpers import (
 
 パッケージ形式が必要な理由: Dashのページスキャナーが `__init__.py` を `_` 始まりとしてスキップするため、`app.py` での明示的インポートが必須。
 
+### 7.1 チャート視認性の再利用パターン（DOMO比較で有効）
+
+`hamm_overview` の Content Metadata で有効だった改善を、他ページへ横展開するための標準手順。
+
+実装チェックリスト:
+- [ ] `dbc.CardHeader` を使う場合、Plotlyのタイトルは消す（`title={"text": None}`）
+- [ ] `dcc.Graph` に `config={"displayModeBar": False, "responsive": True}` を設定
+- [ ] 単一系列バーは `show_legend=False`
+- [ ] 積み上げバーは `text_template="%{y}"` と `textposition="inside"` を組み合わせる
+- [ ] `ChartSpec.height` を用途別に明示し、描画面積を確保する
+- [ ] CSSはセクションclassでスコープし、全ページ共通classに直接影響させない
+
+責務分担:
+
+| ファイル | 役割 | 例 |
+|---------|------|----|
+| `_layout.py` | `dcc.Graph` config とスコープclass付与 | `className="xx-metadata-graph"` |
+| `_constants.py` | `ChartSpec` の高さ・凡例・ラベル方針 | `show_legend=False`, `text_template="%{y}"` |
+| `_chart_builders.py` | `build_chart()` 後の最終レイアウト調整 | `title=None`, `margin`, `legend` |
+| `assets/*.css` | セクション限定の余白最適化 | `.xx-row .xx-card .card-body { ... }` |
+
+最小雛形:
+
+```python
+# _layout.py
+dbc.Row([
+    dbc.Col([
+        dbc.Card([
+            dbc.CardHeader("Genre", className="card-header"),
+            dbc.CardBody([
+                dcc.Graph(
+                    id=CHART_ID_GENRE,
+                    className="page-metadata-graph",
+                    config={"displayModeBar": False, "responsive": True},
+                ),
+            ]),
+        ], className="page-metadata-card"),
+    ], md=4),
+], className="mb-4 page-metadata-row")
+```
+
+```python
+# _constants.py
+GENRE_SPEC = ChartSpec(
+    title="Genre",
+    chart_type="bar",
+    x_column="genre",
+    y_columns=["count"],
+    text_template="%{y}",
+    show_legend=False,
+    height=460,
+)
+```
+
+```python
+# _chart_builders.py
+def _apply_chart_readability(fig):
+    fig.update_layout(
+        title={"text": None},
+        margin={"l": 24, "r": 8, "t": 8, "b": 44},
+        xaxis_title="",
+        yaxis_title="",
+    )
+    return fig
+```
+
+```css
+/* assets/05-charts.css */
+.page-metadata-row .page-metadata-card .card-body {
+  padding: 0.25rem;
+}
+
+.page-metadata-row .page-metadata-graph {
+  min-height: 460px;
+}
+```
+
+アンチパターン:
+- `CardHeader` と `ChartSpec.title` を同時表示して縦スペースを二重消費する
+- 単一系列なのに凡例を表示し、プロット面積を圧迫する
+- `.card` など共通classへ直接padding変更を入れて他ページを壊す
+
+実装後確認:
+- [ ] タイトル重複がない
+- [ ] 凡例が本当に必要なチャートだけ表示される
+- [ ] データラベルが重ならず読める
+- [ ] CSS変更が対象セクション外へ波及しない
+
 ## 8. ETL設定ファイル
 
 ### backend/config/domo_datasets.yaml

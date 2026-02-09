@@ -125,27 +125,39 @@ def build_layout() -> html.Div:
                     dbc.Card([
                         dbc.CardHeader("Original Language", className="card-header"),
                         dbc.CardBody([
-                            dcc.Graph(id=CHART_ID_METADATA_ORIGINAL_LANGUAGE),
+                            dcc.Graph(
+                                id=CHART_ID_METADATA_ORIGINAL_LANGUAGE,
+                                className="chart-density-graph",
+                                config={"displayModeBar": False, "responsive": True},
+                            ),
                         ]),
-                    ]),
+                    ], className="chart-density-card"),
                 ], md=4),
                 dbc.Col([
                     dbc.Card([
                         dbc.CardHeader("Was dialogue Provided?", className="card-header"),
                         dbc.CardBody([
-                            dcc.Graph(id=CHART_ID_METADATA_DIALOGUE),
+                            dcc.Graph(
+                                id=CHART_ID_METADATA_DIALOGUE,
+                                className="chart-density-graph",
+                                config={"displayModeBar": False, "responsive": True},
+                            ),
                         ]),
-                    ]),
+                    ], className="chart-density-card"),
                 ], md=4),
                 dbc.Col([
                     dbc.Card([
                         dbc.CardHeader("Genre", className="card-header"),
                         dbc.CardBody([
-                            dcc.Graph(id=CHART_ID_METADATA_GENRE),
+                            dcc.Graph(
+                                id=CHART_ID_METADATA_GENRE,
+                                className="chart-density-graph",
+                                config={"displayModeBar": False, "responsive": True},
+                            ),
                         ]),
-                    ]),
+                    ], className="chart-density-card"),
                 ], md=4),
-            ], className="mb-4"),
+            ], className="mb-4 chart-density-row"),
 
             # Error Details header section
             dbc.Row([

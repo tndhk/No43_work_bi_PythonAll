@@ -6,13 +6,15 @@ These tests verify the expected layout grid configuration:
 - Title fontSize: 32px
 
 Helper utilities:
-- _find_components: generic tree walker with a user-supplied predicate
+- find_components: generic tree walker with a user-supplied predicate
 """
 from unittest.mock import patch, MagicMock
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 
 import pytest
+
+from tests.helpers.dash_test_utils import find_components
 
 # Import the module first so patch() can resolve the target
 import src.pages.hamm_overview._layout as _layout_mod  # noqa: F401
@@ -45,27 +47,13 @@ def layout():
         return _layout_mod.build_layout()
 
 
-def _find_components(component, predicate) -> list:
-    """Recursively find all components in the tree that satisfy *predicate*."""
-    results = []
-    if predicate(component):
-        results.append(component)
-    children = getattr(component, "children", None)
-    if children is None:
-        return results
-    if not isinstance(children, list):
-        children = [children]
-    for child in children:
-        if child is not None:
-            results.extend(_find_components(child, predicate))
-    return results
 
 
 class TestRow1FilterRow:
     """Row 1: CSS Grid with title (4 cols) + 3 filters (1 col each)."""
 
     def _find_filter_row_title_3filters(self, layout) -> list:
-        return _find_components(
+        return find_components(
             layout,
             lambda c: isinstance(c, html.Div)
             and "filter-row-title-3filters" in (getattr(c, "className", None) or ""),
@@ -94,7 +82,7 @@ class TestRow2CssGrid:
     """Row 2: CSS Grid layout with 7 equal-width filter columns."""
 
     def _find_filter_row_7col(self, layout) -> list:
-        return _find_components(
+        return find_components(
             layout,
             lambda c: isinstance(c, html.Div)
             and "filter-row-7col" in (getattr(c, "className", None) or ""),
@@ -124,7 +112,7 @@ class TestTitleStyle:
 
     def test_title_font_size_is_32px(self, layout):
         # Find the filter-row-title-3filters div
-        divs = _find_components(
+        divs = find_components(
             layout,
             lambda c: isinstance(c, html.Div)
             and "filter-row-title-3filters" in (getattr(c, "className", None) or ""),
@@ -147,7 +135,7 @@ class TestCadenceFilter:
 
     def test_cadence_card_body_has_classname(self, layout):
         """A dbc.CardBody with className containing 'cadence-chip-body' must exist."""
-        card_bodies = _find_components(
+        card_bodies = find_components(
             layout,
             lambda c: isinstance(c, dbc.CardBody),
         )
@@ -169,7 +157,7 @@ class TestVolumeSectionWhiteText:
 
     def _find_volume_section(self, layout):
         """Find the Volume section div (backgroundColor=#2f5f8f with list children containing H3)."""
-        candidates = _find_components(
+        candidates = find_components(
             layout,
             lambda c: isinstance(c, html.Div)
             and isinstance(getattr(c, "style", None), dict)
@@ -184,7 +172,7 @@ class TestVolumeSectionWhiteText:
         assert len(sections) >= 1, "Volume section div (backgroundColor=#2f5f8f) not found"
 
         section = sections[0]
-        h3_list = _find_components(
+        h3_list = find_components(
             section,
             lambda c: isinstance(c, html.H3),
         )
@@ -203,7 +191,7 @@ class TestVolumeSectionWhiteText:
         assert len(sections) >= 1, "Volume section div (backgroundColor=#2f5f8f) not found"
 
         section = sections[0]
-        p_list = _find_components(
+        p_list = find_components(
             section,
             lambda c: isinstance(c, html.P),
         )
@@ -222,7 +210,7 @@ class TestVolumeCadenceRowAlignment:
 
     def test_row_has_align_items_stretch(self, layout):
         """The dbc.Row wrapping Volume + Cadence must have 'align-items-stretch' in className."""
-        rows = _find_components(
+        rows = find_components(
             layout,
             lambda c: isinstance(c, dbc.Row),
         )
@@ -239,7 +227,7 @@ class TestVolumeCadenceRowAlignment:
 
     def test_child_cols_have_d_flex(self, layout):
         """The dbc.Col children of the Volume/Cadence row must have 'd-flex' in className."""
-        rows = _find_components(
+        rows = find_components(
             layout,
             lambda c: isinstance(c, dbc.Row),
         )
@@ -247,7 +235,7 @@ class TestVolumeCadenceRowAlignment:
         # Find the row that contains the Volume section (backgroundColor=#2f5f8f)
         volume_row = None
         for row in rows:
-            volume_divs = _find_components(
+            volume_divs = find_components(
                 row,
                 lambda c: isinstance(c, html.Div)
                 and isinstance(getattr(c, "style", None), dict)
@@ -259,7 +247,7 @@ class TestVolumeCadenceRowAlignment:
 
         assert volume_row is not None, "Could not find dbc.Row containing Volume section"
 
-        cols = _find_components(
+        cols = find_components(
             volume_row,
             lambda c: isinstance(c, dbc.Col),
         )
@@ -289,7 +277,7 @@ class TestPerSlicerClearButtons:
 
         found_ids = {
             getattr(c, "id", None)
-            for c in _find_components(layout, lambda c: getattr(c, "id", None) is not None)
+            for c in find_components(layout, lambda c: getattr(c, "id", None) is not None)
         }
         for clear_id in clear_ids:
             assert clear_id in found_ids, f"{clear_id} not found in layout"
@@ -297,7 +285,7 @@ class TestPerSlicerClearButtons:
 
 class TestContentMetadataSection:
     def test_content_metadata_header_exists(self, layout):
-        header_divs = _find_components(
+        header_divs = find_components(
             layout,
             lambda c: isinstance(c, html.H3) and getattr(c, "children", "") == "Content Metadata",
         )
@@ -309,11 +297,46 @@ class TestContentMetadataSection:
             "hamm-metadata-dialogue",
             "hamm-metadata-genre",
         }
-        graphs = _find_components(layout, lambda c: isinstance(c, dcc.Graph))
+        graphs = find_components(layout, lambda c: isinstance(c, dcc.Graph))
         graph_ids = {getattr(g, "id", None) for g in graphs}
 
         for expected_id in expected_ids:
             assert expected_id in graph_ids, f"{expected_id} not found in layout"
+
+    def test_content_metadata_row_has_scope_class(self, layout):
+        rows = find_components(
+            layout,
+            lambda c: isinstance(c, dbc.Row)
+            and "chart-density-row" in (getattr(c, "className", None) or ""),
+        )
+        assert len(rows) >= 1, "chart-density-row class not found"
+
+    def test_content_metadata_cards_have_class(self, layout):
+        cards = find_components(
+            layout,
+            lambda c: isinstance(c, dbc.Card)
+            and "chart-density-card" in (getattr(c, "className", None) or ""),
+        )
+        assert len(cards) == 3, f"Expected 3 metadata cards, got {len(cards)}"
+
+    def test_content_metadata_graphs_have_class_and_config(self, layout):
+        expected_ids = {
+            "hamm-metadata-original-language",
+            "hamm-metadata-dialogue",
+            "hamm-metadata-genre",
+        }
+        graphs = find_components(
+            layout,
+            lambda c: isinstance(c, dcc.Graph) and getattr(c, "id", None) in expected_ids,
+        )
+        assert len(graphs) == 3, f"Expected 3 metadata graphs, got {len(graphs)}"
+
+        for graph in graphs:
+            class_name = getattr(graph, "className", "") or ""
+            assert "chart-density-graph" in class_name
+            config = getattr(graph, "config", None) or {}
+            assert config.get("displayModeBar") is False
+            assert config.get("responsive") is True
 
 
 # ---------------------------------------------------------------------------
@@ -327,7 +350,7 @@ class TestLanguageTableInLayout:
         """A component with id=CHART_ID_LANGUAGE_TABLE must exist in the layout tree."""
         from src.pages.hamm_overview._constants import CHART_ID_LANGUAGE_TABLE
 
-        all_components = _find_components(
+        all_components = find_components(
             layout,
             lambda c: getattr(c, "id", None) == CHART_ID_LANGUAGE_TABLE,
         )

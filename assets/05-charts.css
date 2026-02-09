@@ -37,3 +37,21 @@
   color: var(--text-primary);
   margin-bottom: var(--spacing-md);
 }
+
+/* Chart density tweaks: compact card/graph spacing for chart-in-card layouts */
+.chart-density-row .chart-density-card {
+  padding: 0.75rem;
+}
+
+.chart-density-row .chart-density-card .card-header {
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.35rem;
+}
+
+.chart-density-row .chart-density-card .card-body {
+  padding: 0.25rem;
+}
+
+.chart-density-row .chart-density-graph {
+  min-height: 460px;
+}

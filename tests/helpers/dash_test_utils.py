@@ -169,3 +169,27 @@ def extract_dropdown_value(
         return None
 
     return _walk(component)
+
+
+def find_components(component: Any, predicate: callable) -> list[Any]:
+    """Recursively find all components in the tree that satisfy predicate.
+
+    Args:
+        component: The root Dash component to search from.
+        predicate: A callable that takes a component and returns True if it matches.
+
+    Returns:
+        A list of all matching components (empty list if none found).
+    """
+    results: list[Any] = []
+    if predicate(component):
+        results.append(component)
+    children = getattr(component, "children", None)
+    if children is None:
+        return results
+    if not isinstance(children, list):
+        children = [children]
+    for child in children:
+        if child is not None:
+            results.extend(find_components(child, predicate))
+    return results

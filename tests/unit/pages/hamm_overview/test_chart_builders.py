@@ -607,6 +607,9 @@ class TestContentMetadataChartBuilders:
         assert len(fig.data) == 1
         assert isinstance(fig.data[0], go.Pie)
         assert set(fig.data[0].labels) == {"Japanese", "Korean"}
+        assert fig.layout.title.text is None
+        assert fig.layout.legend.orientation == "h"
+        assert fig.layout.margin.t == 8
 
     def test_build_dialogue_chart(self):
         from src.pages.hamm_overview._chart_builders import build_dialogue_chart
@@ -623,6 +626,10 @@ class TestContentMetadataChartBuilders:
         assert len(bar_traces) == 2
         assert set([t.name for t in bar_traces]) == {"Yes", "No"}
         assert fig.layout.barmode == "stack"
+        assert fig.layout.title.text is None
+        assert fig.layout.legend.x == 1.02
+        assert fig.layout.margin.r == 70
+        assert all(t.textposition == "inside" for t in bar_traces)
 
     def test_build_genre_chart(self):
         from src.pages.hamm_overview._chart_builders import build_genre_chart
@@ -637,3 +644,6 @@ class TestContentMetadataChartBuilders:
         bar_traces = [t for t in fig.data if isinstance(t, go.Bar)]
         assert len(bar_traces) == 1
         assert bar_traces[0].name == "count"
+        assert fig.layout.title.text is None
+        assert fig.layout.showlegend is False
+        assert fig.layout.margin.t == 8

@@ -244,18 +244,25 @@ class TestContentMetadataChartSpecs:
         assert ORIGINAL_LANGUAGE_SPEC.chart_type == "pie"
         assert ORIGINAL_LANGUAGE_SPEC.x_column == "original_language"
         assert ORIGINAL_LANGUAGE_SPEC.y_columns == ["count"]
+        assert ORIGINAL_LANGUAGE_SPEC.height == 460
+        assert ORIGINAL_LANGUAGE_SPEC.show_legend is True
 
     def test_dialogue_spec(self):
         from src.pages.hamm_overview._constants import DIALOGUE_SPEC
         assert DIALOGUE_SPEC.chart_type == "stacked_bar"
         assert DIALOGUE_SPEC.x_column == "content_type"
         assert DIALOGUE_SPEC.y_columns == ["Yes", "No"]
+        assert DIALOGUE_SPEC.height == 460
+        assert DIALOGUE_SPEC.text_template == "%{y}"
 
     def test_genre_spec(self):
         from src.pages.hamm_overview._constants import GENRE_SPEC
         assert GENRE_SPEC.chart_type == "bar"
         assert GENRE_SPEC.x_column == "genre"
         assert GENRE_SPEC.y_columns == ["count"]
+        assert GENRE_SPEC.height == 460
+        assert GENRE_SPEC.text_template == "%{y}"
+        assert GENRE_SPEC.show_legend is False
 
 
 # ---------------------------------------------------------------------------

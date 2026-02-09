@@ -201,6 +201,7 @@ class TestBuildChartIntegration:
     def test_cost_trend_chart_has_title(
         self, mock_reader_cls, mock_resolve, mock_load
     ):
+        """Title is now suppressed (shown via CardHeader); title.text must be None."""
         from src.pages.cursor_usage._callbacks import update_dashboard
 
         mock_reader_cls.return_value = MagicMock()
@@ -209,7 +210,7 @@ class TestBuildChartIntegration:
 
         result = update_dashboard("2024-01-01", "2024-12-31", None, None, None)
         cost_trend_fig = result[3]
-        assert cost_trend_fig.layout.title.text == "Daily Cost Trend"
+        assert cost_trend_fig.layout.title.text is None
 
     @patch("src.pages.cursor_usage._callbacks.load_and_filter_data")
     @patch("src.pages.cursor_usage._callbacks.resolve_dataset_id_for_dashboard")
@@ -217,6 +218,7 @@ class TestBuildChartIntegration:
     def test_token_efficiency_chart_has_title(
         self, mock_reader_cls, mock_resolve, mock_load
     ):
+        """Title is now suppressed (shown via CardHeader); title.text must be None."""
         from src.pages.cursor_usage._callbacks import update_dashboard
 
         mock_reader_cls.return_value = MagicMock()
@@ -225,7 +227,7 @@ class TestBuildChartIntegration:
 
         result = update_dashboard("2024-01-01", "2024-12-31", None, None, None)
         efficiency_fig = result[4]
-        assert efficiency_fig.layout.title.text == "Token Efficiency by Model (Tokens per $)"
+        assert efficiency_fig.layout.title.text is None
 
     @patch("src.pages.cursor_usage._callbacks.load_and_filter_data")
     @patch("src.pages.cursor_usage._callbacks.resolve_dataset_id_for_dashboard")
@@ -233,6 +235,7 @@ class TestBuildChartIntegration:
     def test_model_distribution_chart_has_title(
         self, mock_reader_cls, mock_resolve, mock_load
     ):
+        """Title is now suppressed (shown via CardHeader); title.text must be None."""
         from src.pages.cursor_usage._callbacks import update_dashboard
 
         mock_reader_cls.return_value = MagicMock()
@@ -241,7 +244,7 @@ class TestBuildChartIntegration:
 
         result = update_dashboard("2024-01-01", "2024-12-31", None, None, None)
         distribution_fig = result[5]
-        assert distribution_fig.layout.title.text == "Cost Distribution by Model"
+        assert distribution_fig.layout.title.text is None
 
     @patch("src.pages.cursor_usage._callbacks.load_and_filter_data")
     @patch("src.pages.cursor_usage._callbacks.resolve_dataset_id_for_dashboard")

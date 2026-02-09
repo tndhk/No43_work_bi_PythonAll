@@ -387,6 +387,68 @@ dbc.Row([
 
 参考実装: [`src/pages/hamm_overview/_layout.py`](../../src/pages/hamm_overview/_layout.py)
 
+### 2-6a. Chart Readability Playbook（再利用パターン）
+
+DOMO比較で有効だった視認性改善を、別ページへ再利用するための標準手順。
+
+チェックリスト:
+- [ ] `dbc.CardHeader` を使うチャートは Plotlyタイトルを消す（`title={"text": None}`）
+- [ ] `dcc.Graph` には `config={"displayModeBar": False, "responsive": True}` を設定
+- [ ] 単一系列バーは `show_legend=False`
+- [ ] 積み上げバーは `text_template="%{y}"` + `textposition="inside"`
+- [ ] `ChartSpec.height` を明示して描画領域を確保
+- [ ] CSSはセクションclassでスコープし、グローバルclassの副作用を回避
+
+最小雛形:
+
+```python
+# _layout.py
+dcc.Graph(
+    id=CHART_ID,
+    className="page-metadata-graph",
+    config={"displayModeBar": False, "responsive": True},
+)
+```
+
+```python
+# _constants.py
+CHART_SPEC = ChartSpec(
+    title="Sample",
+    chart_type="bar",
+    x_column="category",
+    y_columns=["count"],
+    text_template="%{y}",
+    show_legend=False,
+    height=460,
+)
+```
+
+```python
+# _chart_builders.py
+fig = build_chart(df, CHART_SPEC)
+fig.update_layout(
+    title={"text": None},
+    margin={"l": 24, "r": 8, "t": 8, "b": 44},
+    xaxis_title="",
+    yaxis_title="",
+)
+```
+
+```css
+/* assets/05-charts.css */
+.page-metadata-row .page-metadata-card .card-body {
+  padding: 0.25rem;
+}
+.page-metadata-row .page-metadata-graph {
+  min-height: 460px;
+}
+```
+
+アンチパターン:
+- CardHeaderとChartSpec.titleの同時表示
+- 単一系列チャートで不要な凡例を表示
+- `.card` へ直接スタイル追加して全ページへ副作用を出す
+
 ### 2-7. `_callbacks.py` - コールバック実装
 
 参考実装: [`src/pages/hamm_overview/_callbacks.py`](../../src/pages/hamm_overview/_callbacks.py)

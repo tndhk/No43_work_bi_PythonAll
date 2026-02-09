@@ -1,6 +1,10 @@
 """Tests for cursor_usage layout module."""
 from unittest.mock import patch, MagicMock
+from dash import html, dcc
+import dash_bootstrap_components as dbc
 import pytest
+
+from tests.helpers.dash_test_utils import find_components
 
 
 class TestBuildLayout:
@@ -175,3 +179,148 @@ class TestBuildLayout:
             assert token_eff is not None
             assert model_dist is not None
             assert data_table is not None
+
+
+# ---------------------------------------------------------------------------
+# Helper: recursive component finder (same as hamm_overview test_layout)
+# ---------------------------------------------------------------------------
+
+
+
+# ---------------------------------------------------------------------------
+# Shared layout fixture for chart-density tests
+# ---------------------------------------------------------------------------
+
+@pytest.fixture()
+def layout():
+    """Build layout with mocked data dependencies."""
+    import src.pages.cursor_usage._layout as _layout_mod
+
+    mock_opts = {
+        "min_date": "2024-01-01",
+        "max_date": "2024-12-31",
+        "models": ["gpt-4", "claude-3"],
+        "users": ["user1", "user2"],
+        "kinds": ["chat", "completion"],
+    }
+    with patch.object(
+        _layout_mod, "load_filter_options", return_value=mock_opts
+    ), patch.object(
+        _layout_mod, "ParquetReader", return_value=MagicMock()
+    ), patch.object(
+        _layout_mod, "resolve_dataset_id_for_dashboard", return_value="cursor-usage-dataset"
+    ):
+        return _layout_mod.build_layout()
+
+
+# ---------------------------------------------------------------------------
+# Chart density CSS class tests (RED -- not yet implemented)
+# ---------------------------------------------------------------------------
+
+class TestChartRowDensityClass:
+    """Charts Row 1 and Row 2 must have 'chart-density-row' className."""
+
+    def test_charts_row_1_has_density_class(self, layout):
+        """The dbc.Row containing CHART_ID_COST_TREND must have 'chart-density-row'."""
+        from src.pages.cursor_usage._constants import CHART_ID_COST_TREND
+
+        rows = find_components(
+            layout,
+            lambda c: isinstance(c, dbc.Row)
+            and "chart-density-row" in (getattr(c, "className", None) or ""),
+        )
+        # Find the row that contains the cost trend chart
+        matching = [
+            r for r in rows
+            if find_components(
+                r,
+                lambda c: isinstance(c, dcc.Graph)
+                and getattr(c, "id", None) == CHART_ID_COST_TREND,
+            )
+        ]
+        assert len(matching) >= 1, (
+            "Expected Charts Row 1 (containing cost trend) to have "
+            "'chart-density-row' in className"
+        )
+
+    def test_charts_row_2_has_density_class(self, layout):
+        """The dbc.Row containing token efficiency and model distribution must have 'chart-density-row'."""
+        from src.pages.cursor_usage._constants import CHART_ID_TOKEN_EFFICIENCY
+
+        rows = find_components(
+            layout,
+            lambda c: isinstance(c, dbc.Row)
+            and "chart-density-row" in (getattr(c, "className", None) or ""),
+        )
+        matching = [
+            r for r in rows
+            if find_components(
+                r,
+                lambda c: isinstance(c, dcc.Graph)
+                and getattr(c, "id", None) == CHART_ID_TOKEN_EFFICIENCY,
+            )
+        ]
+        assert len(matching) >= 1, (
+            "Expected Charts Row 2 (containing token efficiency) to have "
+            "'chart-density-row' in className"
+        )
+
+
+class TestChartCardDensityClass:
+    """All 3 chart dbc.Cards must have 'chart-density-card' className."""
+
+    def test_three_chart_cards_have_density_class(self, layout):
+        cards = find_components(
+            layout,
+            lambda c: isinstance(c, dbc.Card)
+            and "chart-density-card" in (getattr(c, "className", None) or ""),
+        )
+        assert len(cards) == 3, (
+            f"Expected 3 dbc.Card with 'chart-density-card' class, got {len(cards)}"
+        )
+
+
+class TestChartGraphDensityClassAndConfig:
+    """All 3 chart dcc.Graphs must have 'chart-density-graph' className and compact config."""
+
+    def _get_chart_graph_ids(self):
+        from src.pages.cursor_usage._constants import (
+            CHART_ID_COST_TREND,
+            CHART_ID_TOKEN_EFFICIENCY,
+            CHART_ID_MODEL_DISTRIBUTION,
+        )
+        return {CHART_ID_COST_TREND, CHART_ID_TOKEN_EFFICIENCY, CHART_ID_MODEL_DISTRIBUTION}
+
+    def test_three_chart_graphs_have_density_class(self, layout):
+        expected_ids = self._get_chart_graph_ids()
+        graphs = find_components(
+            layout,
+            lambda c: isinstance(c, dcc.Graph)
+            and getattr(c, "id", None) in expected_ids,
+        )
+        assert len(graphs) == 3, f"Expected 3 chart graphs, got {len(graphs)}"
+
+        for graph in graphs:
+            class_name = getattr(graph, "className", "") or ""
+            assert "chart-density-graph" in class_name, (
+                f"Graph id={graph.id} should have 'chart-density-graph' in className, "
+                f"got '{class_name}'"
+            )
+
+    def test_three_chart_graphs_have_compact_config(self, layout):
+        expected_ids = self._get_chart_graph_ids()
+        graphs = find_components(
+            layout,
+            lambda c: isinstance(c, dcc.Graph)
+            and getattr(c, "id", None) in expected_ids,
+        )
+        assert len(graphs) == 3, f"Expected 3 chart graphs, got {len(graphs)}"
+
+        for graph in graphs:
+            config = getattr(graph, "config", None) or {}
+            assert config.get("displayModeBar") is False, (
+                f"Graph id={graph.id} should have displayModeBar=False"
+            )
+            assert config.get("responsive") is True, (
+                f"Graph id={graph.id} should have responsive=True"
+            )

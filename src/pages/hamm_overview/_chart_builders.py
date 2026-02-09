@@ -15,6 +15,7 @@ import plotly.graph_objects as go
 
 from src.charts.chart_builder import build_chart
 from src.charts.table_builder import build_table
+from src.charts.layout_helpers import apply_compact_chart_layout
 from ._constants import (
     VOLUME_TABLE_SPEC,
     VOLUME_CHART_SPEC,
@@ -158,6 +159,8 @@ def build_hamm_breakdown_chart(df: pd.DataFrame) -> go.Figure:
     return build_chart(df, HAMM_BREAKDOWN_SPEC)
 
 
+
+
 def build_original_language_chart(df: pd.DataFrame) -> go.Figure:
     """Render original language distribution via shared build_chart."""
     fig = build_chart(df, ORIGINAL_LANGUAGE_SPEC)
@@ -165,15 +168,34 @@ def build_original_language_chart(df: pd.DataFrame) -> go.Figure:
         # Pie uses category-based colors; ensure image-aligned colours.
         color_map = ORIGINAL_LANGUAGE_SPEC.color_map or {}
         colors = [color_map.get(label) for label in df["original_language"]]
-        fig.update_traces(marker={"colors": colors})
-    return fig
+        fig.update_traces(
+            marker={"colors": colors},
+            textinfo="label+value+percent",
+            textposition="inside",
+        )
+    return apply_compact_chart_layout(
+        fig,
+        margin={"l": 8, "r": 8, "t": 8, "b": 34},
+        legend={"orientation": "h", "x": 0.0, "y": -0.06},
+    )
 
 
 def build_dialogue_chart(df: pd.DataFrame) -> go.Figure:
     """Render dialogue Yes/No by content type via shared build_chart."""
-    return build_chart(df, DIALOGUE_SPEC)
+    fig = build_chart(df, DIALOGUE_SPEC)
+    if len(fig.data) > 0:
+        fig.update_traces(textposition="inside")
+    return apply_compact_chart_layout(
+        fig,
+        margin={"l": 16, "r": 70, "t": 8, "b": 30},
+        legend={"orientation": "v", "x": 1.02, "xanchor": "left", "y": 0.5, "yanchor": "middle"},
+    )
 
 
 def build_genre_chart(df: pd.DataFrame) -> go.Figure:
     """Render genre distribution via shared build_chart."""
-    return build_chart(df, GENRE_SPEC)
+    fig = build_chart(df, GENRE_SPEC)
+    return apply_compact_chart_layout(
+        fig,
+        margin={"l": 24, "r": 8, "t": 8, "b": 44},
+    )

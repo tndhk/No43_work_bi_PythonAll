@@ -227,7 +227,8 @@ ORIGINAL_LANGUAGE_SPEC: ChartSpec = ChartSpec(
         "Japanese": "#6EA5C8",
         "Korean": "#A8D184",
     },
-    height=400,
+    height=460,
+    show_legend=True,
 )
 
 DIALOGUE_SPEC: ChartSpec = ChartSpec(
@@ -239,7 +240,8 @@ DIALOGUE_SPEC: ChartSpec = ChartSpec(
         "Yes": "#4F89B5",
         "No": "#D22D27",
     },
-    height=400,
+    text_template="%{y}",
+    height=460,
 )
 
 GENRE_SPEC: ChartSpec = ChartSpec(
@@ -250,7 +252,9 @@ GENRE_SPEC: ChartSpec = ChartSpec(
     color_map={
         "count": "#7FAECC",
     },
-    height=400,
+    text_template="%{y}",
+    height=460,
+    show_legend=False,
 )
 
 LANGUAGE_TABLE_SPEC: TableSpec = TableSpec(

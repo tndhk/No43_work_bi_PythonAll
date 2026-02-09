@@ -8,6 +8,7 @@
 | 2026-02-08 | self | Started ETL pytest run before checking test deps, failed on missing `boto3` import from `tests/conftest.py` | Check/install core test deps (at least `boto3`, `moto`) before running suite in this environment |
 | 2026-02-08 | self | test_data_loader.py で19件が DATASETS NameError。メソッド内importがある関数とない関数が混在 | テストファイルで定数をメソッド内importする場合、全メソッドで統一するかトップレベルimportにする |
 | 2026-02-09 | self | `python3 -m py_compile` に Markdown (`.claude/napkin.md`) を含めて失敗 | `py_compile` は Python ファイルのみに限定する |
+| 2026-02-09 | self | 依存確認前に pytest を実行し `boto3`/`dash` 未インストールで停止 | この環境では最初に依存確認し、未導入時は `py_compile` と差分レビューを優先する |
 
 ## User Preferences
 - Prefer YAML only for look/labels; keep calculation logic in Python templates.
@@ -23,6 +24,7 @@
 - 2026-02-08: Vendor component docs (e.g., Dash Dropdown) are better captured as concise "reference notes" unless they include project-specific guardrails or repeated failure patterns.
 - 2026-02-08: `_normalize_month_series` ベクトル化 — `.apply(func)` を `pd.to_datetime(..., utc=True).dt.tz_convert(None)` + `.where()` + `.dt.strftime()` に置換で66x高速化。
 - 2026-02-08: キャッシュTTL 300→3600変更は日次ETLデータに適切。テスト影響なし。
+- 2026-02-09: UI改善の横展開は `docs/CONTRIB.md` + `docs/tech-spec.md` + `codemaps/frontend.md` + `.claude/skills/dash-bi-workflow/SKILL.md` を同時更新すると再利用性と運用整合が高い。
 
 ## Domain Notes
 - (project/domain context that matters)
@@ -40,3 +42,4 @@
 - 2026-02-09: Dashページのチャート/テーブルは全て `dbc.Card` で囲むのが必須ルール。灰色背景（`--bg-base`）との対比で視認性向上、フィルターエリアとのデザイン統一。`hamm_overview` で実装し、`dash-bi-workflow` と `CLAUDE.md` にデフォルトルールとして記載。
 - 2026-02-09: hamm_overview ページにフィルタ追加する際の修正順序: _constants.py (ID定義) → _data_loader.py (FILTER_COLUMN_MAP + load_filter_options) → _filters.py (UI作成) → _callbacks.py (Input + filter_pairs) → _layout.py (通常は自動配置)。この順序で依存関係が構成される。
 - 2026-02-09: 3ダッシュボード共通化レビュー完了。cursor_usageにdbc.Card wrap、CLEAR_PAIRS、_chart_builders.py分離を追加。apac_dot_due_dateのCLEAR_PAIRSを_constants.pyに移動。hamm_overviewパターンが標準構成となった。
+- 2026-02-09: チャートデザイン改善の横展開（hamm_overview → cursor_usage）完了。TDDアプローチ（RED: テスト追加 → GREEN: 実装 → REFACTOR: コードレビュー指摘対応）で実施。CSS クラスを汎用化（hamm-metadata-* → chart-density-*）し、重複ヘルパー関数を `tests/helpers/dash_test_utils.py` の `find_components()` と `src/charts/layout_helpers.py` の `apply_compact_chart_layout()` に統合。SPEC.md は技術詳細なしでユーザー視点の記述を維持。

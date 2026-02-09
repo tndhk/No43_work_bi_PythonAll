@@ -201,6 +201,11 @@ class TestCostTrendChartSpec:
 
         assert COST_TREND_SPEC.show_legend is False
 
+    def test_cost_trend_spec_height_460(self):
+        from src.pages.cursor_usage._constants import COST_TREND_SPEC
+
+        assert COST_TREND_SPEC.height == 460
+
 
 class TestTokenEfficiencyChartSpec:
     """TOKEN_EFFICIENCY_SPEC must define a bar chart for token efficiency."""
@@ -241,6 +246,16 @@ class TestTokenEfficiencyChartSpec:
 
         assert TOKEN_EFFICIENCY_SPEC.show_legend is False
 
+    def test_token_efficiency_spec_height_460(self):
+        from src.pages.cursor_usage._constants import TOKEN_EFFICIENCY_SPEC
+
+        assert TOKEN_EFFICIENCY_SPEC.height == 460
+
+    def test_token_efficiency_spec_text_template(self):
+        from src.pages.cursor_usage._constants import TOKEN_EFFICIENCY_SPEC
+
+        assert TOKEN_EFFICIENCY_SPEC.text_template == "%{y}"
+
 
 class TestModelDistributionChartSpec:
     """MODEL_DISTRIBUTION_SPEC must define a pie chart for cost distribution."""
@@ -275,6 +290,16 @@ class TestModelDistributionChartSpec:
         from src.pages.cursor_usage._constants import MODEL_DISTRIBUTION_SPEC, COLUMN_MAP
 
         assert MODEL_DISTRIBUTION_SPEC.y_columns == [COLUMN_MAP["cost"]]
+
+    def test_model_distribution_spec_height_460(self):
+        from src.pages.cursor_usage._constants import MODEL_DISTRIBUTION_SPEC
+
+        assert MODEL_DISTRIBUTION_SPEC.height == 460
+
+    def test_model_distribution_spec_show_legend_true(self):
+        from src.pages.cursor_usage._constants import MODEL_DISTRIBUTION_SPEC
+
+        assert MODEL_DISTRIBUTION_SPEC.show_legend is True
 
 
 # ===========================================================================

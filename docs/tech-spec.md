@@ -269,6 +269,39 @@ error_fig = create_error_figure(message="エラーが発生しました", height
 - Dash 4.x では `dangerously_allow_html` が廃止され、レガシーラッパーは非推奨
 - 新規実装では `build_chart()` + `ChartSpec` を使用すること
 
+### 4.5 表示品質パターン（再利用用）
+
+チャートの見やすさをページ横断で揃える場合は、`ChartSpec` と `_chart_builders.py` 後段調整をセットで使う。
+
+用途別の推奨値:
+
+| 用途 | 推奨 `ChartSpec` | 推奨レイアウト後処理 |
+|------|------------------|----------------------|
+| 円グラフ（構成比） | `height=460`, `show_legend=True` | `title=None`, `margin`調整, `textinfo="label+value+percent"` |
+| 積み上げ棒 | `text_template="%{y}"`, `height=460` | `title=None`, `legend`位置最適化, `textposition="inside"` |
+| 単一系列バー | `show_legend=False`, `text_template="%{y}"` | `title=None`, 上余白を詰める |
+
+標準の適用順序（`build_chart()` 後）:
+1. タイトル重複を避けるため `fig.update_layout(title={"text": None})`
+2. `margin` を調整して描画面積を確保
+3. `legend` の表示有無と位置を調整
+4. データラベル（`textposition` / `uniformtext`）を調整
+
+`dcc.Graph` 推奨設定:
+
+```python
+dcc.Graph(
+    id=CHART_ID,
+    className="page-metadata-graph",
+    config={"displayModeBar": False, "responsive": True},
+)
+```
+
+CSS設計原則:
+- `.card` などのグローバルclassを直接変更しない
+- セクションclassを起点にスコープする（例: `.page-metadata-row .page-metadata-card`）
+- 余白最適化は `card-body` と `graph` の局所設定で行う
+
 ---
 
 ## 5. データフロー

@@ -63,6 +63,7 @@ COST_TREND_SPEC: ChartSpec = ChartSpec(
     x_column=COLUMN_MAP["date"],
     y_columns=[COLUMN_MAP["cost"]],
     show_legend=False,
+    height=460,
 )
 
 TOKEN_EFFICIENCY_SPEC: ChartSpec = ChartSpec(
@@ -71,6 +72,8 @@ TOKEN_EFFICIENCY_SPEC: ChartSpec = ChartSpec(
     x_column=COLUMN_MAP["model"],
     y_columns=["TokensPerCost"],
     show_legend=False,
+    height=460,
+    text_template="%{y}",
 )
 
 MODEL_DISTRIBUTION_SPEC: ChartSpec = ChartSpec(
@@ -78,6 +81,8 @@ MODEL_DISTRIBUTION_SPEC: ChartSpec = ChartSpec(
     chart_type="pie",
     x_column=COLUMN_MAP["model"],
     y_columns=[COLUMN_MAP["cost"]],
+    height=460,
+    show_legend=True,
 )
 
 DETAIL_TABLE_SPEC: TableSpec = TableSpec(
