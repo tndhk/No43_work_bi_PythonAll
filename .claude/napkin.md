@@ -43,3 +43,6 @@
 - 2026-02-09: hamm_overview ページにフィルタ追加する際の修正順序: _constants.py (ID定義) → _data_loader.py (FILTER_COLUMN_MAP + load_filter_options) → _filters.py (UI作成) → _callbacks.py (Input + filter_pairs) → _layout.py (通常は自動配置)。この順序で依存関係が構成される。
 - 2026-02-09: 3ダッシュボード共通化レビュー完了。cursor_usageにdbc.Card wrap、CLEAR_PAIRS、_chart_builders.py分離を追加。apac_dot_due_dateのCLEAR_PAIRSを_constants.pyに移動。hamm_overviewパターンが標準構成となった。
 - 2026-02-09: チャートデザイン改善の横展開（hamm_overview → cursor_usage）完了。TDDアプローチ（RED: テスト追加 → GREEN: 実装 → REFACTOR: コードレビュー指摘対応）で実施。CSS クラスを汎用化（hamm-metadata-* → chart-density-*）し、重複ヘルパー関数を `tests/helpers/dash_test_utils.py` の `find_components()` と `src/charts/layout_helpers.py` の `apply_compact_chart_layout()` に統合。SPEC.md は技術詳細なしでユーザー視点の記述を維持。
+- 2026-02-10: page_generator で再構築時、backup の YAML は旧スキーマ形式。主な変換ルール: layout の `columns` → `rows > items`, コンポーネントに `spec` フィールド追加（KPI: KPICardSpec, Chart: title必須, Table: title必須）, pivot の `columns` → `columns_pivot`。
+- 2026-02-10: page_generator の chip_group フィルタ（column=None）は schema.py と data_loader.py.j2 の両方で guard が必要。schema.py の validate_column_references と テンプレートの `.startswith()` 呼び出し箇所。
+- 2026-02-10: hamm_overview 再構築で自動生成コードと既存テスト（298件）の整合を取る際、_constants.py にエイリアス定数（ERV_LABEL, PRELIM_LABEL, 短縮ID等）と _callbacks.py に compute_volume_kpis 等のビジネスロジック関数を追加する必要があった。自動生成はスキャフォールドに留め、手動で接合するのが現実的。

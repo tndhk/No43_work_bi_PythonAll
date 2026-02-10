@@ -112,7 +112,9 @@ def load_filter_options(reader: ParquetReader, dataset_id: str) -> dict:
 
     return {
         {% for filter in spec.filters %}
+        {% if filter.column is not none %}
         "{{ filter.id }}": extract_unique_values(df, {% if filter.column.startswith('_') %}DERIVED{{ filter.column | upper }}{% else %}COLUMN_MAP["{{ filter.column }}"]{% endif %}),
+        {% endif %}
         {% endfor %}
     }
 
@@ -267,8 +269,10 @@ def load_and_filter_data(
 
     # Apply filters
     {% for filter in spec.filters %}
+    {% if filter.column is not none %}
     if {{ filter.id.replace('-', '_') }}_values:
         df = df[df[{% if filter.column.startswith('_') %}DERIVED{{ filter.column | upper }}{% else %}COLUMN_MAP["{{ filter.column }}"]{% endif %}].isin({{ filter.id.replace('-', '_') }}_values)]
+    {% endif %}
     {% endfor %}
 
     return df

@@ -1,7 +1,7 @@
 """Pydantic models for page_spec.yaml validation."""
 from __future__ import annotations
 
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 
@@ -15,7 +15,7 @@ class MetadataSpec(BaseModel):
     id_prefix: str = Field(..., description="Prefix for all component IDs (e.g., 'hamm-')")
     dataset_id: str = Field(..., description="Dataset ID to load data from")
     title: str = Field(..., description="Dashboard display title")
-    description: Optional[str] = Field(None, description="Dashboard description for SPEC.md")
+    description: str | None = Field(None, description="Dashboard description for SPEC.md")
 
 
 # ---------------------------------------------------------------------------
@@ -37,11 +37,11 @@ class DerivedColumnSpec(BaseModel):
         "timedelta_to_seconds",
         "custom",
     ] = Field(..., description="Type of derived column")
-    source_column: Optional[str] = Field(None, description="Source column name in DataFrame")
-    format: Optional[str] = Field(None, description="Format string for custom derivation")
-    expression: Optional[str] = Field(None, description="Custom expression for derived column")
-    function: Optional[str] = Field(None, description="Custom function name for complex derivations")
-    depends_on: Optional[list[str]] = Field(None, description="List of dependencies (e.g., ['cadence'])")
+    source_column: str | None = Field(None, description="Source column name in DataFrame")
+    format: str | None = Field(None, description="Format string for custom derivation")
+    expression: str | None = Field(None, description="Custom expression for derived column")
+    function: str | None = Field(None, description="Custom function name for complex derivations")
+    depends_on: list[str] | None = Field(None, description="List of dependencies (e.g., ['cadence'])")
 
 
 # ---------------------------------------------------------------------------
@@ -55,17 +55,17 @@ class FilterSpec(BaseModel):
     )
     id: str = Field(..., description="Filter component ID (must be unique)")
     label: str = Field(..., description="Display label for the filter")
-    column: Optional[str] = Field(None, description="Column name to filter on")
-    options: Optional[list[str]] = Field(None, description="Predefined options for category/slicer filters")
+    column: str | None = Field(None, description="Column name to filter on")
+    options: list[str] | None = Field(None, description="Predefined options for category/slicer filters")
     has_clear_button: bool = Field(False, description="Whether to show clear button (for slicer)")
     multi: bool = Field(False, description="Whether to allow multiple selections")
-    default: Optional[Union[str, list[str]]] = Field(None, description="Default filter value (alias)")
-    default_value: Optional[Union[str, list[str]]] = Field(None, description="Default filter value")
-    placeholder: Optional[str] = Field(None, description="Placeholder text for dropdown")
-    clear_button_id: Optional[str] = Field(None, description="ID for clear button (if has_clear_button=True)")
+    default: str | list[str] | None = Field(None, description="Default filter value (alias)")
+    default_value: str | list[str] | None = Field(None, description="Default filter value")
+    placeholder: str | None = Field(None, description="Placeholder text for dropdown")
+    clear_button_id: str | None = Field(None, description="ID for clear button (if has_clear_button=True)")
 
     @model_validator(mode="after")
-    def validate_column_requirement(self) -> "FilterSpec":
+    def validate_column_requirement(self) -> FilterSpec:
         """Validate that column is provided when required."""
         if self.type in ("slicer", "category", "dropdown") and not self.column:
             raise ValueError(f"Filter type '{self.type}' requires a 'column' field")
@@ -80,23 +80,23 @@ class LayoutItemSpec(BaseModel):
 
     component_id: str = Field(..., description="ID of the component to place")
     md: int = Field(12, description="Bootstrap column width (1-12)")
-    className: Optional[str] = Field(None, description="Additional CSS classes")
+    className: str | None = Field(None, description="Additional CSS classes")
 
 
 class LayoutRowSpec(BaseModel):
     """A single row in layout."""
 
     items: list[LayoutItemSpec] = Field(..., description="Components in this row")
-    className: Optional[str] = Field(None, description="CSS classes for the row")
+    className: str | None = Field(None, description="CSS classes for the row")
 
 
 class LayoutSectionSpec(BaseModel):
     """A logical section grouping multiple rows."""
 
     rows: list[LayoutRowSpec] = Field(..., description="Rows in this section")
-    className: Optional[str] = Field(None, description="CSS classes for the section")
-    title: Optional[str] = Field(None, description="Section title")
-    description: Optional[str] = Field(None, description="Section description")
+    className: str | None = Field(None, description="CSS classes for the section")
+    title: str | None = Field(None, description="Section title")
+    description: str | None = Field(None, description="Section description")
 
 
 class LayoutSpec(BaseModel):
@@ -111,8 +111,8 @@ class LayoutSpec(BaseModel):
 class DataTransformSpec(BaseModel):
     """Data transformation specification."""
 
-    params: Optional[list[str]] = Field(None, description="Parameter names to extract from context")
-    operations: list["DataTransformOperationSpec"] = Field(..., description="Transformation operations")
+    params: list[str] | None = Field(None, description="Parameter names to extract from context")
+    operations: list[DataTransformOperationSpec] = Field(..., description="Transformation operations")
 
 
 class DataTransformOperationSpec(BaseModel):
@@ -134,55 +134,55 @@ class DataTransformOperationSpec(BaseModel):
     ] = Field(..., description="Type of transformation")
 
     # Common fields
-    columns: Optional[Union[list[str], str]] = Field(None, description="Columns involved in the operation")
+    columns: list[str] | str | None = Field(None, description="Columns involved in the operation")
 
     # Filter operation
-    filter_query: Optional[str] = Field(None, description="Pandas query string for filtering")
-    include: Optional[dict[str, list[str]]] = Field(None, description="Include filter (column: [values])")
-    exclude: Optional[dict[str, list[str]]] = Field(None, description="Exclude filter (column: [values])")
-    exclude_null: Optional[list[str]] = Field(None, description="Columns to exclude null values from")
+    filter_query: str | None = Field(None, description="Pandas query string for filtering")
+    include: dict[str, list[str]] | None = Field(None, description="Include filter (column: [values])")
+    exclude: dict[str, list[str]] | None = Field(None, description="Exclude filter (column: [values])")
+    exclude_null: list[str] | None = Field(None, description="Columns to exclude null values from")
 
     # Group by operation
-    group_columns: Optional[list[str]] = Field(None, description="Columns to group by")
-    agg_funcs: Optional[dict[str, str]] = Field(None, description="Aggregation functions per column")
-    agg: Optional[dict[str, str]] = Field(None, description="Alias for agg_funcs")
-    output_name: Optional[str] = Field(None, description="Output column name for aggregation")
+    group_columns: list[str] | None = Field(None, description="Columns to group by")
+    agg_funcs: dict[str, str] | None = Field(None, description="Aggregation functions per column")
+    agg: dict[str, str] | None = Field(None, description="Alias for agg_funcs")
+    output_name: str | None = Field(None, description="Output column name for aggregation")
 
     # Pivot operation
-    index: Optional[Union[list[str], str]] = Field(None, description="Index columns for pivot")
-    columns_pivot: Optional[Union[list[str], str]] = Field(None, description="Columns to pivot")
-    values: Optional[Union[list[str], str]] = Field(None, description="Values for pivot", alias="values")
-    values_pivot: Optional[Union[list[str], str]] = Field(None, description="Values for pivot (alias)")
-    fill_value: Optional[Union[int, float, str]] = Field(None, description="Fill value for missing pivot values")
+    index: list[str] | str | None = Field(None, description="Index columns for pivot")
+    columns_pivot: list[str] | str | None = Field(None, description="Columns to pivot")
+    values: list[str] | str | None = Field(None, description="Values for pivot", alias="values")
+    values_pivot: list[str] | str | None = Field(None, description="Values for pivot (alias)")
+    fill_value: int | float | str | None = Field(None, description="Fill value for missing pivot values")
 
     # Sort operation
-    by: Optional[str] = Field(None, description="Column to sort by")
+    by: str | None = Field(None, description="Column to sort by")
     ascending: bool = Field(True, description="Sort order")
-    parse_date: Optional[dict[str, str]] = Field(None, description="Parse date for sorting")
+    parse_date: dict[str, str] | None = Field(None, description="Parse date for sorting")
 
     # Rename operation
-    rename_map: Optional[dict[str, str]] = Field(None, description="Column rename mapping")
-    mapping: Optional[dict[str, str]] = Field(None, description="Alias for rename_map")
+    rename_map: dict[str, str] | None = Field(None, description="Column rename mapping")
+    mapping: dict[str, str] | None = Field(None, description="Alias for rename_map")
 
     # Add column operation
-    column_name: Optional[str] = Field(None, description="New column name")
-    name: Optional[str] = Field(None, description="Alias for column_name")
-    expression: Optional[str] = Field(None, description="Expression to compute new column")
-    left: Optional[str] = Field(None, description="Left operand for binary operation")
-    operator: Optional[str] = Field(None, description="Operator for binary operation (+, -, *, /)")
-    right: Optional[Union[str, int, float]] = Field(None, description="Right operand for binary operation")
+    column_name: str | None = Field(None, description="New column name")
+    name: str | None = Field(None, description="Alias for column_name")
+    expression: str | None = Field(None, description="Expression to compute new column")
+    left: str | None = Field(None, description="Left operand for binary operation")
+    operator: str | None = Field(None, description="Operator for binary operation (+, -, *, /)")
+    right: str | int | float | None = Field(None, description="Right operand for binary operation")
 
     # Ensure columns operation
-    default_value: Optional[Union[int, float, str]] = Field(None, description="Default value for missing columns")
+    default_value: int | float | str | None = Field(None, description="Default value for missing columns")
 
     # Count rows operation
-    output_key: Optional[str] = Field(None, description="Output key for count_rows operation")
+    output_key: str | None = Field(None, description="Output key for count_rows operation")
 
     # Custom operation
-    custom_code: Optional[str] = Field(None, description="Custom Python code for transformation")
-    function: Optional[str] = Field(None, description="Custom function name to call")
-    args: Optional[dict[str, Any]] = Field(None, description="Arguments to pass to custom function")
-    params: Optional[list[str]] = Field(None, description="Parameter names to extract from context")
+    custom_code: str | None = Field(None, description="Custom Python code for transformation")
+    function: str | None = Field(None, description="Custom function name to call")
+    args: dict[str, Any] | None = Field(None, description="Arguments to pass to custom function")
+    params: list[str] | None = Field(None, description="Parameter names to extract from context")
 
 
 # ---------------------------------------------------------------------------
@@ -199,14 +199,14 @@ class ChartSpecYAML(BaseModel):
     y_columns: list[str] = Field(..., description="Y-axis columns")
 
     # Optional fields
-    color_map: Optional[dict[str, str]] = Field(None, description="Color mapping for series")
+    color_map: dict[str, str] | None = Field(None, description="Color mapping for series")
     height: int = Field(400, description="Chart height in pixels")
-    barmode: Optional[Literal["group", "stack", "overlay"]] = Field(None, description="Bar chart mode")
-    labels: Optional[dict[str, str]] = Field(None, description="Axis labels")
+    barmode: Literal["group", "stack", "overlay"] | None = Field(None, description="Bar chart mode")
+    labels: dict[str, str] | None = Field(None, description="Axis labels")
     show_legend: bool = Field(True, description="Whether to show legend")
     orientation: Literal["v", "h"] = Field("v", description="Chart orientation (v=vertical, h=horizontal)")
-    text_template: Optional[str] = Field(None, description="Data labels template (e.g., '%{y}')")
-    hover_template: Optional[str] = Field(None, description="Hover tooltip template")
+    text_template: str | None = Field(None, description="Data labels template (e.g., '%{y}')")
+    hover_template: str | None = Field(None, description="Hover tooltip template")
 
 
 class TableSpecYAML(BaseModel):
@@ -233,14 +233,14 @@ class TableSpecYAML(BaseModel):
 class KPICardSpec(BaseModel):
     """KPI card specification."""
 
-    value_column: Optional[str] = Field(None, description="Column containing the KPI value")
+    value_column: str | None = Field(None, description="Column containing the KPI value")
     agg_func: Literal["sum", "count", "mean", "median", "max", "min", "nunique"] = Field(
         "sum", description="Aggregation function"
     )
-    format: Optional[str] = Field(None, description="Format string for value (e.g., '{:,.0f}')")
-    color_bg: Optional[str] = Field(None, description="Background color")
-    color_accent: Optional[str] = Field(None, description="Accent color")
-    subtitle: Optional[str] = Field(None, description="Optional subtitle")
+    format: str | None = Field(None, description="Format string for value (e.g., '{:,.0f}')")
+    color_bg: str | None = Field(None, description="Background color")
+    color_accent: str | None = Field(None, description="Accent color")
+    subtitle: str | None = Field(None, description="Optional subtitle")
 
 
 # ---------------------------------------------------------------------------
@@ -254,29 +254,29 @@ class ComponentSpec(BaseModel):
     title: str = Field(..., description="Component display title")
 
     # Component-specific spec
-    spec: Union[ChartSpecYAML, TableSpecYAML, KPICardSpec] = Field(
+    spec: ChartSpecYAML | TableSpecYAML | KPICardSpec = Field(
         ..., description="Type-specific specification"
     )
 
     # Data transformation
-    data_transform: Optional[Union[DataTransformSpec, dict[str, Any]]] = Field(
+    data_transform: DataTransformSpec | dict[str, Any] | None = Field(
         None, description="Data transformation operations"
     )
 
     # Additional fields for KPI cards (top-level, outside of spec)
-    bg_color: Optional[str] = Field(None, description="Background color for KPI card")
-    accent_color: Optional[str] = Field(None, description="Accent color for KPI card")
+    bg_color: str | None = Field(None, description="Background color for KPI card")
+    accent_color: str | None = Field(None, description="Accent color for KPI card")
 
     # Data source specification
-    data_source: Optional[str] = Field(None, description="Data source identifier (e.g., 'filtered_data')")
+    data_source: str | None = Field(None, description="Data source identifier (e.g., 'filtered_data')")
 
     # Layout customization for charts
-    layout_overrides: Optional[dict[str, Any]] = Field(
+    layout_overrides: dict[str, Any] | None = Field(
         None, description="Chart layout overrides (margin, legend, textposition, etc.)"
     )
 
     @model_validator(mode="after")
-    def validate_spec_type(self) -> "ComponentSpec":
+    def validate_spec_type(self) -> ComponentSpec:
         """Validate that spec matches component type."""
         if self.type == "kpi" and not isinstance(self.spec, KPICardSpec):
             raise ValueError(f"Component type 'kpi' requires KPICardSpec, got {type(self.spec)}")
@@ -295,14 +295,14 @@ class PageSpec(BaseModel):
 
     metadata: MetadataSpec = Field(..., description="Dashboard metadata")
     column_map: dict[str, str] = Field(..., description="Logical key to DataFrame column mapping")
-    derived_columns: Optional[list[DerivedColumnSpec]] = Field(None, description="Derived columns")
+    derived_columns: list[DerivedColumnSpec] | None = Field(None, description="Derived columns")
     filters: list[FilterSpec] = Field(..., description="Filter definitions")
     layout: LayoutSpec = Field(..., description="Layout structure")
     components: list[ComponentSpec] = Field(..., description="Component definitions")
-    custom_logic: Optional[dict[str, Any]] = Field(None, description="Custom callback logic")
+    custom_logic: dict[str, Any] | None = Field(None, description="Custom callback logic")
 
     @model_validator(mode="after")
-    def validate_unique_ids(self) -> "PageSpec":
+    def validate_unique_ids(self) -> PageSpec:
         """Validate that all IDs are unique across filters and components."""
         all_ids: list[str] = []
 
@@ -330,7 +330,7 @@ class PageSpec(BaseModel):
         return self
 
     @model_validator(mode="after")
-    def validate_column_references(self) -> "PageSpec":
+    def validate_column_references(self) -> PageSpec:
         """Validate that columns referenced in components exist in column_map.
 
         Note: Components with data_transform are skipped from validation, as they may
@@ -345,9 +345,9 @@ class PageSpec(BaseModel):
 
         errors: list[str] = []
 
-        # Check filter columns
+        # Check filter columns (skip filters without a column, e.g. chip_group)
         for f in self.filters:
-            if f.column not in available_columns:
+            if f.column is not None and f.column not in available_columns:
                 errors.append(f"Filter '{f.id}' references unknown column '{f.column}'")
 
         # Check component spec columns (skip if component has data_transform)
@@ -382,7 +382,7 @@ class PageSpec(BaseModel):
         return self
 
     @model_validator(mode="after")
-    def validate_layout_references(self) -> "PageSpec":
+    def validate_layout_references(self) -> PageSpec:
         """Validate that layout references valid component IDs."""
         component_ids = {c.id for c in self.components}
         errors: list[str] = []

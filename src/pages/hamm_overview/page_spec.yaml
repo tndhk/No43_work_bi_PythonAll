@@ -1,13 +1,27 @@
-# Minimal HAMM Overview Page Spec for Phase 7 Prototype
-# This is a simplified version that passes validation
+# ==============================================================================
+# HAMM Overview Dashboard - Page Specification
+# ==============================================================================
+# Adapted from page_spec.yaml.backup to conform to the current schema
+# (tools/page_generator/schema.py).
+#
+# Key changes from backup:
+#   - layout: LayoutSectionSpec format (sections -> rows -> items[component_id, md])
+#     Filters and title are omitted (page_generator auto-places them).
+#     Section headers are expressed as title/description on LayoutSectionSpec.
+#   - KPI components: added spec (KPICardSpec) with agg_func/value_column
+#   - Chart/Table specs: added title field inside spec
+#   - pivot operations: columns -> columns_pivot
 
 metadata:
   dashboard_id: "hamm_overview"
   id_prefix: "hamm-"
   dataset_id: "hamm-dashboard"
   title: "HAMM Overview"
-  description: "HAMM overview dashboard showing volume metrics, task details, error analysis"
+  description: "HAMM overview dashboard showing volume metrics, task details, error analysis, and content metadata"
 
+# ==============================================================================
+# Column Mappings
+# ==============================================================================
 column_map:
   id: "id"
   title: "title"
@@ -26,42 +40,147 @@ column_map:
   audio_details: "audio location"
   language_count: "number of languages"
   additional_languages: "additional languages"
+  # Aliases for derived columns (used by filters)
+  year: "_year"
+  month: "_month"
 
+# ==============================================================================
+# Derived Columns
+# ==============================================================================
 derived_columns:
+  # Year extracted from created_at
   - name: "_year"
-    type: "year"
+    type: "datetime_year"
     source_column: "created_at"
+    format: "%Y"
 
+  # Month extracted from created_at
   - name: "_month"
-    type: "month"
+    type: "datetime_month"
     source_column: "created_at"
+    format: "%b"
 
+  # Fiscal year (created_at + 3 months)
   - name: "_fiscal_year"
-    type: "fiscal_year"
-    source_column: "created_at"
+    type: "custom"
+    function: "compute_fiscal_year"
 
+  # Fiscal quarter (created_at + 3 months)
+  - name: "_fiscal_quarter"
+    type: "custom"
+    function: "compute_fiscal_quarter"
+
+  # ISO week number
+  - name: "_iso_week"
+    type: "custom"
+    function: "compute_iso_week"
+    depends_on: ["cadence"]
+
+  # Start date of period
+  - name: "_start_date"
+    type: "custom"
+    function: "compute_start_date"
+    depends_on: ["cadence"]
+
+  # End date of period
+  - name: "_end_date"
+    type: "custom"
+    function: "compute_end_date"
+    depends_on: ["cadence"]
+
+  # Video duration in seconds
+  - name: "_video_duration_seconds"
+    type: "timedelta_to_seconds"
+    source_column: "video_duration"
+
+# ==============================================================================
+# Filters
+# ==============================================================================
 filters:
-  - type: "slicer"
-    id: "filter-region"
+  # Slicer filters (multi-select with clear button)
+  - id: "filter-region"
+    type: "slicer"
     label: "Region"
     column: "region"
     has_clear_button: true
 
-  - type: "slicer"
-    id: "filter-year"
+  - id: "filter-year"
+    type: "slicer"
     label: "Year"
-    column: "_year"
+    column: "year"
     has_clear_button: true
 
-  - type: "category"
-    id: "filter-month"
+  - id: "filter-content-type"
+    type: "slicer"
+    label: "Content Type"
+    column: "content_type"
+    has_clear_button: true
+
+  - id: "filter-original-language"
+    type: "slicer"
+    label: "Original Language"
+    column: "original_language"
+    has_clear_button: true
+
+  - id: "filter-dialogue"
+    type: "slicer"
+    label: "Was Dialogue Provided?"
+    column: "dialogue"
+    has_clear_button: true
+
+  - id: "filter-genre"
+    type: "slicer"
+    label: "Genre"
+    column: "genre"
+    has_clear_button: true
+
+  - id: "filter-error-type"
+    type: "slicer"
+    label: "Error Type"
+    column: "error_type"
+    has_clear_button: true
+
+  # Category filters (dropdown, no clear button)
+  - id: "filter-month"
+    type: "category"
     label: "Month"
-    column: "_month"
+    column: "month"
     multi: false
 
+  - id: "filter-task-id"
+    type: "category"
+    label: "Task ID"
+    column: "id"
+    multi: true
+
+  - id: "filter-error-code"
+    type: "category"
+    label: "Error Code"
+    column: "error_code"
+    multi: false
+
+  # Special chip-group filter
+  - id: "filter-cadence"
+    type: "chip_group"
+    label: "Cadence"
+    options: ["weekly", "monthly", "quarterly", "yearly"]
+    default: "weekly"
+    multi: false
+
+# ==============================================================================
+# Layout Structure
+# ==============================================================================
+# Only component placements are listed here.
+# Filters and page title are auto-generated by page_generator.
+# Section headers from the backup are preserved as title/description.
 layout:
   sections:
-    - rows:
+    # ----- Volume section -----
+    - title: "Volume"
+      description: "Please use the filter to select the desired calendar interval and metrics for viewing volume."
+      className: "mb-3"
+      rows:
+        # KPI cards row
         - items:
             - component_id: "kpi-total-screens"
               md: 4
@@ -70,121 +189,704 @@ layout:
             - component_id: "kpi-total-prelim"
               md: 4
           className: "mb-3"
-
-    - rows:
+        # Volume table + chart row
         - items:
             - component_id: "volume-table"
               md: 6
             - component_id: "volume-chart"
               md: 6
           className: "mb-4"
+        # Task details table row
+        - items:
+            - component_id: "task-table"
+              md: 12
+          className: "mb-4"
 
+    # ----- Content Metadata section -----
+    - title: "Content Metadata"
+      className: "mb-3"
+      rows:
+        - items:
+            - component_id: "metadata-original-language"
+              md: 4
+            - component_id: "metadata-dialogue"
+              md: 4
+            - component_id: "metadata-genre"
+              md: 4
+          className: "mb-4"
+
+    # ----- Error Details section -----
+    - title: "Error Details"
+      description: "Error analysis showing User vs HAMM intervention breakdown by screener type and error description."
+      className: "mb-3"
+      rows:
+        # Error ratio + screener type row
+        - items:
+            - component_id: "error-ratio"
+              md: 6
+            - component_id: "error-by-screener"
+              md: 6
+          className: "mb-3"
+        # User / HAMM breakdown row
+        - items:
+            - component_id: "user-breakdown"
+              md: 6
+            - component_id: "hamm-breakdown"
+              md: 6
+          className: "mb-4"
+
+    # ----- Language Details section -----
+    - className: "mb-4"
+      rows:
+        - items:
+            - component_id: "language-table"
+              md: 12
+
+# ==============================================================================
+# Components
+# ==============================================================================
 components:
+  # ---------------------------------------------------------------------------
   # KPI Cards
-  - type: "kpi"
-    id: "kpi-total-screens"
+  # ---------------------------------------------------------------------------
+  - id: "kpi-total-screens"
+    type: "kpi"
     title: "Total Screens Processed"
-    spec:
-      value_column: "id"
-      agg_func: "nunique"
-      color_bg: "#d6e4f0"
-      color_accent: "#2f5f8f"
+    data_source: "filtered_data"
     bg_color: "#d6e4f0"
     accent_color: "#2f5f8f"
-    data_source: "filtered_data"
-
-  - type: "kpi"
-    id: "kpi-total-erv"
-    title: "Total ERV Processed"
     spec:
+      agg_func: "count"
       value_column: "id"
-      agg_func: "nunique"
-      color_bg: "#f6b3b3"
-      color_accent: "#e57f7f"
+    data_transform:
+      operations:
+        - type: "filter"
+          exclude:
+            status: ["Cancelled"]
+        - type: "count_rows"
+          output_key: "value"
+
+  - id: "kpi-total-erv"
+    type: "kpi"
+    title: "Total ERV Processed"
+    data_source: "filtered_data"
     bg_color: "#f6b3b3"
     accent_color: "#e57f7f"
-    data_source: "filtered_data"
+    spec:
+      agg_func: "count"
+      value_column: "id"
     data_transform:
       operations:
         - type: "filter"
+          exclude:
+            status: ["Cancelled"]
           include:
             content_type: ["ERV"]
+        - type: "count_rows"
+          output_key: "value"
 
-  - type: "kpi"
-    id: "kpi-total-prelim"
+  - id: "kpi-total-prelim"
+    type: "kpi"
     title: "Total Prelim Processed"
-    spec:
-      value_column: "id"
-      agg_func: "nunique"
-      color_bg: "#e57f7f"
-      color_accent: "#c0392b"
+    data_source: "filtered_data"
     bg_color: "#e57f7f"
     accent_color: "#c0392b"
-    data_source: "filtered_data"
+    spec:
+      agg_func: "count"
+      value_column: "id"
     data_transform:
       operations:
         - type: "filter"
+          exclude:
+            status: ["Cancelled"]
           include:
             content_type: ["Prelim"]
+        - type: "count_rows"
+          output_key: "value"
 
-  # Volume Table
-  - type: "table"
-    id: "volume-table"
+  # ---------------------------------------------------------------------------
+  # Volume Summary Components
+  # ---------------------------------------------------------------------------
+  - id: "volume-table"
+    type: "table"
     title: "Volume Summary"
+    data_source: "filtered_data"
     spec:
       title: "Volume Summary"
       style_table:
         overflowX: "auto"
         height: "400px"
+        overflowY: "auto"
       style_cell:
         textAlign: "left"
         padding: "6px 8px"
+        fontSize: "13px"
+        fontFamily: "'Inter', 'Segoe UI', sans-serif"
+        whiteSpace: "normal"
+        overflow: "hidden"
+        textOverflow: "ellipsis"
       style_header:
         fontWeight: "600"
+        backgroundColor: "#f8f9fa"
+        borderBottom: "2px solid #dee2e6"
+        padding: "8px"
+        fontSize: "13px"
+        textAlign: "left"
       sort_action: "native"
       page_size: 20
       column_order:
         - "Fiscal Year"
-        - "Month"
+        - "Fiscal Quarter"
+        - "ISO Week"
+        - "Start Date"
+        - "End Date"
         - "Completed"
         - "Invalid"
-    data_source: "filtered_data"
+        - "VOLUME TOTAL"
     data_transform:
+      params:
+        - cadence
       operations:
-        - type: "group_by"
-          group_columns:
+        - type: "custom"
+          function: "add_cadence_columns"
+          args:
+            cadence: "{{cadence}}"
+
+        - type: "filter"
+          exclude:
+            status: ["Cancelled"]
+
+        - type: "groupby"
+          columns:
             - "_fiscal_year"
-            - "_month"
+            - "_fiscal_quarter"
+            - "_iso_week"
+            - "_start_date"
+            - "_end_date"
             - "status"
-          agg_funcs:
+          agg:
             id: "nunique"
 
-  # Volume Chart
-  - type: "chart"
-    id: "volume-chart"
+        - type: "pivot"
+          index:
+            - "_fiscal_year"
+            - "_fiscal_quarter"
+            - "_iso_week"
+            - "_start_date"
+            - "_end_date"
+          columns_pivot: "status"
+          values: "id"
+          fill_value: 0
+
+        - type: "ensure_columns"
+          columns: ["Completed", "Invalid"]
+          default_value: 0
+
+        - type: "add_column"
+          name: "VOLUME TOTAL"
+          left: "Completed"
+          operator: "+"
+          right: "Invalid"
+
+        - type: "rename"
+          mapping:
+            _fiscal_year: "Fiscal Year"
+            _fiscal_quarter: "Fiscal Quarter"
+            _iso_week: "ISO Week"
+            _start_date: "Start Date"
+            _end_date: "End Date"
+
+        - type: "sort"
+          by: "Start Date"
+          ascending: false
+          parse_date:
+            column: "Start Date"
+            format: "%d-%b-%y"
+            output: "_sort_start_dt"
+
+  - id: "volume-chart"
+    type: "chart"
     title: "Volume Chart"
+    data_source: "filtered_data"
     spec:
       title: "Volume Chart"
       chart_type: "stacked_bar"
-      x_column: "_month"
-      y_columns:
-        - "Completed"
-        - "Invalid"
+      x_column: "Start Date"
+      y_columns: ["Completed", "Invalid"]
       color_map:
         Completed: "#2d6a2e"
         Invalid: "#9ca3af"
+      text_template: "%{y}"
       height: 460
-    data_source: "filtered_data"
+    layout_overrides:
+      margin:
+        l: 30
+        r: 10
+        t: 8
+        b: 60
+      legend:
+        orientation: "h"
+        y: -0.25
+      textposition: "inside"
     data_transform:
+      params:
+        - cadence
       operations:
-        - type: "group_by"
-          group_columns:
-            - "_month"
+        - type: "custom"
+          function: "add_cadence_columns"
+          args:
+            cadence: "{{cadence}}"
+
+        - type: "filter"
+          exclude:
+            status: ["Cancelled"]
+
+        - type: "groupby"
+          columns:
+            - "_fiscal_year"
+            - "_fiscal_quarter"
+            - "_iso_week"
+            - "_start_date"
+            - "_end_date"
             - "status"
-          agg_funcs:
+          agg:
             id: "nunique"
 
+        - type: "pivot"
+          index:
+            - "_fiscal_year"
+            - "_fiscal_quarter"
+            - "_iso_week"
+            - "_start_date"
+            - "_end_date"
+          columns_pivot: "status"
+          values: "id"
+          fill_value: 0
+
+        - type: "ensure_columns"
+          columns: ["Completed", "Invalid"]
+          default_value: 0
+
+        - type: "add_column"
+          name: "VOLUME TOTAL"
+          left: "Completed"
+          operator: "+"
+          right: "Invalid"
+
+        - type: "rename"
+          mapping:
+            _fiscal_year: "Fiscal Year"
+            _fiscal_quarter: "Fiscal Quarter"
+            _iso_week: "ISO Week"
+            _start_date: "Start Date"
+            _end_date: "End Date"
+
+        - type: "sort"
+          by: "Start Date"
+          ascending: true
+          parse_date:
+            column: "Start Date"
+            format: "%d-%b-%y"
+            output: "_sort_start_dt"
+
+  # ---------------------------------------------------------------------------
+  # Task Details Table
+  # ---------------------------------------------------------------------------
+  - id: "task-table"
+    type: "table"
+    title: "Task Details"
+    data_source: "filtered_data"
+    spec:
+      title: "Task Details"
+      style_table:
+        overflowX: "auto"
+      style_cell:
+        textAlign: "left"
+        padding: "6px 8px"
+        fontSize: "13px"
+        fontFamily: "'Inter', 'Segoe UI', sans-serif"
+        whiteSpace: "normal"
+        overflow: "hidden"
+        textOverflow: "ellipsis"
+      style_header:
+        fontWeight: "600"
+        backgroundColor: "#f8f9fa"
+        borderBottom: "2px solid #dee2e6"
+        padding: "8px"
+        fontSize: "13px"
+        textAlign: "left"
+      sort_action: "native"
+      page_size: 20
+      column_order:
+        - "Task ID"
+        - "Task Name"
+        - "Content Type"
+        - "Task Status"
+        - "Source File Duration"
+        - "Audio Details"
+        - "Job Created"
+        - "Completed / Err"
+        - "Total Duration"
+    data_transform:
+      operations:
+        - type: "custom"
+          function: "prepare_task_display_df"
+
+  # ---------------------------------------------------------------------------
+  # Language Details Table
+  # ---------------------------------------------------------------------------
+  - id: "language-table"
+    type: "table"
+    title: "Language Details"
+    data_source: "filtered_data"
+    spec:
+      title: "Language Details"
+      style_table:
+        overflowX: "auto"
+      style_cell:
+        textAlign: "left"
+        padding: "6px 8px"
+        fontSize: "13px"
+        fontFamily: "'Inter', 'Segoe UI', sans-serif"
+        whiteSpace: "normal"
+        overflow: "hidden"
+        textOverflow: "ellipsis"
+      style_header:
+        fontWeight: "600"
+        backgroundColor: "#f8f9fa"
+        borderBottom: "2px solid #dee2e6"
+        padding: "8px"
+        fontSize: "13px"
+        textAlign: "left"
+      style_data_conditional:
+        - if:
+            filter_query: '{Status} = "Completed"'
+          backgroundColor: "#d4edda"
+        - if:
+            filter_query: '{Content Type} = "ERV"'
+          backgroundColor: "#f8d7da"
+        - if:
+            filter_query: '{Content Type} = "Prelim"'
+          backgroundColor: "#f8d7da"
+      sort_action: "native"
+      page_size: 20
+      column_order:
+        - "Task ID"
+        - "Task Name"
+        - "Content Type"
+        - "Status"
+        - "Language Count"
+        - "Additional Languages"
+    data_transform:
+      operations:
+        - type: "custom"
+          function: "prepare_language_display_df"
+
+  # ---------------------------------------------------------------------------
+  # Error Details Charts
+  # ---------------------------------------------------------------------------
+  - id: "error-ratio"
+    type: "chart"
+    title: "Issues Ratio (HAMM vs Human Intervention)"
+    data_source: "filtered_data"
+    spec:
+      title: "Issues Ratio (HAMM vs Human Intervention)"
+      chart_type: "pie"
+      x_column: "error_type"
+      y_columns: ["count"]
+      height: 460
+      show_legend: true
+    layout_overrides:
+      margin:
+        l: 8
+        r: 8
+        t: 8
+        b: 34
+      legend:
+        orientation: "h"
+        x: 0.0
+        y: -0.06
+      textinfo: "label+value+percent"
+      textposition: "inside"
+    data_transform:
+      operations:
+        - type: "filter"
+          include:
+            error_type: ["User", "HAMM"]
+            status: ["Invalid", "Error"]
+
+        - type: "groupby"
+          columns: ["error_type"]
+          agg:
+            id: "nunique"
+          output_name: "count"
+
+  - id: "error-by-screener"
+    type: "chart"
+    title: "Intervention per Screener Type"
+    data_source: "filtered_data"
+    spec:
+      title: "Intervention per Screener Type"
+      chart_type: "stacked_bar"
+      x_column: "video_type_description"
+      y_columns: ["User", "HAMM"]
+      color_map:
+        User: "#e57f7f"
+        HAMM: "#5f8fc7"
+      text_template: "%{y}"
+      height: 460
+    layout_overrides:
+      margin:
+        l: 16
+        r: 70
+        t: 8
+        b: 30
+      legend:
+        orientation: "v"
+        x: 1.02
+        xanchor: "left"
+        y: 0.5
+        yanchor: "middle"
+      textposition: "inside"
+    data_transform:
+      operations:
+        - type: "filter"
+          include:
+            error_type: ["User", "HAMM"]
+            status: ["Invalid", "Error"]
+
+        - type: "groupby"
+          columns: ["content_type", "error_type"]
+          agg:
+            id: "nunique"
+          output_name: "count"
+
+        - type: "pivot"
+          index: "content_type"
+          columns_pivot: "error_type"
+          values: "count"
+          fill_value: 0
+
+        - type: "rename"
+          mapping:
+            content_type: "video_type_description"
+
+        - type: "ensure_columns"
+          columns: ["User", "HAMM"]
+          default_value: 0
+
+  - id: "user-breakdown"
+    type: "chart"
+    title: "User Intervention Breakdown"
+    data_source: "filtered_data"
+    spec:
+      title: "User Intervention Breakdown"
+      chart_type: "bar"
+      x_column: "error_description"
+      y_columns: ["count"]
+      color_map:
+        count: "#e57f7f"
+      text_template: "%{y}"
+      height: 460
+      show_legend: false
+    layout_overrides:
+      margin:
+        l: 24
+        r: 8
+        t: 8
+        b: 44
+    data_transform:
+      operations:
+        - type: "filter"
+          include:
+            error_type: ["User"]
+            status: ["Invalid", "Error"]
+
+        - type: "groupby"
+          columns: ["error_description"]
+          agg:
+            id: "nunique"
+          output_name: "count"
+
+        - type: "sort"
+          by: "count"
+          ascending: false
+
+  - id: "hamm-breakdown"
+    type: "chart"
+    title: "HAMM Intervention Breakdown"
+    data_source: "filtered_data"
+    spec:
+      title: "HAMM Intervention Breakdown"
+      chart_type: "bar"
+      x_column: "error_description"
+      y_columns: ["count"]
+      color_map:
+        count: "#5f8fc7"
+      text_template: "%{y}"
+      height: 460
+      show_legend: false
+    layout_overrides:
+      margin:
+        l: 24
+        r: 8
+        t: 8
+        b: 44
+    data_transform:
+      operations:
+        - type: "filter"
+          include:
+            error_type: ["HAMM"]
+            status: ["Invalid", "Error"]
+
+        - type: "groupby"
+          columns: ["error_description"]
+          agg:
+            id: "nunique"
+          output_name: "count"
+
+        - type: "sort"
+          by: "count"
+          ascending: false
+
+  # ---------------------------------------------------------------------------
+  # Content Metadata Charts
+  # ---------------------------------------------------------------------------
+  - id: "metadata-original-language"
+    type: "chart"
+    title: "Original Language"
+    data_source: "filtered_data"
+    spec:
+      title: "Original Language"
+      chart_type: "pie"
+      x_column: "original_language"
+      y_columns: ["count"]
+      color_map:
+        Japanese: "#6EA5C8"
+        Korean: "#A8D184"
+      height: 460
+      show_legend: true
+    layout_overrides:
+      margin:
+        l: 8
+        r: 8
+        t: 8
+        b: 34
+      legend:
+        orientation: "h"
+        x: 0.0
+        y: -0.06
+      textinfo: "label+value+percent"
+      textposition: "inside"
+    data_transform:
+      operations:
+        - type: "groupby"
+          columns: ["original_language"]
+          agg:
+            id: "nunique"
+          output_name: "count"
+
+        - type: "filter"
+          exclude_null: ["original_language"]
+
+        - type: "sort"
+          by: "count"
+          ascending: false
+
+  - id: "metadata-dialogue"
+    type: "chart"
+    title: "Was dialogue Provided?"
+    data_source: "filtered_data"
+    spec:
+      title: "Was dialogue Provided?"
+      chart_type: "stacked_bar"
+      x_column: "content_type"
+      y_columns: ["Yes", "No"]
+      color_map:
+        "Yes": "#4F89B5"
+        "No": "#D22D27"
+      text_template: "%{y}"
+      height: 460
+    layout_overrides:
+      margin:
+        l: 16
+        r: 70
+        t: 8
+        b: 30
+      legend:
+        orientation: "v"
+        x: 1.02
+        xanchor: "left"
+        y: 0.5
+        yanchor: "middle"
+      textposition: "inside"
+    data_transform:
+      operations:
+        - type: "filter"
+          include:
+            dialogue: ["Yes", "No"]
+
+        - type: "groupby"
+          columns: ["content_type", "dialogue"]
+          agg:
+            id: "nunique"
+          output_name: "count"
+
+        - type: "pivot"
+          index: "content_type"
+          columns_pivot: "dialogue"
+          values: "count"
+          fill_value: 0
+
+        - type: "ensure_columns"
+          columns: ["Yes", "No"]
+          default_value: 0
+
+        - type: "sort"
+          by: "content_type"
+          ascending: true
+
+  - id: "metadata-genre"
+    type: "chart"
+    title: "Genre"
+    data_source: "filtered_data"
+    spec:
+      title: "Genre"
+      chart_type: "bar"
+      x_column: "genre"
+      y_columns: ["count"]
+      color_map:
+        count: "#7FAECC"
+      text_template: "%{y}"
+      height: 460
+      show_legend: false
+    layout_overrides:
+      margin:
+        l: 24
+        r: 8
+        t: 8
+        b: 44
+    data_transform:
+      operations:
+        - type: "groupby"
+          columns: ["genre"]
+          agg:
+            id: "nunique"
+          output_name: "count"
+
+        - type: "filter"
+          exclude_null: ["genre"]
+
+        - type: "sort"
+          by: "count"
+          ascending: false
+
+# ==============================================================================
+# Custom Logic
+# ==============================================================================
+# Functions imported from _custom_logic.py for complex transformations
 custom_logic:
   imports:
     - "add_cadence_columns"
     - "prepare_task_display_df"
+    - "prepare_language_display_df"
