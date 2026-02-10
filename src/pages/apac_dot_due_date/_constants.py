@@ -6,7 +6,7 @@ and callback code.
 """
 from dataclasses import dataclass
 
-from src.charts.specs import TableSpec
+from src.charts.specs import TableSpec, DEFAULT_STYLE_TABLE, DEFAULT_STYLE_CELL, DEFAULT_STYLE_HEADER
 
 # Dashboard identifier (used for config lookup)
 DASHBOARD_ID: str = "apac_dot_due_date"
@@ -123,17 +123,9 @@ DATASETS: dict[str, DatasetConfig] = {
 TABLE_SPECS: dict[str, TableSpec] = {
     "ch00_reference_table": TableSpec(
         title="0) Reference : Number of Work Order",
-        style_table={"overflowX": "auto"},
-        style_cell={
-            "textAlign": "left",
-            "padding": "8px",
-            "fontSize": "14px",
-        },
-        style_header={
-            "fontWeight": "bold",
-            "backgroundColor": "#2563eb",
-            "color": "white",
-        },
+        style_table=DEFAULT_STYLE_TABLE,
+        style_cell=DEFAULT_STYLE_CELL,
+        style_header=DEFAULT_STYLE_HEADER,
         style_data_conditional=[
             {
                 "if": {"filter_query": "{breakdown_col} = \"GRAND TOTAL\""},
@@ -145,17 +137,9 @@ TABLE_SPECS: dict[str, TableSpec] = {
     ),
     "ch01_change_issue_table": TableSpec(
         title="1) DDD Change + Issue : Number of Work Order",
-        style_table={"overflowX": "auto"},
-        style_cell={
-            "textAlign": "left",
-            "padding": "8px",
-            "fontSize": "14px",
-        },
-        style_header={
-            "fontWeight": "bold",
-            "backgroundColor": "#2563eb",
-            "color": "white",
-        },
+        style_table=DEFAULT_STYLE_TABLE,
+        style_cell=DEFAULT_STYLE_CELL,
+        style_header=DEFAULT_STYLE_HEADER,
         style_data_conditional=[
             {
                 "if": {"filter_query": "{breakdown_col} = \"GRAND TOTAL\""},

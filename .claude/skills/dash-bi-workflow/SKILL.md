@@ -61,12 +61,12 @@ src/pages/<page_name>/
 ├── _constants.py        # 必須: DASHBOARD_ID, DATASET_ID, ID_PREFIX, COLUMN_MAP, TABLE_SPECS, CHART_SPECS
 ├── data_sources.yml     # 必須: chart_id -> dataset_id マッピング
 ├── _data_loader.py      # 必須: load_filter_options(), load_and_filter_data()
-├── _filters.py          # 条件付き必須: フィルタUI構築（フィルタ5個以上の場合）
+├── _filters.py          # 推奨: フィルタUI構築（フィルタUI分離を推奨）
 ├── _layout.py           # 必須: build_layout()
 ├── _callbacks.py        # 必須: コールバック関数群（薄いオーケストレータ）
 ├── SPEC.md              # 必須: ユーザー向け設計書（日本語）
 ├── _utils.py            # オプション: ヘルパー関数
-└── _chart_builders.py   # オプション: カスタム集計・描画ロジック
+└── _chart_builders.py   # 推奨: カスタム集計・描画ロジック（チャート/テーブルがある場合）
 ```
 
 ### 2-2. `_constants.py` - 定数・定義ファイル
@@ -241,11 +241,11 @@ def load_and_filter_data(
 
 複数データセットの例: [`src/pages/apac_dot_due_date/_data_loader.py`](../../src/pages/apac_dot_due_date/_data_loader.py)
 
-### 2-5. `_filters.py` - フィルタUI構築（5個以上のフィルタがある場合）
+### 2-5. `_filters.py` - フィルタUI構築（推奨）
 
 参考実装: [`src/pages/hamm_overview/_filters.py`](../../src/pages/hamm_overview/_filters.py)
 
-フィルタが5個未満の場合は、`_layout.py`に直接記述することも可能です。
+フィルタUI構築を `_layout.py` から分離することを推奨します。フィルタが少数の場合は `_layout.py` に直接記述しても構いません。
 
 #### Slicer フィルタとクリアボタン
 
@@ -405,7 +405,7 @@ DOMO比較で有効だった視認性改善を、別ページへ再利用する�
 # _layout.py
 dcc.Graph(
     id=CHART_ID,
-    className="page-metadata-graph",
+    className="chart-density-graph",
     config={"displayModeBar": False, "responsive": True},
 )
 ```
@@ -425,21 +425,21 @@ CHART_SPEC = ChartSpec(
 
 ```python
 # _chart_builders.py
+from src.charts.layout_helpers import apply_compact_chart_layout
+
 fig = build_chart(df, CHART_SPEC)
-fig.update_layout(
-    title={"text": None},
+fig = apply_compact_chart_layout(
+    fig,
     margin={"l": 24, "r": 8, "t": 8, "b": 44},
-    xaxis_title="",
-    yaxis_title="",
 )
 ```
 
 ```css
 /* assets/05-charts.css */
-.page-metadata-row .page-metadata-card .card-body {
+.chart-density-row .chart-density-card .card-body {
   padding: 0.25rem;
 }
-.page-metadata-row .page-metadata-graph {
+.chart-density-row .chart-density-graph {
   min-height: 460px;
 }
 ```

@@ -276,3 +276,84 @@ class TestChartSpec:
         )
         with pytest.raises(AttributeError):
             spec.y_columns = ["z"]
+
+
+# ---------------------------------------------------------------------------
+# Default table style constants tests
+# ---------------------------------------------------------------------------
+
+class TestDefaultTableStyles:
+    """Tests for default table style constants."""
+
+    def test_default_style_table_importable(self):
+        """DEFAULT_STYLE_TABLE can be imported from src.charts.specs."""
+        from src.charts.specs import DEFAULT_STYLE_TABLE
+        assert isinstance(DEFAULT_STYLE_TABLE, dict)
+        assert "overflowX" in DEFAULT_STYLE_TABLE
+
+    def test_default_style_cell_importable(self):
+        """DEFAULT_STYLE_CELL can be imported from src.charts.specs."""
+        from src.charts.specs import DEFAULT_STYLE_CELL
+        assert isinstance(DEFAULT_STYLE_CELL, dict)
+        assert "textAlign" in DEFAULT_STYLE_CELL
+        assert "padding" in DEFAULT_STYLE_CELL
+        assert "fontSize" in DEFAULT_STYLE_CELL
+
+    def test_default_style_header_importable(self):
+        """DEFAULT_STYLE_HEADER can be imported from src.charts.specs."""
+        from src.charts.specs import DEFAULT_STYLE_HEADER
+        assert isinstance(DEFAULT_STYLE_HEADER, dict)
+        assert "fontWeight" in DEFAULT_STYLE_HEADER
+        assert "backgroundColor" in DEFAULT_STYLE_HEADER
+        assert "color" in DEFAULT_STYLE_HEADER
+
+    def test_compact_style_cell_importable(self):
+        """COMPACT_STYLE_CELL can be imported from src.charts.specs."""
+        from src.charts.specs import COMPACT_STYLE_CELL
+        assert isinstance(COMPACT_STYLE_CELL, dict)
+        assert "fontSize" in COMPACT_STYLE_CELL
+        assert COMPACT_STYLE_CELL["fontSize"] == "0.75rem"
+
+    def test_compact_style_header_importable(self):
+        """COMPACT_STYLE_HEADER can be imported from src.charts.specs."""
+        from src.charts.specs import COMPACT_STYLE_HEADER
+        assert isinstance(COMPACT_STYLE_HEADER, dict)
+        assert "fontWeight" in COMPACT_STYLE_HEADER
+        assert COMPACT_STYLE_HEADER["fontSize"] == "0.75rem"
+
+    def test_default_styles_create_valid_table_spec(self):
+        """Default style constants can be used to create a valid TableSpec."""
+        from src.charts.specs import (
+            TableSpec,
+            DEFAULT_STYLE_TABLE,
+            DEFAULT_STYLE_CELL,
+            DEFAULT_STYLE_HEADER,
+        )
+        spec = TableSpec(
+            title="Test",
+            style_table=DEFAULT_STYLE_TABLE,
+            style_cell=DEFAULT_STYLE_CELL,
+            style_header=DEFAULT_STYLE_HEADER,
+            style_data_conditional=[],
+        )
+        assert spec.title == "Test"
+        assert spec.style_cell == DEFAULT_STYLE_CELL
+        assert spec.style_header == DEFAULT_STYLE_HEADER
+
+    def test_compact_styles_create_valid_table_spec(self):
+        """Compact style constants can be used to create a valid TableSpec."""
+        from src.charts.specs import (
+            TableSpec,
+            DEFAULT_STYLE_TABLE,
+            COMPACT_STYLE_CELL,
+            COMPACT_STYLE_HEADER,
+        )
+        spec = TableSpec(
+            title="Compact Test",
+            style_table=DEFAULT_STYLE_TABLE,
+            style_cell=COMPACT_STYLE_CELL,
+            style_header=COMPACT_STYLE_HEADER,
+            style_data_conditional=[],
+        )
+        assert spec.title == "Compact Test"
+        assert spec.style_cell == COMPACT_STYLE_CELL

@@ -190,7 +190,7 @@ from src.charts.specs import ChartSpec
 # ChartSpecを定義
 spec = ChartSpec(
     title="売上推移",
-    chart_type="bar",  # bar, line, pie, stacked_bar
+    chart_type="bar",  # bar, line, pie, stacked_bar, scatter, area, horizontal_bar
     x_column="date",
     y_columns=["sales"],
     height=400,
@@ -208,14 +208,19 @@ dcc.Graph(figure=figure)
 
 ```python
 from src.charts.table_builder import build_table
-from src.charts.specs import TableSpec
+from src.charts.specs import (
+    TableSpec,
+    DEFAULT_STYLE_TABLE,
+    DEFAULT_STYLE_CELL,
+    DEFAULT_STYLE_HEADER,
+)
 
-# TableSpecを定義
+# TableSpecを定義（デフォルトスタイル定数を使用）
 spec = TableSpec(
     title="詳細一覧",
-    style_table={"overflowX": "auto"},
-    style_cell={"textAlign": "left"},
-    style_header={"backgroundColor": "rgb(230, 230, 230)", "fontWeight": "bold"},
+    style_table=DEFAULT_STYLE_TABLE,
+    style_cell=DEFAULT_STYLE_CELL,
+    style_header=DEFAULT_STYLE_HEADER,
     style_data_conditional=[],
     column_display={"col1": "列1", "col2": "列2"},
     column_order=["col1", "col2"],
@@ -255,6 +260,9 @@ error_fig = create_error_figure(message="エラーが発生しました", height
 | line | `"line"` | 折れ線グラフ |
 | pie | `"pie"` | 円グラフ |
 | stacked_bar | `"stacked_bar"` | 積み上げ棒グラフ |
+| scatter | `"scatter"` | 散布図 |
+| area | `"area"` | 面グラフ |
+| horizontal_bar | `"horizontal_bar"` | 横棒グラフ |
 
 ### 4.3 その他の表示形式
 
@@ -292,14 +300,14 @@ error_fig = create_error_figure(message="エラーが発生しました", height
 ```python
 dcc.Graph(
     id=CHART_ID,
-    className="page-metadata-graph",
+    className="chart-density-graph",
     config={"displayModeBar": False, "responsive": True},
 )
 ```
 
 CSS設計原則:
 - `.card` などのグローバルclassを直接変更しない
-- セクションclassを起点にスコープする（例: `.page-metadata-row .page-metadata-card`）
+- セクションclassを起点にスコープする（例: `.chart-density-row .chart-density-card`）
 - 余白最適化は `card-body` と `graph` の局所設定で行う
 
 ---

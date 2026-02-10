@@ -1,6 +1,6 @@
 """Constants for the Hamm Overview dashboard."""
 
-from src.charts.specs import ChartSpec, TableSpec
+from src.charts.specs import ChartSpec, TableSpec, COMPACT_STYLE_CELL, COMPACT_STYLE_HEADER
 
 DASHBOARD_ID: str = "hamm_overview"
 DATASET_ID: str = "hamm-dashboard"
@@ -103,19 +103,6 @@ ERV_LABEL: str = "ERV"
 # Internal sort column used in volume summary
 SORT_START_COL: str = "_sort_start_dt"
 
-# Compact table styling shared by volume and task tables
-_COMPACT_CELL: dict = {
-    "textAlign": "left",
-    "padding": "2px 4px",
-    "fontSize": "0.75rem",
-    "whiteSpace": "nowrap",
-}
-_COMPACT_HEADER: dict = {
-    "fontWeight": "bold",
-    "fontSize": "0.75rem",
-    "padding": "2px 4px",
-    "whiteSpace": "normal",
-}
 
 # ---------------------------------------------------------------------------
 # Chart / Table Specs (declarative definitions)
@@ -124,8 +111,8 @@ _COMPACT_HEADER: dict = {
 VOLUME_TABLE_SPEC: TableSpec = TableSpec(
     title="Volume Summary",
     style_table={"overflowX": "auto", "height": "400px", "overflowY": "auto"},
-    style_cell=_COMPACT_CELL,
-    style_header=_COMPACT_HEADER,
+    style_cell=COMPACT_STYLE_CELL,
+    style_header=COMPACT_STYLE_HEADER,
     style_data_conditional=[],
     sort_action="native",
     page_size=20,
@@ -157,8 +144,8 @@ VOLUME_CHART_SPEC: ChartSpec = ChartSpec(
 TASK_TABLE_SPEC: TableSpec = TableSpec(
     title="Task Details",
     style_table={"overflowX": "auto"},
-    style_cell=_COMPACT_CELL,
-    style_header=_COMPACT_HEADER,
+    style_cell=COMPACT_STYLE_CELL,
+    style_header=COMPACT_STYLE_HEADER,
     style_data_conditional=[],
     sort_action="native",
     page_size=20,
@@ -267,8 +254,8 @@ GENRE_SPEC: ChartSpec = ChartSpec(
 LANGUAGE_TABLE_SPEC: TableSpec = TableSpec(
     title="Language Details",
     style_table={"overflowX": "auto"},
-    style_cell=_COMPACT_CELL,
-    style_header=_COMPACT_HEADER,
+    style_cell=COMPACT_STYLE_CELL,
+    style_header=COMPACT_STYLE_HEADER,
     style_data_conditional=[
         {
             "if": {"filter_query": '{Status} = "Completed"'},

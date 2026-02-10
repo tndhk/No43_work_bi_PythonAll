@@ -430,11 +430,11 @@ class TestErrorHandling:
 
         result = _invoke_update()
         # Check component at position 2 (reference table error)
-        assert isinstance(result[2], html.Div)
+        assert isinstance(result[2], html.P)
         error_text_0 = extract_text_recursive(result[2])
         assert "S3 connection failed" in error_text_0
         # Check component at position 4 (change_issue table error)
-        assert isinstance(result[4], html.Div)
+        assert isinstance(result[4], html.P)
         error_text_1 = extract_text_recursive(result[4])
         assert "S3 connection failed" in error_text_1
 

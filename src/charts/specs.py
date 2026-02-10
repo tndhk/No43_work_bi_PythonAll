@@ -35,6 +35,35 @@ class TableSpec:
     filter_action: str = "none"
 
 
+# ---------------------------------------------------------------------------
+# Default table style constants (reusable across pages)
+# ---------------------------------------------------------------------------
+DEFAULT_STYLE_TABLE: dict[str, Any] = {"overflowX": "auto"}
+DEFAULT_STYLE_CELL: dict[str, Any] = {
+    "textAlign": "left",
+    "padding": "8px",
+    "fontSize": "14px",
+}
+DEFAULT_STYLE_HEADER: dict[str, Any] = {
+    "fontWeight": "bold",
+    "backgroundColor": "#2563eb",
+    "color": "white",
+}
+# Compact variant for dense tables (e.g. hamm_overview)
+COMPACT_STYLE_CELL: dict[str, Any] = {
+    "textAlign": "left",
+    "padding": "2px 4px",
+    "fontSize": "0.75rem",
+    "whiteSpace": "nowrap",
+}
+COMPACT_STYLE_HEADER: dict[str, Any] = {
+    "fontWeight": "bold",
+    "fontSize": "0.75rem",
+    "padding": "2px 4px",
+    "whiteSpace": "normal",
+}
+
+
 @dataclass(frozen=True)
 class ChartSpec:
     """Declarative specification for a Plotly chart.

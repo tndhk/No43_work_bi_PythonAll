@@ -4,7 +4,7 @@ Centralizes dataset identifiers, column name mappings, ID prefixes,
 and declarative ChartSpec / TableSpec definitions.
 """
 
-from src.charts.specs import ChartSpec, TableSpec
+from src.charts.specs import ChartSpec, TableSpec, DEFAULT_STYLE_TABLE, DEFAULT_STYLE_CELL, DEFAULT_STYLE_HEADER
 
 # Dashboard identifier (used for config lookup)
 DASHBOARD_ID: str = "cursor_usage"
@@ -87,9 +87,9 @@ MODEL_DISTRIBUTION_SPEC: ChartSpec = ChartSpec(
 
 DETAIL_TABLE_SPEC: TableSpec = TableSpec(
     title="Detailed Data",
-    style_table={"overflowX": "auto"},
-    style_cell={"textAlign": "left", "padding": "8px"},
-    style_header={"fontWeight": "bold"},
+    style_table=DEFAULT_STYLE_TABLE,
+    style_cell=DEFAULT_STYLE_CELL,
+    style_header=DEFAULT_STYLE_HEADER,
     style_data_conditional=[],
     page_size=20,
     column_order=[

@@ -12,7 +12,7 @@ from dash import callback, html, Input, Output
 from src.data.parquet_reader import ParquetReader
 from src.data.data_source_registry import resolve_dataset_id
 from src.charts.table_builder import build_table
-from src.charts.empty_states import create_empty_table
+from src.charts.empty_states import create_empty_table, create_error_figure  # noqa: F401
 from src.utils.callback_helpers import register_clear_callbacks
 from src.components.cards import create_kpi_card
 from ._chart_builders import build_pivot_data
@@ -37,7 +37,12 @@ from ._data_loader import load_and_filter_data
 
 
 def _coerce_single_value(value, default: str) -> str:
-    """Normalize potentially list-like UI values to a single string."""
+    """Normalize callback value to a single scalar or the default.
+
+    Unlike ``ensure_list`` (which normalizes to a list), this extracts the
+    first element when a list is given, or returns the *default* value for
+    empty/None input.
+    """
     if isinstance(value, list):
         return value[0] if value else default
     if value is None:
@@ -194,16 +199,16 @@ def update_dashboard(
         )
 
     except Exception as e:
-        msg = f"Error loading data: {str(e)}"
+        error_msg = html.P(f"Error loading data: {e}", className="text-danger")
         ref_config = DATASETS["reference"]
         change_config = DATASETS["change_issue"]
 
         return (
             create_kpi_card("Total Work Orders", "0"),
             TABLE_SPECS[ref_config.table_spec_key].title,
-            html.Div([html.P(msg, className="text-danger")]),
+            error_msg,
             TABLE_SPECS[change_config.table_spec_key].title,
-            html.Div([html.P(msg, className="text-danger")]),
+            error_msg,
         )
 
 

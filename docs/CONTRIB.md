@@ -337,13 +337,16 @@ from src.utils.data_helpers import (
 ## 7. 新規ダッシュボードページの追加手順
 
 1. パッケージディレクトリ作成: `src/pages/<page_name>/`
-2. 必須ファイル作成:
+2. 必須/推奨ファイル作成:
    - `__init__.py` -- Dash登録 + `build_layout` 参照 + コールバックインポート
    - `_constants.py` -- `DATASET_ID`, `ID_PREFIX`, `COLUMN_MAP`, `TABLE_SPECS`, `CHART_SPECS`, `CLEAR_PAIRS`
    - `_data_loader.py` -- `load_filter_options()`, `load_and_filter_data()`
    - `_layout.py` -- `build_layout()`
+   - `_filters.py` -- フィルタUI構築（推奨）
    - `_callbacks.py` -- コールバック群 + `register_clear_callbacks(CLEAR_PAIRS)`
    - `SPEC.md` -- ユーザー向け設計書（日本語）
+   - `data_sources.yml` -- chart_id -> dataset_id マッピング定義
+   - `_chart_builders.py` -- カスタム集計・描画ロジック（チャート/テーブルがある場合は推奨）
 3. `app.py` に明示的インポート追加: `import src.pages.<page_name>  # noqa: F401`
 4. テスト作成: `tests/unit/pages/<page_name>/test_constants.py`, `test_data_loader.py`
 
