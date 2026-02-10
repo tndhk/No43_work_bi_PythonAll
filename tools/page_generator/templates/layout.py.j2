@@ -1,0 +1,82 @@
+"""Layout for {{ spec.metadata.title }} dashboard.
+
+Auto-generated from page_spec.yaml by tools.page_generator.
+"""
+import dash_bootstrap_components as dbc
+import dash_mantine_components as dmc
+from dash import dcc, html
+
+from src.data.parquet_reader import ParquetReader
+from src.data.data_source_registry import resolve_dataset_id
+from ._constants import *
+from ._filters import build_filter_layout
+from ._data_loader import load_filter_options
+
+
+def _chart_card(title: str, chart_id: str) -> dbc.Card:
+    """Create a card containing a chart."""
+    return dbc.Card([
+        dbc.CardHeader(title, className="card-header"),
+        dbc.CardBody([
+            dcc.Graph(
+                id=chart_id,
+                className="chart-density-graph",
+                config={"displayModeBar": False, "responsive": True},
+            ),
+        ], className="p-1"),
+    ], className="chart-density-card")
+
+
+def _table_card(title: str, table_id: str) -> dbc.Card:
+    """Create a card containing a table."""
+    return dbc.Card([
+        dbc.CardHeader(title, className="card-header"),
+        dbc.CardBody([
+            html.Div(id=table_id),
+        ], className="p-1"),
+    ])
+
+
+def build_layout() -> html.Div:
+    """Build the dashboard layout."""
+    reader = ParquetReader()
+    {% set first_column = spec.column_map.values() | list | first %}
+    dataset_id = resolve_dataset_id(DASHBOARD_ID, "{{ first_column }}")
+
+    # Load filter options
+    opts = load_filter_options(reader, dataset_id)
+
+    # Build title element
+    title_element = html.H1("{{ spec.metadata.title }}", className="page-title")
+
+    # Build filters
+    filter_rows = build_filter_layout(opts, title_element=title_element)
+
+    # Build main content
+    content = []
+
+{% for section in spec.layout.sections %}
+    # Section: {{ section.title or 'Untitled' }}
+{% for row in section.rows %}
+    content.append(dbc.Row([
+{% for item in row.items %}
+{% set component = spec.components | selectattr('id', 'equalto', item.component_id) | first %}
+{% set clean_comp_id = component.id.replace(spec.metadata.id_prefix, '') %}
+{% if component.type == 'kpi' %}
+        dbc.Col([html.Div(id=KPI_ID_{{ clean_comp_id | upper | replace('-', '_') }})], md={{ item.md }}),
+{% elif component.type == 'chart' %}
+        dbc.Col([_chart_card("{{ component.title }}", CHART_ID_{{ clean_comp_id | upper | replace('-', '_') }})], md={{ item.md }}),
+{% elif component.type == 'table' %}
+        dbc.Col([_table_card("{{ component.title }}", TABLE_ID_{{ clean_comp_id | upper | replace('-', '_') }})], md={{ item.md }}),
+{% endif %}
+{% endfor %}
+    ], className="{{ row.className or 'mb-3' }}"))
+{% endfor %}
+{% endfor %}
+
+    return html.Div([
+        dmc.MantineProvider([
+            *filter_rows,
+            dcc.Loading(content),
+        ]),
+    ], className="page-container")

@@ -1,0 +1,105 @@
+"""Filter components for {{ spec.metadata.title }} dashboard.
+
+Auto-generated from page_spec.yaml by tools.page_generator.
+"""
+from dash import html
+from src.components.filters import (
+{% set filter_types = spec.filters | map(attribute='type') | unique | list %}
+{% if 'slicer' in filter_types %}
+    create_slicer_filter,
+{% endif %}
+{% if 'category' in filter_types or 'dropdown' in filter_types %}
+    create_category_filter,
+{% endif %}
+{% if 'chip_group' in filter_types %}
+    create_chip_group_filter,
+{% endif %}
+)
+from ._constants import *
+
+
+def build_filter_layout(opts: dict, title_element=None) -> list:
+    """Build filter layout rows.
+
+    Args:
+        opts: Dictionary of filter options
+        title_element: Optional title element to prepend to first row
+
+    Returns:
+        List of filter row elements
+    """
+{% set title_row_filters = spec.filters | selectattr('type', 'equalto', 'slicer') | list %}
+{% set detail_row_filters = spec.filters | rejectattr('type', 'equalto', 'slicer') | list %}
+
+    # Title row filters (slicers)
+    title_row_items = []
+{% for filter in title_row_filters %}
+{% set clean_id = filter.id.replace(spec.metadata.id_prefix, '') %}
+    title_row_items.append(
+        create_slicer_filter(
+            filter_id=FILTER_ID_{{ clean_id | upper | replace('-', '_') }},
+            column_name="{{ filter.label }}",
+            options=opts["{{ filter.column }}"],
+{% if filter.has_clear_button %}
+{% set clear_id = filter.clear_button_id or (filter.id ~ '-clear') %}
+{% set clean_clear_id = clear_id.replace(spec.metadata.id_prefix, '') %}
+            clear_button_id=CTRL_ID_{{ clean_clear_id | upper | replace('-', '_') }},
+{% endif %}
+        )
+    )
+{% endfor %}
+
+    if title_element is not None:
+        title_row_items = [title_element] + title_row_items
+
+    title_row = html.Div(
+        title_row_items,
+        className="mb-3 filter-row-title-{{ title_row_filters | length }}filters",
+    )
+
+    # Detail row filters
+    detail_row_items = []
+{% for filter in detail_row_filters %}
+{% set clean_id = filter.id.replace(spec.metadata.id_prefix, '') %}
+{% if filter.type == 'category' %}
+    detail_row_items.append(
+        create_category_filter(
+            filter_id=FILTER_ID_{{ clean_id | upper | replace('-', '_') }},
+            column_name="{{ filter.label }}",
+            options=opts["{{ filter.column }}"],
+{% if filter.multi %}
+            multi={{ 'True' if filter.multi else 'False' }},
+{% endif %}
+        )
+    )
+{% elif filter.type == 'chip_group' %}
+    detail_row_items.append(
+        create_chip_group_filter(
+            filter_id=FILTER_ID_{{ clean_id | upper | replace('-', '_') }},
+            column_name="{{ filter.label }}",
+            options=opts["{{ filter.column }}"],
+        )
+    )
+{% elif filter.type == 'dropdown' %}
+    detail_row_items.append(
+        create_category_filter(
+            filter_id=FILTER_ID_{{ clean_id | upper | replace('-', '_') }},
+            column_name="{{ filter.label }}",
+            options=opts["{{ filter.column }}"],
+{% if filter.multi %}
+            multi={{ 'True' if filter.multi else 'False' }},
+{% endif %}
+{% if filter.placeholder %}
+            placeholder="{{ filter.placeholder }}",
+{% endif %}
+        )
+    )
+{% endif %}
+{% endfor %}
+
+    detail_row = html.Div(
+        detail_row_items,
+        className="mb-3 filter-row-{{ detail_row_filters | length }}col",
+    )
+
+    return [title_row, detail_row]

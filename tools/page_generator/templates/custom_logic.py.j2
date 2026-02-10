@@ -1,0 +1,56 @@
+"""Custom data transformation logic for {{ spec.metadata.title }} dashboard.
+
+This module contains complex transformation functions that cannot be expressed
+in page_spec.yaml's declarative data_transform operations.
+
+This file is meant to be edited manually. Add your custom functions here.
+"""
+import pandas as pd
+
+
+# Example custom transformation function:
+# def add_cadence_columns(df: pd.DataFrame, cadence: str) -> pd.DataFrame:
+#     """Add cadence-specific derived columns (fiscal year/quarter, ISO week, start/end dates).
+#
+#     Args:
+#         df: DataFrame with created_at column
+#         cadence: One of "weekly", "monthly", "quarterly", "yearly"
+#
+#     Returns:
+#         DataFrame with additional columns: _fiscal_year, _fiscal_quarter, _iso_week, _start_date, _end_date
+#     """
+#     # Implementation here
+#     return df
+
+
+# Example vectorized computation function:
+# def compute_total_duration_vec(created: pd.Series, completed: pd.Series) -> pd.Series:
+#     """Vectorized: compute 'HH:MM:SS' duration, '' for NaT completed.
+#
+#     Args:
+#         created: Series of creation timestamps
+#         completed: Series of completion timestamps
+#
+#     Returns:
+#         Series of formatted duration strings
+#     """
+#     if created.empty:
+#         return pd.Series([], dtype=str)
+#
+#     missing = completed.isna()
+#     delta = (completed - created).fillna(pd.Timedelta(0))
+#     total_seconds = delta.dt.total_seconds().astype("int64")
+#
+#     hours = total_seconds // 3600
+#     minutes = (total_seconds % 3600) // 60
+#     seconds = total_seconds % 60
+#
+#     formatted = (
+#         hours.astype(str).str.zfill(2)
+#         + ":"
+#         + minutes.astype(str).str.zfill(2)
+#         + ":"
+#         + seconds.astype(str).str.zfill(2)
+#     )
+#
+#     return formatted.where(~missing, "")

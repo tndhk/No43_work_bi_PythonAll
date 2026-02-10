@@ -1,0 +1,194 @@
+"""Callbacks for {{ spec.metadata.title }} dashboard.
+
+Auto-generated from page_spec.yaml by tools.page_generator.
+
+This module is the slim orchestration layer. All chart/table rendering
+lives in ``_chart_builders``, data aggregation in ``_data_loader``, and
+clear-filter callbacks are registered via ``register_clear_callbacks``.
+"""
+import pandas as pd
+from dash import callback, Input, Output, html
+import plotly.graph_objects as go
+
+from src.data.parquet_reader import ParquetReader
+from src.charts.empty_states import create_empty_figure, create_error_figure
+from src.utils.callback_helpers import ensure_list{% if spec.filters | selectattr('has_clear_button') | list %}, register_clear_callbacks{% endif %}
+from src.components.cards import create_kpi_card
+from ._constants import (
+    DASHBOARD_ID,
+    COLUMN_MAP,
+{% for component in spec.components %}
+    {% set clean_comp_id = component.id.replace(spec.metadata.id_prefix, '') %}
+    {% if component.type == 'kpi' %}
+    KPI_ID_{{ clean_comp_id | upper | replace('-', '_') }},
+    {% elif component.type == 'chart' %}
+    CHART_ID_{{ clean_comp_id | upper | replace('-', '_') }},
+    {% elif component.type == 'table' %}
+    TABLE_ID_{{ clean_comp_id | upper | replace('-', '_') }},
+    {% endif %}
+{% endfor %}
+{% for filter in spec.filters %}
+    {% set clean_filter_id = filter.id.replace(spec.metadata.id_prefix, '') %}
+    FILTER_ID_{{ clean_filter_id | upper | replace('-', '_') }},
+{% endfor %}
+{% if spec.filters | selectattr('has_clear_button') | list %}
+    CLEAR_PAIRS,
+{% endif %}
+)
+from ._data_loader import (
+    resolve_dataset_id_for_dashboard,
+    load_and_filter_data,
+    FILTER_COLUMN_MAP,
+{% for component in spec.components if component.data_transform %}
+    build_{{ component.id | replace('-', '_') }},
+{% endfor %}
+)
+from ._chart_builders import (
+{% for component in spec.components if component.type in ['chart', 'table'] %}
+    build_{{ component.id | replace('-', '_') }},
+{% endfor %}
+)
+
+
+@callback(
+{% for component in spec.components %}
+    {% set clean_comp_id = component.id.replace(spec.metadata.id_prefix, '') %}
+    {% if component.type == 'kpi' %}
+    Output(KPI_ID_{{ clean_comp_id | upper | replace('-', '_') }}, "children"),
+    {% elif component.type == 'chart' %}
+    Output(CHART_ID_{{ clean_comp_id | upper | replace('-', '_') }}, "figure"),
+    {% elif component.type == 'table' %}
+    Output(TABLE_ID_{{ clean_comp_id | upper | replace('-', '_') }}, "children"),
+    {% endif %}
+{% endfor %}
+{% for filter in spec.filters %}
+    {% set clean_filter_id = filter.id.replace(spec.metadata.id_prefix, '') %}
+    Input(FILTER_ID_{{ clean_filter_id | upper | replace('-', '_') }}, "value"),
+{% endfor %}
+)
+def update_dashboard(
+{% for filter in spec.filters %}
+    {{ filter.id | replace('-', '_') | replace(spec.metadata.id_prefix, '') }}_values,
+{% endfor %}
+):
+    """Update all dashboard components based on filter selections.
+
+    Auto-generated from page_spec.yaml components and filters.
+    """
+    reader = ParquetReader()
+    dataset_id = resolve_dataset_id_for_dashboard()
+
+    filter_pairs = [
+{% for filter in spec.filters %}
+    {% set filter_col = filter.column %}
+        ("{{ filter_col }}", ensure_list({{ filter.id | replace('-', '_') | replace(spec.metadata.id_prefix, '') }}_values)),
+{% endfor %}
+    ]
+
+    try:
+        df = load_and_filter_data(
+            reader,
+            dataset_id,
+            FILTER_COLUMN_MAP,
+            filter_pairs,
+        )
+
+{% for component in spec.components if component.type == 'kpi' %}
+        # KPI: {{ component.title }}
+    {% if component.data_transform %}
+        {{ component.id | replace('-', '_') }}_df = build_{{ component.id | replace('-', '_') }}(df)
+        {% if component.spec.agg_func == 'sum' %}
+        {{ component.id | replace('-', '_') }}_value = {{ component.id | replace('-', '_') }}_df["{{ component.spec.value_column }}"].sum()
+        {% elif component.spec.agg_func == 'nunique' %}
+        {{ component.id | replace('-', '_') }}_value = {{ component.id | replace('-', '_') }}_df["{{ component.spec.value_column }}"].nunique()
+        {% elif component.spec.agg_func == 'count' %}
+        {{ component.id | replace('-', '_') }}_value = len({{ component.id | replace('-', '_') }}_df)
+        {% elif component.spec.agg_func == 'mean' %}
+        {{ component.id | replace('-', '_') }}_value = {{ component.id | replace('-', '_') }}_df["{{ component.spec.value_column }}"].mean()
+        {% else %}
+        {{ component.id | replace('-', '_') }}_value = {{ component.id | replace('-', '_') }}_df["{{ component.spec.value_column }}"].sum()
+        {% endif %}
+    {% else %}
+        {% if component.spec.agg_func == 'sum' %}
+        {{ component.id | replace('-', '_') }}_value = df["{{ component.spec.value_column }}"].sum() if "{{ component.spec.value_column }}" in df.columns else df[COLUMN_MAP.get("{{ component.spec.value_column }}", "{{ component.spec.value_column }}")].sum()
+        {% elif component.spec.agg_func == 'nunique' %}
+        {{ component.id | replace('-', '_') }}_value = df["{{ component.spec.value_column }}"].nunique() if "{{ component.spec.value_column }}" in df.columns else df[COLUMN_MAP.get("{{ component.spec.value_column }}", "{{ component.spec.value_column }}")].nunique()
+        {% elif component.spec.agg_func == 'count' %}
+        {{ component.id | replace('-', '_') }}_value = len(df)
+        {% elif component.spec.agg_func == 'mean' %}
+        {{ component.id | replace('-', '_') }}_value = df["{{ component.spec.value_column }}"].mean() if "{{ component.spec.value_column }}" in df.columns else df[COLUMN_MAP.get("{{ component.spec.value_column }}", "{{ component.spec.value_column }}")].mean()
+        {% else %}
+        {{ component.id | replace('-', '_') }}_value = df["{{ component.spec.value_column }}"].sum() if "{{ component.spec.value_column }}" in df.columns else df[COLUMN_MAP.get("{{ component.spec.value_column }}", "{{ component.spec.value_column }}")].sum()
+        {% endif %}
+    {% endif %}
+        {% if component.spec.format %}
+        {{ component.id | replace('-', '_') }}_formatted = "{{ component.spec.format }}".format({{ component.id | replace('-', '_') }}_value)
+        {% else %}
+        {{ component.id | replace('-', '_') }}_formatted = f"{{ '{' }}{{ component.id | replace('-', '_') }}_value:,.0f{{ '}' }}"
+        {% endif %}
+        {{ component.id | replace('-', '_') }}_card = create_kpi_card(
+            "{{ component.title }}",
+            {{ component.id | replace('-', '_') }}_formatted,
+        {% if component.spec.color_bg %}
+            bg_color="{{ component.spec.color_bg }}",
+        {% endif %}
+        {% if component.spec.color_accent %}
+            accent_color="{{ component.spec.color_accent }}",
+        {% endif %}
+        )
+
+{% endfor %}
+{% for component in spec.components if component.type == 'chart' %}
+        # Chart: {{ component.title }}
+    {% if component.data_transform %}
+        {{ component.id | replace('-', '_') }}_df = build_{{ component.id | replace('-', '_') }}(df)
+    {% else %}
+        {{ component.id | replace('-', '_') }}_df = df
+    {% endif %}
+        {{ component.id | replace('-', '_') }}_fig = build_{{ component.id | replace('-', '_') }}({{ component.id | replace('-', '_') }}_df)
+
+{% endfor %}
+{% for component in spec.components if component.type == 'table' %}
+        # Table: {{ component.title }}
+    {% if component.data_transform %}
+        {{ component.id | replace('-', '_') }}_df = build_{{ component.id | replace('-', '_') }}(df)
+    {% else %}
+        {{ component.id | replace('-', '_') }}_df = df
+    {% endif %}
+        _, {{ component.id | replace('-', '_') }}_table = build_{{ component.id | replace('-', '_') }}({{ component.id | replace('-', '_') }}_df)
+
+{% endfor %}
+        return (
+{% for component in spec.components %}
+    {% if component.type == 'kpi' %}
+            {{ component.id | replace('-', '_') }}_card,
+    {% elif component.type == 'chart' %}
+            {{ component.id | replace('-', '_') }}_fig,
+    {% elif component.type == 'table' %}
+            {{ component.id | replace('-', '_') }}_table,
+    {% endif %}
+{% endfor %}
+        )
+
+    except Exception as exc:
+        error_msg = html.P(f"Error loading data: {exc}", className="text-danger")
+        error_fig = create_error_figure(error=str(exc))
+        return (
+{% for component in spec.components %}
+    {% if component.type == 'kpi' %}
+            error_msg,
+    {% elif component.type == 'chart' %}
+            error_fig,
+    {% elif component.type == 'table' %}
+            error_msg,
+    {% endif %}
+{% endfor %}
+        )
+
+{% if spec.filters | selectattr('has_clear_button') | list %}
+
+# ---------------------------------------------------------------------------
+# Clear-filter callbacks (registered via shared helper)
+# ---------------------------------------------------------------------------
+register_clear_callbacks(CLEAR_PAIRS)
+{% endif %}

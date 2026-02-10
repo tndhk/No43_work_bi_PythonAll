@@ -1,0 +1,302 @@
+metadata:
+  dashboard_id: complex_test
+  id_prefix: ct-
+  dataset_id: complex-test-dataset
+  title: Complex Test Dashboard
+  description: A comprehensive test with filters, KPIs, charts, and tables
+
+column_map:
+  id: task_id
+  title: task_title
+  status: task_status
+  created_at: created_timestamp
+  region: notification_company_name
+  content_type: video_type_description
+  count: task_count
+
+derived_columns:
+  - name: _year
+    type: year
+    source_column: created_at
+  - name: _month
+    type: month
+    source_column: created_at
+  - name: _fiscal_year
+    type: fiscal_year
+    source_column: created_at
+
+filters:
+  - type: slicer
+    id: ct-filter-region
+    label: Region
+    column: region
+    has_clear_button: true
+    clear_button_id: ct-clear-region
+
+  - type: slicer
+    id: ct-filter-year
+    label: Year
+    column: _year
+    has_clear_button: true
+    clear_button_id: ct-clear-year
+
+  - type: category
+    id: ct-filter-month
+    label: Month
+    column: _month
+    multi: false
+
+  - type: dropdown
+    id: ct-filter-content-type
+    label: Content Type
+    column: content_type
+    multi: true
+    placeholder: Select content types...
+
+  - type: chip_group
+    id: ct-filter-status
+    label: Status
+    column: status
+    options:
+      - Active
+      - Completed
+      - Failed
+
+layout:
+  sections:
+    # Section 1: KPI Cards
+    - title: Key Performance Indicators
+      rows:
+        - items:
+            - component_id: ct-kpi-total
+              md: 4
+            - component_id: ct-kpi-active
+              md: 4
+            - component_id: ct-kpi-completed
+              md: 4
+          className: mb-3
+
+    # Section 2: Volume Charts
+    - title: Volume Analysis
+      description: Weekly and monthly volume trends
+      rows:
+        - items:
+            - component_id: ct-table-volume
+              md: 6
+            - component_id: ct-chart-volume
+              md: 6
+          className: mb-4
+
+    # Section 3: Status Distribution
+    - title: Status Distribution
+      rows:
+        - items:
+            - component_id: ct-chart-status-pie
+              md: 6
+            - component_id: ct-chart-status-bar
+              md: 6
+          className: mb-4
+
+    # Section 4: Detailed Table
+    - rows:
+        - items:
+            - component_id: ct-table-details
+              md: 12
+          className: mb-4
+
+components:
+  # KPI Cards
+  - type: kpi
+    id: ct-kpi-total
+    title: Total Tasks
+    spec:
+      value_column: count
+      agg_func: sum
+      format: "{:,.0f}"
+      color_bg: "#d6e4f0"
+      color_accent: "#2f5f8f"
+      subtitle: All time
+
+  - type: kpi
+    id: ct-kpi-active
+    title: Active Tasks
+    spec:
+      value_column: count
+      agg_func: sum
+      format: "{:,.0f}"
+      color_bg: "#f6b3b3"
+      color_accent: "#e57f7f"
+    data_transform:
+      operations:
+        - type: filter
+          filter_query: "status == 'Active'"
+
+  - type: kpi
+    id: ct-kpi-completed
+    title: Completed Tasks
+    spec:
+      value_column: count
+      agg_func: sum
+      format: "{:,.0f}"
+      color_bg: "#e57f7f"
+      color_accent: "#c0392b"
+    data_transform:
+      operations:
+        - type: filter
+          filter_query: "status == 'Completed'"
+
+  # Volume Table
+  - type: table
+    id: ct-table-volume
+    title: Volume Summary
+    spec:
+      title: Volume Summary
+      style_table:
+        overflowX: auto
+        height: 400px
+        overflowY: auto
+      style_cell:
+        textAlign: left
+        padding: 2px 4px
+        fontSize: 0.75rem
+      style_header:
+        fontWeight: bold
+        fontSize: 0.75rem
+        padding: 2px 4px
+      style_data_conditional: []
+      sort_action: native
+      page_size: 20
+      column_order:
+        - Fiscal Year
+        - Month
+        - Active
+        - Completed
+        - Total
+    data_transform:
+      operations:
+        - type: group_by
+          group_columns:
+            - _fiscal_year
+            - _month
+          agg_funcs:
+            count: sum
+
+  # Volume Chart
+  - type: chart
+    id: ct-chart-volume
+    title: Volume Trend
+    spec:
+      title: Volume Trend
+      chart_type: stacked_bar
+      x_column: _month
+      y_columns:
+        - Active
+        - Completed
+      color_map:
+        Active: "#2d6a2e"
+        Completed: "#9ca3af"
+      text_template: "%{y}"
+      height: 460
+    data_transform:
+      operations:
+        - type: group_by
+          group_columns:
+            - _month
+            - status
+          agg_funcs:
+            count: sum
+        - type: pivot
+          index:
+            - _month
+          columns_pivot:
+            - status
+          values:
+            - count
+
+  # Status Pie Chart
+  - type: chart
+    id: ct-chart-status-pie
+    title: Status Distribution
+    spec:
+      title: Status Distribution
+      chart_type: pie
+      x_column: status
+      y_columns:
+        - count
+      height: 460
+      show_legend: true
+    data_transform:
+      operations:
+        - type: group_by
+          group_columns:
+            - status
+          agg_funcs:
+            count: sum
+
+  # Status Bar Chart
+  - type: chart
+    id: ct-chart-status-bar
+    title: Status by Region
+    spec:
+      title: Status by Region
+      chart_type: stacked_bar
+      x_column: region
+      y_columns:
+        - Active
+        - Completed
+        - Failed
+      color_map:
+        Active: "#4F89B5"
+        Completed: "#2d6a2e"
+        Failed: "#D22D27"
+      text_template: "%{y}"
+      height: 460
+    data_transform:
+      operations:
+        - type: group_by
+          group_columns:
+            - region
+            - status
+          agg_funcs:
+            count: sum
+        - type: pivot
+          index:
+            - region
+          columns_pivot:
+            - status
+          values:
+            - count
+
+  # Detail Table
+  - type: table
+    id: ct-table-details
+    title: Task Details
+    spec:
+      title: Task Details
+      style_table:
+        overflowX: auto
+      style_cell:
+        textAlign: left
+        padding: 2px 4px
+        fontSize: 0.75rem
+      style_header:
+        fontWeight: bold
+        fontSize: 0.75rem
+        padding: 2px 4px
+      style_data_conditional:
+        - if:
+            filter_query: '{Status} = "Completed"'
+          backgroundColor: "#d4edda"
+        - if:
+            filter_query: '{Status} = "Failed"'
+          backgroundColor: "#f8d7da"
+      sort_action: native
+      page_size: 20
+      filter_action: native
+      column_order:
+        - Task ID
+        - Task Title
+        - Status
+        - Region
+        - Content Type
+        - Created At

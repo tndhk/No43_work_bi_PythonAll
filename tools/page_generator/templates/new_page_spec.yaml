@@ -1,0 +1,175 @@
+# page_spec.yaml - Dashboard page specification
+# Replace placeholders with your actual values
+
+metadata:
+  dashboard_id: "my_dashboard"  # Replace with your dashboard ID (used in URL)
+  id_prefix: "md-"              # Replace with 2-3 letter prefix for component IDs
+  dataset_id: "my_dataset"      # Replace with your dataset ID (S3/MinIO)
+  title: "My Dashboard"         # Dashboard display title
+  description: "Dashboard description for SPEC.md"
+
+column_map:
+  # Logical name -> Physical column name in Parquet
+  # Logical names are used in YAML, physical names are actual column names in data
+  id: "id"
+  name: "name"
+  created_at: "created_at"
+  status: "status"
+  # Add more column mappings as needed...
+
+derived_columns:
+  # Optional: Add derived columns computed from existing columns
+  - name: "_year"
+    type: "year"
+    source_column: "created_at"
+
+  - name: "_month"
+    type: "month"
+    source_column: "created_at"
+
+  # More derived columns as needed...
+  # Supported types: year, month, fiscal_year, fiscal_quarter, iso_week,
+  #                  datetime_year, datetime_month, timedelta_to_seconds, custom
+
+filters:
+  # Define your filters
+  # Multiple filter types are supported: slicer, category, dropdown, date, chip_group
+
+  - type: "slicer"
+    id: "md-filter-region"
+    label: "Region"
+    column: "region"
+    has_clear_button: true
+
+  - type: "category"
+    id: "md-filter-status"
+    label: "Status"
+    column: "status"
+    multi: false
+
+  # Add more filters as needed...
+
+layout:
+  sections:
+    # Section 1: KPI Cards
+    - rows:
+        - items:
+            - component_id: "md-kpi-total"
+              md: 4  # Bootstrap grid width (1-12)
+            - component_id: "md-kpi-active"
+              md: 4
+            - component_id: "md-kpi-completed"
+              md: 4
+          className: "mb-3"
+
+    # Section 2: Charts and Tables
+    - rows:
+        - items:
+            - component_id: "md-chart-volume"
+              md: 6
+            - component_id: "md-table-summary"
+              md: 6
+          className: "mb-4"
+
+    # Add more sections/rows as needed...
+
+components:
+  # KPI Cards
+  - type: "kpi"
+    id: "md-kpi-total"
+    title: "Total Count"
+    spec:
+      value_column: "id"
+      agg_func: "count"
+      format: "{:,.0f}"
+      subtitle: "All time"
+    bg_color: "#e3f2fd"
+    accent_color: "#1976d2"
+
+  - type: "kpi"
+    id: "md-kpi-active"
+    title: "Active Count"
+    spec:
+      value_column: "id"
+      agg_func: "count"
+      format: "{:,.0f}"
+    bg_color: "#f6b3b3"
+    accent_color: "#e57f7f"
+    data_transform:
+      operations:
+        - type: "filter"
+          include:
+            status: ["Active"]
+
+  - type: "kpi"
+    id: "md-kpi-completed"
+    title: "Completed Count"
+    spec:
+      value_column: "id"
+      agg_func: "count"
+      format: "{:,.0f}"
+    bg_color: "#d4edda"
+    accent_color: "#28a745"
+    data_transform:
+      operations:
+        - type: "filter"
+          include:
+            status: ["Completed"]
+
+  # Chart
+  - type: "chart"
+    id: "md-chart-volume"
+    title: "Volume by Month"
+    spec:
+      title: "Volume by Month"
+      chart_type: "bar"
+      x_column: "_month"
+      y_columns:
+        - "count"
+      height: 460
+      text_template: "%{y}"
+      show_legend: false
+    data_transform:
+      operations:
+        - type: "group_by"
+          group_columns:
+            - "_month"
+          agg_funcs:
+            id: "count"
+
+  # Table
+  - type: "table"
+    id: "md-table-summary"
+    title: "Summary Table"
+    spec:
+      title: "Summary Table"
+      style_table:
+        overflowX: "auto"
+        height: "400px"
+      style_cell:
+        textAlign: "left"
+        padding: "6px 8px"
+      style_header:
+        fontWeight: "600"
+      sort_action: "native"
+      page_size: 20
+      column_order:
+        - "Status"
+        - "Count"
+    data_transform:
+      operations:
+        - type: "group_by"
+          group_columns:
+            - "status"
+          agg_funcs:
+            id: "count"
+        - type: "rename"
+          mapping:
+            status: "Status"
+            id: "Count"
+
+custom_logic:
+  # Optional: List custom functions to import from _custom_logic.py
+  # These functions must be implemented manually in _custom_logic.py
+  imports: []
+    # - "my_custom_function"

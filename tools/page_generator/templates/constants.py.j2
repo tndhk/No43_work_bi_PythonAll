@@ -1,0 +1,130 @@
+"""Constants for {{ spec.metadata.title }} dashboard.
+
+Auto-generated from page_spec.yaml by tools.page_generator.
+"""
+from src.charts.specs import ChartSpec, TableSpec, COMPACT_STYLE_CELL, COMPACT_STYLE_HEADER
+
+# Dashboard metadata
+DASHBOARD_ID: str = "{{ spec.metadata.dashboard_id }}"
+DATASET_ID: str = "{{ spec.metadata.dataset_id }}"
+ID_PREFIX: str = "{{ spec.metadata.id_prefix }}"
+
+# Filter IDs
+{% for filter in spec.filters %}
+{% set clean_id = filter.id.replace(spec.metadata.id_prefix, '') %}
+FILTER_ID_{{ clean_id | upper | replace('-', '_') }}: str = f"{ID_PREFIX}{{ clean_id }}"
+{% if filter.has_clear_button %}
+{% set clear_id = filter.clear_button_id or (filter.id ~ '-clear') %}
+{% set clean_clear_id = clear_id.replace(spec.metadata.id_prefix, '') %}
+CTRL_ID_{{ clean_clear_id | upper | replace('-', '_') }}: str = f"{ID_PREFIX}{{ clean_clear_id }}"
+{% endif %}
+{% endfor %}
+
+# Component IDs
+{% for component in spec.components %}
+{% set clean_comp_id = component.id.replace(spec.metadata.id_prefix, '') %}
+{% if component.type == 'chart' %}
+CHART_ID_{{ clean_comp_id | upper | replace('-', '_') }}: str = f"{ID_PREFIX}{{ clean_comp_id }}"
+{% elif component.type == 'table' %}
+TABLE_ID_{{ clean_comp_id | upper | replace('-', '_') }}: str = f"{ID_PREFIX}{{ clean_comp_id }}"
+{% elif component.type == 'kpi' %}
+KPI_ID_{{ clean_comp_id | upper | replace('-', '_') }}: str = f"{ID_PREFIX}{{ clean_comp_id }}"
+{% endif %}
+{% endfor %}
+
+{% if spec.filters | selectattr('has_clear_button', 'equalto', true) | list | length > 0 %}
+# Clear callback pairs: (filter_id, clear_button_id)
+CLEAR_PAIRS: list[tuple[str, str]] = [
+{% for filter in spec.filters if filter.has_clear_button %}
+{% set clean_id = filter.id.replace(spec.metadata.id_prefix, '') %}
+{% set clear_id = filter.clear_button_id or (filter.id ~ '-clear') %}
+{% set clean_clear_id = clear_id.replace(spec.metadata.id_prefix, '') %}
+    (FILTER_ID_{{ clean_id | upper | replace('-', '_') }}, CTRL_ID_{{ clean_clear_id | upper | replace('-', '_') }}),
+{% endfor %}
+]
+{% endif %}
+
+{% if spec.derived_columns %}
+# Derived column names
+{% for col in spec.derived_columns %}
+DERIVED{{ col.name | upper }}: str = "{{ col.name }}"
+{% endfor %}
+{% endif %}
+
+# Mapping from logical keys to DataFrame column names
+COLUMN_MAP: dict[str, str] = {
+{% for logical, physical in spec.column_map.items() %}
+    "{{ logical }}": "{{ physical }}",
+{% endfor %}
+}
+
+{% set chart_components = spec.components | selectattr('type', 'equalto', 'chart') | list %}
+{% if chart_components %}
+# ---------------------------------------------------------------------------
+# Chart Specs (declarative definitions)
+# ---------------------------------------------------------------------------
+{% for component in chart_components %}
+{% set clean_comp_id = component.id.replace(spec.metadata.id_prefix, '') %}
+
+{{ clean_comp_id | upper | replace('-', '_') }}_SPEC: ChartSpec = ChartSpec(
+    title="{{ component.spec.title }}",
+    chart_type="{{ component.spec.chart_type }}",
+    x_column="{{ component.spec.x_column }}",
+    y_columns={{ component.spec.y_columns | tojson }},
+{% if component.spec.color_map %}
+    color_map={{ component.spec.color_map | tojson }},
+{% endif %}
+{% if component.spec.text_template %}
+    text_template="{{ component.spec.text_template }}",
+{% endif %}
+{% if component.spec.height %}
+    height={{ component.spec.height }},
+{% endif %}
+{% if component.spec.barmode %}
+    barmode="{{ component.spec.barmode }}",
+{% endif %}
+{% if component.spec.labels %}
+    labels={{ component.spec.labels | tojson }},
+{% endif %}
+{% if component.spec.show_legend is defined %}
+    show_legend={{ 'True' if component.spec.show_legend else 'False' }},
+{% endif %}
+{% if component.spec.orientation %}
+    orientation="{{ component.spec.orientation }}",
+{% endif %}
+{% if component.spec.hover_template %}
+    hover_template="{{ component.spec.hover_template }}",
+{% endif %}
+)
+{% endfor %}
+{% endif %}
+
+{% set table_components = spec.components | selectattr('type', 'equalto', 'table') | list %}
+{% if table_components %}
+# ---------------------------------------------------------------------------
+# Table Specs (declarative definitions)
+# ---------------------------------------------------------------------------
+{% for component in table_components %}
+{% set clean_comp_id = component.id.replace(spec.metadata.id_prefix, '') %}
+
+{{ clean_comp_id | upper | replace('-', '_') }}_SPEC: TableSpec = TableSpec(
+    title="{{ component.spec.title }}",
+    style_table={{ component.spec.style_table | tojson if component.spec.style_table else '{}' }},
+    style_cell={{ component.spec.style_cell | tojson if component.spec.style_cell else 'COMPACT_STYLE_CELL' }},
+    style_header={{ component.spec.style_header | tojson if component.spec.style_header else 'COMPACT_STYLE_HEADER' }},
+    style_data_conditional={{ component.spec.style_data_conditional | tojson if component.spec.style_data_conditional else '[]' }},
+{% if component.spec.sort_action %}
+    sort_action="{{ component.spec.sort_action }}",
+{% endif %}
+{% if component.spec.page_size %}
+    page_size={{ component.spec.page_size }},
+{% endif %}
+{% if component.spec.column_order %}
+    column_order={{ component.spec.column_order | tojson }},
+{% endif %}
+{% if component.spec.filter_action %}
+    filter_action="{{ component.spec.filter_action }}",
+{% endif %}
+)
+{% endfor %}
+{% endif %}

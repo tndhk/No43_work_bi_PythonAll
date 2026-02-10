@@ -1,0 +1,95 @@
+"""Chart and table builders for {{ spec.metadata.title }} dashboard.
+
+Auto-generated from page_spec.yaml by tools.page_generator.
+
+Delegates rendering to shared infrastructure:
+- build_*_table: build_table(df, *_TABLE_SPEC) -> (title, DataTable)
+- build_*_chart: build_chart(df, *_CHART_SPEC) -> go.Figure (+ custom layout)
+"""
+from __future__ import annotations
+
+from typing import Any
+
+import pandas as pd
+import plotly.graph_objects as go
+
+from src.charts.chart_builder import build_chart
+from src.charts.table_builder import build_table
+from src.charts.layout_helpers import apply_compact_chart_layout
+from ._constants import (
+{% for component in spec.components if component.type == 'chart' %}
+    {{ component.id | upper | replace('-', '_') }}_SPEC,
+{% endfor %}
+{% for component in spec.components if component.type == 'table' %}
+    {{ component.id | upper | replace('-', '_') }}_SPEC,
+{% endfor %}
+)
+
+
+{% for component in spec.components if component.type == 'table' %}
+def build_{{ component.id | replace('-', '_') }}(df: pd.DataFrame) -> tuple[str, Any]:
+    """Render {{ component.title }}.
+
+    Auto-generated from page_spec.yaml component: {{ component.id }}
+
+    Args:
+        df: {% if component.data_transform %}Transformed DataFrame{% else %}Raw or filtered DataFrame{% endif %}
+
+    Returns:
+        A ``(title, component)`` tuple where component is either a
+        ``dash_table.DataTable`` or an ``html.P`` empty-state placeholder.
+    """
+    return build_table(df, {{ component.id | upper | replace('-', '_') }}_SPEC)
+
+
+{% endfor %}
+{% for component in spec.components if component.type == 'chart' %}
+def build_{{ component.id | replace('-', '_') }}(df: pd.DataFrame) -> go.Figure:
+    """Render {{ component.title }}.
+
+    Auto-generated from page_spec.yaml component: {{ component.id }}
+
+    Args:
+        df: {% if component.data_transform %}Transformed DataFrame{% else %}Raw or filtered DataFrame{% endif %}
+
+    Returns:
+        A themed go.Figure{% if component.spec.chart_type %} with {{ component.spec.chart_type }} traces{% endif %}, or empty-state figure.
+    """
+    fig = build_chart(df, {{ component.id | upper | replace('-', '_') }}_SPEC)
+
+{% if component.layout_adjustments %}
+    {% if component.layout_adjustments.text_position %}
+    if len(fig.data) > 0:
+        fig.update_traces(textposition="{{ component.layout_adjustments.text_position }}")
+
+    {% endif %}
+    {% if component.layout_adjustments.text_info %}
+    if len(fig.data) > 0:
+        fig.update_traces(textinfo="{{ component.layout_adjustments.text_info }}")
+
+    {% endif %}
+    {% if component.layout_adjustments.marker_colors %}
+    if len(df) > 0 and len(fig.data) > 0:
+        # Custom color mapping
+        color_map = {{ component.id | upper | replace('-', '_') }}_SPEC.color_map or {}
+        colors = [color_map.get(label) for label in df["{{ component.spec.x_column }}"]]
+        fig.update_traces(marker={"colors": colors})
+
+    {% endif %}
+    {% if component.layout_adjustments.margin or component.layout_adjustments.legend %}
+    fig = apply_compact_chart_layout(
+        fig,
+        {% if component.layout_adjustments.margin %}
+        margin={{ component.layout_adjustments.margin }},
+        {% endif %}
+        {% if component.layout_adjustments.legend %}
+        legend={{ component.layout_adjustments.legend }},
+        {% endif %}
+    )
+
+    {% endif %}
+{% endif %}
+    return fig
+
+
+{% endfor %}

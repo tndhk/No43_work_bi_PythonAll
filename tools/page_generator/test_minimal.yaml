@@ -1,0 +1,48 @@
+metadata:
+  dashboard_id: test_dashboard
+  id_prefix: test-
+  dataset_id: test-dataset
+  title: Test Dashboard
+  description: A minimal test dashboard
+
+column_map:
+  date: created_at
+  status: task_status
+  count: task_count
+
+filters:
+  - type: category
+    id: test-filter-status
+    label: Status
+    column: status
+
+layout:
+  sections:
+    - rows:
+        - items:
+            - component_id: test-kpi-total
+              md: 6
+            - component_id: test-chart-status
+              md: 6
+
+components:
+  - type: kpi
+    id: test-kpi-total
+    title: Total Count
+    spec:
+      value_column: count
+      agg_func: sum
+      format: "{:,.0f}"
+      color_bg: "#d6e4f0"
+      color_accent: "#2f5f8f"
+
+  - type: chart
+    id: test-chart-status
+    title: Status Distribution
+    spec:
+      title: Status Distribution
+      chart_type: bar
+      x_column: status
+      y_columns:
+        - count
+      height: 400

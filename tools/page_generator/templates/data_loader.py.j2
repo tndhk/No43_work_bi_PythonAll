@@ -1,0 +1,304 @@
+"""Data loading and transformation for {{ spec.metadata.title }} dashboard.
+
+Auto-generated from page_spec.yaml by tools.page_generator.
+"""
+import pandas as pd
+from src.data.parquet_reader import ParquetReader
+from src.data.data_source_registry import resolve_dataset_id
+from src.core.cache import get_cached_dataset
+from src.utils.data_helpers import extract_unique_values
+from ._constants import (
+    DASHBOARD_ID,
+    COLUMN_MAP,
+{% if spec.derived_columns %}
+{% for col in spec.derived_columns %}
+    DERIVED{{ col.name | upper }},
+{% endfor %}
+{% endif %}
+{% for component in spec.components %}
+    {% set clean_comp_id = component.id.replace(spec.metadata.id_prefix, '') %}
+    {% if component.type == 'chart' %}
+    CHART_ID_{{ clean_comp_id | upper | replace('-', '_') }},
+    {% elif component.type == 'table' %}
+    TABLE_ID_{{ clean_comp_id | upper | replace('-', '_') }},
+    {% elif component.type == 'kpi' %}
+    KPI_ID_{{ clean_comp_id | upper | replace('-', '_') }},
+    {% endif %}
+{% endfor %}
+)
+
+{% if spec.custom_logic and spec.custom_logic.get('imports') %}
+from ._custom_logic import {{ spec.custom_logic.imports | join(', ') }}
+{% endif %}
+
+
+# ---------------------------------------------------------------------------
+# Filter column mapping (extends COLUMN_MAP with derived columns)
+# ---------------------------------------------------------------------------
+FILTER_COLUMN_MAP: dict[str, str] = {
+    **COLUMN_MAP,
+{% if spec.derived_columns %}
+{% for col in spec.derived_columns %}
+    "{{ col.name[1:] if col.name.startswith('_') else col.name }}": DERIVED{{ col.name | upper }},
+{% endfor %}
+{% endif %}
+}
+
+
+def _prepare_base_df(df: pd.DataFrame) -> pd.DataFrame:
+    """Prepare base DataFrame with derived columns.
+
+    Args:
+        df: Raw DataFrame from Parquet
+
+    Returns:
+        DataFrame with derived columns added
+    """
+    df = df.copy()
+
+    {% if spec.derived_columns %}
+    # Add derived columns
+    {% for col in spec.derived_columns %}
+    {% if col.source_column %}
+    {% if col.type == 'year' or col.type == 'datetime_year' %}
+    df[DERIVED{{ col.name | upper }}] = pd.to_datetime(df[COLUMN_MAP["{{ col.source_column }}"]]).dt.strftime("%Y")
+    {% elif col.type == 'month' or col.type == 'datetime_month' %}
+    df[DERIVED{{ col.name | upper }}] = pd.to_datetime(df[COLUMN_MAP["{{ col.source_column }}"]]).dt.strftime("%b")
+    {% elif col.type == 'fiscal_year' %}
+    # Fiscal year calculation (assuming April start)
+    shifted = pd.to_datetime(df[COLUMN_MAP["{{ col.source_column }}"]]) + pd.DateOffset(months=3)
+    df[DERIVED{{ col.name | upper }}] = shifted.dt.strftime("%Y").fillna("Null")
+    {% elif col.type == 'fiscal_quarter' %}
+    shifted = pd.to_datetime(df[COLUMN_MAP["{{ col.source_column }}"]]) + pd.DateOffset(months=3)
+    df[DERIVED{{ col.name | upper }}] = ("Q" + shifted.dt.quarter.astype("Int64").astype(str)).where(~shifted.isna(), "Null")
+    {% elif col.type == 'iso_week' %}
+    df[DERIVED{{ col.name | upper }}] = pd.to_datetime(df[COLUMN_MAP["{{ col.source_column }}"]]).dt.strftime("%V").fillna("Null")
+    {% elif col.type == 'timedelta_to_seconds' %}
+    df[DERIVED{{ col.name | upper }}] = pd.to_timedelta(df[COLUMN_MAP["{{ col.source_column }}"]], errors="coerce").dt.total_seconds()
+    {% elif col.type == 'date_extract' %}
+    df[DERIVED{{ col.name | upper }}] = pd.to_datetime(df[COLUMN_MAP["{{ col.source_column }}"]]).dt.{{ col.component }}
+    {% endif %}
+    {% endif %}
+    {% if col.type == 'custom' %}
+    # {{ col.expression or col.function or 'Custom derived column - implement in _prepare_base_df or _custom_logic' }}
+    {% if col.expression %}
+    {{ col.expression }}
+    {% elif col.function %}
+    # TODO: Call {{ col.function }}() for {{ col.name }}
+    {% else %}
+    # TODO: Implement custom logic for {{ col.name }}
+    {% endif %}
+    {% endif %}
+    {% endfor %}
+    {% endif %}
+
+    return df
+
+
+def load_filter_options(reader: ParquetReader, dataset_id: str) -> dict:
+    """Load unique values for all filters.
+
+    Auto-generated from page_spec.yaml filters section.
+
+    Args:
+        reader: ParquetReader instance
+        dataset_id: Dataset ID to load
+
+    Returns:
+        Dictionary mapping filter IDs to option lists
+    """
+    df = get_cached_dataset(reader, dataset_id)
+    df = _prepare_base_df(df)
+
+    return {
+        {% for filter in spec.filters %}
+        "{{ filter.id }}": extract_unique_values(df, {% if filter.column.startswith('_') %}DERIVED{{ filter.column | upper }}{% else %}COLUMN_MAP["{{ filter.column }}"]{% endif %}),
+        {% endfor %}
+    }
+
+{% for component in spec.components %}
+{% set dt = component.data_transform %}
+{% if dt %}
+{% set operations = dt.operations if dt.operations is defined else dt['operations'] if 'operations' in dt else [] %}
+{% if operations %}
+{% set build_func_name = 'build_' + component.id.replace('-', '_').replace(spec.metadata.id_prefix.replace('-', '_'), '') %}
+
+def {{ build_func_name }}(df: pd.DataFrame) -> pd.DataFrame:
+    """Generate {{ component.title }} data.
+
+    Auto-generated from page_spec.yaml component: {{ component.id }}
+
+    Args:
+        df: Filtered DataFrame
+
+    Returns:
+        Transformed DataFrame for {{ component.type }}
+    """
+    {% for op in operations %}
+    # Operation: {{ op.type }}
+    {% if op.type == 'custom' %}
+    df = {{ op.custom_code }}
+
+    {% elif op.type == 'filter' %}
+    {% if op.filter_query %}
+    df = df.query("{{ op.filter_query }}")
+    {% elif op.columns and op.exclude is defined %}
+    {% for col in op.columns %}
+    df = df[~df[COLUMN_MAP["{{ col }}"]].isin({{ op.exclude }})]
+    {% endfor %}
+    {% endif %}
+
+    {% elif op.type == 'group_by' %}
+    {% if op.group_columns %}
+    df = df.groupby([
+        {% for col in op.group_columns %}
+        {% if col.startswith('_') %}
+        DERIVED{{ col | upper }},
+        {% else %}
+        COLUMN_MAP["{{ col }}"],
+        {% endif %}
+        {% endfor %}
+    ], as_index=False).agg({
+        {% for col, agg_func in op.agg_funcs.items() %}
+        {% if col.startswith('_') %}
+        DERIVED{{ col | upper }}: "{{ agg_func }}",
+        {% else %}
+        COLUMN_MAP["{{ col }}"]: "{{ agg_func }}",
+        {% endif %}
+        {% endfor %}
+    })
+    {% endif %}
+
+    {% elif op.type == 'pivot' %}
+    {% set pivot_values = op.values_pivot if op.values_pivot is not none else op.__dict__.get('values') %}
+    {% if op.index and op.columns_pivot and pivot_values %}
+    df = df.pivot_table(
+        index=[
+            {% for col in op.index %}
+            {% if col.startswith('_') %}
+            DERIVED{{ col | upper }},
+            {% else %}
+            COLUMN_MAP["{{ col }}"],
+            {% endif %}
+            {% endfor %}
+        ],
+        columns=[
+            {% for col in op.columns_pivot %}
+            {% if col.startswith('_') %}
+            DERIVED{{ col | upper }},
+            {% else %}
+            COLUMN_MAP["{{ col }}"],
+            {% endif %}
+            {% endfor %}
+        ],
+        values=[
+            {% for col in pivot_values %}
+            {% if col.startswith('_') %}
+            DERIVED{{ col | upper }},
+            {% else %}
+            COLUMN_MAP["{{ col }}"],
+            {% endif %}
+            {% endfor %}
+        ],
+        aggfunc="sum",
+        fill_value=0,
+    ).reset_index()
+    {% endif %}
+
+    {% elif op.type == 'add_column' %}
+    {% if op.column_name and op.expression %}
+    df["{{ op.column_name }}"] = {{ op.expression }}
+    {% endif %}
+
+    {% elif op.type == 'rename' %}
+    {% if op.rename_map %}
+    df = df.rename(columns={
+        {% for old, new in op.rename_map.items() %}
+        {% if old.startswith('_') %}
+        DERIVED{{ old | upper }}: "{{ new }}",
+        {% else %}
+        COLUMN_MAP.get("{{ old }}", "{{ old }}"): "{{ new }}",
+        {% endif %}
+        {% endfor %}
+    })
+    {% endif %}
+
+    {% elif op.type == 'sort' %}
+    {% if op.columns %}
+    df = df.sort_values(
+        by=[
+            {% for col in op.columns %}
+            "{{ col }}",
+            {% endfor %}
+        ],
+        ascending={{ op.ascending if op.ascending is defined else True }},
+    )
+    {% endif %}
+
+    {% endif %}
+    {% endfor %}
+
+    return df
+{% endif %}
+{% endif %}
+{% endfor %}
+
+
+def load_and_filter_data(
+    dataset_id: str,
+    {% for filter in spec.filters %}
+    {{ filter.id.replace('-', '_') }}_values,
+    {% endfor %}
+) -> pd.DataFrame:
+    """Load dataset and apply all filters.
+
+    Args:
+        dataset_id: Dataset ID to load
+        {% for filter in spec.filters %}
+        {{ filter.id.replace('-', '_') }}_values: Selected values for {{ filter.label }}
+        {% endfor %}
+
+    Returns:
+        Filtered DataFrame
+    """
+    reader = ParquetReader()
+    df = get_cached_dataset(reader, dataset_id)
+    df = _prepare_base_df(df)
+
+    # Apply filters
+    {% for filter in spec.filters %}
+    if {{ filter.id.replace('-', '_') }}_values:
+        df = df[df[{% if filter.column.startswith('_') %}DERIVED{{ filter.column | upper }}{% else %}COLUMN_MAP["{{ filter.column }}"]{% endif %}].isin({{ filter.id.replace('-', '_') }}_values)]
+    {% endfor %}
+
+    return df
+
+
+def resolve_dataset_id_for_dashboard() -> str:
+    """Resolve the dataset ID for all {{ spec.metadata.title }} charts.
+
+    Returns:
+        Dataset ID string
+
+    Raises:
+        ValueError: If multiple dataset IDs are found
+    """
+    component_ids = [
+{% for component in spec.components %}
+    {% set clean_comp_id = component.id.replace(spec.metadata.id_prefix, '') %}
+    {% if component.type == 'chart' %}
+        CHART_ID_{{ clean_comp_id | upper | replace('-', '_') }},
+    {% elif component.type == 'table' %}
+        TABLE_ID_{{ clean_comp_id | upper | replace('-', '_') }},
+    {% elif component.type == 'kpi' %}
+        KPI_ID_{{ clean_comp_id | upper | replace('-', '_') }},
+    {% endif %}
+{% endfor %}
+    ]
+    dataset_ids = {resolve_dataset_id(DASHBOARD_ID, comp_id) for comp_id in component_ids}
+    if len(dataset_ids) != 1:
+        raise ValueError(
+            f"Multiple dataset IDs found for {{ spec.metadata.title }} dashboard: "
+            f"{sorted(dataset_ids)}"
+        )
+    return next(iter(dataset_ids))

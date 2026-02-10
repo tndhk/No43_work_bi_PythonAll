@@ -1,0 +1,190 @@
+# Minimal HAMM Overview Page Spec for Phase 7 Prototype
+# This is a simplified version that passes validation
+
+metadata:
+  dashboard_id: "hamm_overview"
+  id_prefix: "hamm-"
+  dataset_id: "hamm-dashboard"
+  title: "HAMM Overview"
+  description: "HAMM overview dashboard showing volume metrics, task details, error analysis"
+
+column_map:
+  id: "id"
+  title: "title"
+  status: "status"
+  created_at: "created_at"
+  completed_at: "completed_at"
+  region: "notification_company_name"
+  content_type: "video_type_description"
+  original_language: "original_language_name"
+  dialogue: "was dialogue provided?"
+  genre: "genre_name"
+  error_code: "error code"
+  error_type: "error user vs system"
+  error_description: "error description"
+  video_duration: "video_duration"
+  audio_details: "audio location"
+  language_count: "number of languages"
+  additional_languages: "additional languages"
+
+derived_columns:
+  - name: "_year"
+    type: "year"
+    source_column: "created_at"
+
+  - name: "_month"
+    type: "month"
+    source_column: "created_at"
+
+  - name: "_fiscal_year"
+    type: "fiscal_year"
+    source_column: "created_at"
+
+filters:
+  - type: "slicer"
+    id: "filter-region"
+    label: "Region"
+    column: "region"
+    has_clear_button: true
+
+  - type: "slicer"
+    id: "filter-year"
+    label: "Year"
+    column: "_year"
+    has_clear_button: true
+
+  - type: "category"
+    id: "filter-month"
+    label: "Month"
+    column: "_month"
+    multi: false
+
+layout:
+  sections:
+    - rows:
+        - items:
+            - component_id: "kpi-total-screens"
+              md: 4
+            - component_id: "kpi-total-erv"
+              md: 4
+            - component_id: "kpi-total-prelim"
+              md: 4
+          className: "mb-3"
+
+    - rows:
+        - items:
+            - component_id: "volume-table"
+              md: 6
+            - component_id: "volume-chart"
+              md: 6
+          className: "mb-4"
+
+components:
+  # KPI Cards
+  - type: "kpi"
+    id: "kpi-total-screens"
+    title: "Total Screens Processed"
+    spec:
+      value_column: "id"
+      agg_func: "nunique"
+      color_bg: "#d6e4f0"
+      color_accent: "#2f5f8f"
+    bg_color: "#d6e4f0"
+    accent_color: "#2f5f8f"
+    data_source: "filtered_data"
+
+  - type: "kpi"
+    id: "kpi-total-erv"
+    title: "Total ERV Processed"
+    spec:
+      value_column: "id"
+      agg_func: "nunique"
+      color_bg: "#f6b3b3"
+      color_accent: "#e57f7f"
+    bg_color: "#f6b3b3"
+    accent_color: "#e57f7f"
+    data_source: "filtered_data"
+    data_transform:
+      operations:
+        - type: "filter"
+          include:
+            content_type: ["ERV"]
+
+  - type: "kpi"
+    id: "kpi-total-prelim"
+    title: "Total Prelim Processed"
+    spec:
+      value_column: "id"
+      agg_func: "nunique"
+      color_bg: "#e57f7f"
+      color_accent: "#c0392b"
+    bg_color: "#e57f7f"
+    accent_color: "#c0392b"
+    data_source: "filtered_data"
+    data_transform:
+      operations:
+        - type: "filter"
+          include:
+            content_type: ["Prelim"]
+
+  # Volume Table
+  - type: "table"
+    id: "volume-table"
+    title: "Volume Summary"
+    spec:
+      title: "Volume Summary"
+      style_table:
+        overflowX: "auto"
+        height: "400px"
+      style_cell:
+        textAlign: "left"
+        padding: "6px 8px"
+      style_header:
+        fontWeight: "600"
+      sort_action: "native"
+      page_size: 20
+      column_order:
+        - "Fiscal Year"
+        - "Month"
+        - "Completed"
+        - "Invalid"
+    data_source: "filtered_data"
+    data_transform:
+      operations:
+        - type: "group_by"
+          group_columns:
+            - "_fiscal_year"
+            - "_month"
+            - "status"
+          agg_funcs:
+            id: "nunique"
+
+  # Volume Chart
+  - type: "chart"
+    id: "volume-chart"
+    title: "Volume Chart"
+    spec:
+      title: "Volume Chart"
+      chart_type: "stacked_bar"
+      x_column: "_month"
+      y_columns:
+        - "Completed"
+        - "Invalid"
+      color_map:
+        Completed: "#2d6a2e"
+        Invalid: "#9ca3af"
+      height: 460
+    data_source: "filtered_data"
+    data_transform:
+      operations:
+        - type: "group_by"
+          group_columns:
+            - "_month"
+            - "status"
+          agg_funcs:
+            id: "nunique"
+
+custom_logic:
+  imports:
+    - "add_cadence_columns"
+    - "prepare_task_display_df"
