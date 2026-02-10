@@ -1,6 +1,6 @@
 ---
-name: dash-bi-workflow
-description: Plotly DashベースのBIダッシュボード開発ワークフロー。Parquetデータからダッシュボードページ作成、フィルタ・コールバック実装、デバッグまでの流れをガイド。Dashダッシュボード、データ可視化、Plotlyに関連する作業で使用。データ取得・ETLは別スキル（etl-workflow）を参照。
+name: dash-manual
+description: Plotly DashベースのBIダッシュボード開発ワークフロー。Parquetデータからダッシュボードページ作成、フィルタ・コールバック実装、デバッグまでの流れをガイド。Dashダッシュボード、データ可視化、Plotlyに関連する作業で使用。データ取得・ETLは別スキル（01-etl）を参照。
 ---
 
 # Plotly Dash BIダッシュボード開発ワークフロー
@@ -9,7 +9,7 @@ description: Plotly DashベースのBIダッシュボード開発ワークフロ
 
 このスキルは、**既にParquet形式でMinIOにアップロード済みのデータ**を前提とします。
 
-データ取得・ETL処理が必要な場合は、別スキル `etl-workflow` を参照してください。
+データ取得・ETL処理が必要な場合は、別スキル `01-etl` を参照してください。
 
 ## クイックスタートチェックリスト
 
@@ -569,7 +569,7 @@ dash.register_page(
 - チャート・テーブルの見方: 各コンポーネントの解説
 - KPIカード: 該当する場合
 
-詳細は `dash-spec-updater` スキルを参照してください。
+詳細は `spec-updater` スキルを参照してください。
 
 ### 2-10. `app.py` へのインポート追加
 
@@ -816,8 +816,19 @@ from src.components.filters import (
 
 ## 関連スキル
 
-- **etl-workflow**: データ取得とETL処理（CSV、API、RDS、S3などからParquetへの変換）
-- **dash-spec-updater**: SPEC.md更新専用スキル
+- `01-etl`: データ取得とETL処理（CSV、API、RDS、S3などからParquetへの変換）
+- `spec-updater`: SPEC.md更新専用スキル
+- `03-page-gen`: YAML駆動のダッシュボードページ自動生成（`tools/page_generator` 使用）
+
+### dash-manual vs 03-page-gen
+
+| 条件 | 使うスキル | 理由 |
+|------|-----------|------|
+| 新規ダッシュボード作成 | 03-page-gen | YAMLから自動生成が圧倒的に効率的 |
+| 既存page_spec.yaml変更後の再生成 | 03-page-gen | --filesで部分再生成可能 |
+| page_generatorで対応できないカスタムUI | dash-manual | 手書きが必要な場合 |
+| フィルタ追加・コールバック修正のみ | dash-manual | 既存コード修正は手動の方が適切 |
+| 既存手書きページの保守 | dash-manual | page_spec.yaml がないページ |
 
 ## 追加リソース
 

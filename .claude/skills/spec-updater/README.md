@@ -1,4 +1,4 @@
-# dash-spec-updater Skill - Deployment Summary
+# spec-updater Skill - Deployment Summary
 
 ## Overview
 Ensures SPEC.md (user-facing dashboard documentation) stays synchronized with Plotly Dash dashboard implementation changes.
@@ -12,7 +12,7 @@ This skill uses a **3-layer approach** to ensure compliance:
 ### SPEC.md 必須ルール（MANDATORY）
 - 全ダッシュボードページには `SPEC.md` を配置すること
 - 更新タイミング: フィルタ、チャート、KPI、テーブルを追加・修正した際は必ずSPEC.mdも更新
-- 詳細: `dash-spec-updater` スキルを参照
+- 詳細: `spec-updater` スキルを参照
 ```
 
 **Why:** Makes SPEC.md a project-wide mandatory requirement
@@ -45,7 +45,7 @@ description: Use when user requests dashboard changes or starting implementation
 ### As a User
 Invoke explicitly when needed:
 ```bash
-/dash-spec-updater
+/spec-updater
 ```
 
 ### As an Agent
@@ -61,7 +61,7 @@ The skill auto-triggers when:
 
 ## Integration Status
 
-- ✅ Deployed as Project Skill to `.claude/skills/dash-spec-updater/`
+- ✅ Deployed as Project Skill to `.claude/skills/spec-updater/`
 - ✅ CLAUDE.md updated with mandatory requirement
 - ✅ Tested and verified working
 - ✅ Scoped to this project only (not global user skill)
@@ -76,8 +76,8 @@ When updating the skill:
 
 ## Related Skills
 
-- `dash-bi-workflow` - Main dashboard development workflow
-- `etl-workflow` - Data pipeline development
+- `dash-manual` - Main dashboard development workflow
+- `01-etl` - Data pipeline development
 
 ## Created
 

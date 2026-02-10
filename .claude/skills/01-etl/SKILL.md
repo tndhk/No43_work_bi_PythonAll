@@ -1,6 +1,6 @@
 ---
-name: etl-workflow
-description: データ取得とETL処理のワークフロー。CSV、API、RDS、S3などの各種データソースからParquet形式への変換とMinIOアップロード。ETL、データパイプライン、BaseETL、CsvETL、ApiETLに関連する作業で使用。ダッシュボード作成は別スキル（dash-bi-workflow）を参照。
+name: 01-etl
+description: データ取得とETL処理のワークフロー。CSV、API、RDS、S3などの各種データソースからParquet形式への変換とMinIOアップロード。ETL、データパイプライン、BaseETL、CsvETL、ApiETLに関連する作業で使用。ダッシュボード作成は別スキル（dash-manual）を参照。
 ---
 
 # ETLワークフロー
@@ -9,7 +9,7 @@ description: データ取得とETL処理のワークフロー。CSV、API、RDS�
 
 このスキルは、データソースからParquet形式への変換とMinIOへのアップロードに特化しています。
 
-ダッシュボード作成が必要な場合は、`dash-bi-workflow` スキルを参照してください。
+ダッシュボード作成が必要な場合は、`dash-manual` スキルを参照してください。
 
 ## クイックスタートチェックリスト
 
@@ -697,7 +697,7 @@ print(df.head())
 
 ## 関連スキル
 
-- **dash-bi-workflow**: Parquetデータからダッシュボード作成
+- **dash-manual**: Parquetデータからダッシュボード作成
 
 ## 追加リソース
 

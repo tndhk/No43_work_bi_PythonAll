@@ -14,6 +14,16 @@ def complex_spec():
     return load_page_spec(yaml_path)
 
 
+def _has_operation(spec, op_type: str) -> bool:
+    """Return True if any component has the given operation type."""
+    return any(
+        comp.data_transform is not None
+        and comp.data_transform.operations
+        and any(op.type == op_type for op in comp.data_transform.operations)
+        for comp in spec.components
+    )
+
+
 def test_generate_data_loader_syntax(complex_spec):
     """Test that generated _data_loader.py has valid Python syntax."""
     code = generate_data_loader(complex_spec)
@@ -53,7 +63,8 @@ def test_generate_data_loader_imports(complex_spec):
     assert "from src.data.parquet_reader import ParquetReader" in code
     assert "from src.core.cache import get_cached_dataset" in code
     assert "from src.utils.data_helpers import extract_unique_values" in code
-    assert "from ._constants import COLUMN_MAP" in code
+    assert "from ._constants import (" in code
+    assert "COLUMN_MAP" in code
 
 
 def test_generate_data_loader_derived_columns(complex_spec):
@@ -72,11 +83,7 @@ def test_generate_data_loader_filter_operations(complex_spec):
     code = generate_data_loader(complex_spec)
 
     # Check for filter query operation
-    has_filter = any(
-        c.data_transform and c.data_transform.get('operations') and
-        any(op.type == 'filter' for op in c.data_transform['operations'])
-        for c in complex_spec.components if c.data_transform
-    )
+    has_filter = _has_operation(complex_spec, "filter")
 
     if has_filter:
         # At least one filter operation should exist
@@ -88,11 +95,7 @@ def test_generate_data_loader_group_by_operations(complex_spec):
     code = generate_data_loader(complex_spec)
 
     # Check for group_by operations
-    has_groupby = any(
-        c.data_transform and c.data_transform.get('operations') and
-        any(op.type == 'group_by' for op in c.data_transform['operations'])
-        for c in complex_spec.components if c.data_transform
-    )
+    has_groupby = _has_operation(complex_spec, "group_by")
 
     if has_groupby:
         assert "df.groupby([" in code
@@ -104,11 +107,7 @@ def test_generate_data_loader_pivot_operations(complex_spec):
     code = generate_data_loader(complex_spec)
 
     # Check for pivot operations
-    has_pivot = any(
-        c.data_transform and c.data_transform.get('operations') and
-        any(op.type == 'pivot' for op in c.data_transform['operations'])
-        for c in complex_spec.components if c.data_transform
-    )
+    has_pivot = _has_operation(complex_spec, "pivot")
 
     if has_pivot:
         assert "df.pivot_table(" in code
@@ -122,11 +121,7 @@ def test_generate_data_loader_rename_operations(complex_spec):
     code = generate_data_loader(complex_spec)
 
     # Check for rename operations
-    has_rename = any(
-        c.data_transform and c.data_transform.get('operations') and
-        any(op.type == 'rename' for op in c.data_transform['operations'])
-        for c in complex_spec.components if c.data_transform
-    )
+    has_rename = _has_operation(complex_spec, "rename")
 
     if has_rename:
         assert "df.rename(columns={" in code
@@ -137,11 +132,7 @@ def test_generate_data_loader_sort_operations(complex_spec):
     code = generate_data_loader(complex_spec)
 
     # Check for sort operations
-    has_sort = any(
-        c.data_transform and c.data_transform.get('operations') and
-        any(op.type == 'sort' for op in c.data_transform['operations'])
-        for c in complex_spec.components if c.data_transform
-    )
+    has_sort = _has_operation(complex_spec, "sort")
 
     if has_sort:
         assert "df.sort_values(" in code
@@ -152,11 +143,7 @@ def test_generate_data_loader_add_column_operations(complex_spec):
     code = generate_data_loader(complex_spec)
 
     # Check for add_column operations
-    has_add_column = any(
-        c.data_transform and c.data_transform.get('operations') and
-        any(op.type == 'add_column' for op in c.data_transform['operations'])
-        for c in complex_spec.components if c.data_transform
-    )
+    has_add_column = _has_operation(complex_spec, "add_column")
 
     if has_add_column:
         # Should have column assignment
@@ -170,8 +157,8 @@ def test_generate_data_loader_custom_operations(complex_spec):
     # Check for custom operations
     has_custom = False
     for c in complex_spec.components:
-        if c.data_transform and c.data_transform.get('operations'):
-            for op in c.data_transform['operations']:
+        if c.data_transform and c.data_transform.operations:
+            for op in c.data_transform.operations:
                 if op.type == 'custom' and op.custom_code:
                     has_custom = True
                     assert op.custom_code in code

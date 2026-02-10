@@ -9,6 +9,8 @@
 | 2026-02-08 | self | test_data_loader.py で19件が DATASETS NameError。メソッド内importがある関数とない関数が混在 | テストファイルで定数をメソッド内importする場合、全メソッドで統一するかトップレベルimportにする |
 | 2026-02-09 | self | `python3 -m py_compile` に Markdown (`.claude/napkin.md`) を含めて失敗 | `py_compile` は Python ファイルのみに限定する |
 | 2026-02-09 | self | 依存確認前に pytest を実行し `boto3`/`dash` 未インストールで停止 | この環境では最初に依存確認し、未導入時は `py_compile` と差分レビューを優先する |
+| 2026-02-10 | self | セッション開始直後に napkin を読む前に `ls` を実行した | 毎セッション開始時は最初のコマンド前に `.claude/napkin.md` を確認する |
+| 2026-02-10 | self | `tools/page_generator` 健全性確認で `pytest tools/page_generator` の失敗を見落としかけた | 「運用可否」の回答前に対象サブシステムのテスト結果を必ず確認し、失敗件数と内容を明示する |
 
 ## User Preferences
 - Prefer YAML only for look/labels; keep calculation logic in Python templates.
@@ -46,3 +48,5 @@
 - 2026-02-10: page_generator で再構築時、backup の YAML は旧スキーマ形式。主な変換ルール: layout の `columns` → `rows > items`, コンポーネントに `spec` フィールド追加（KPI: KPICardSpec, Chart: title必須, Table: title必須）, pivot の `columns` → `columns_pivot`。
 - 2026-02-10: page_generator の chip_group フィルタ（column=None）は schema.py と data_loader.py.j2 の両方で guard が必要。schema.py の validate_column_references と テンプレートの `.startswith()` 呼び出し箇所。
 - 2026-02-10: hamm_overview 再構築で自動生成コードと既存テスト（298件）の整合を取る際、_constants.py にエイリアス定数（ERV_LABEL, PRELIM_LABEL, 短縮ID等）と _callbacks.py に compute_volume_kpis 等のビジネスロジック関数を追加する必要があった。自動生成はスキャフォールドに留め、手動で接合するのが現実的。
+- 2026-02-10: `page_generator` は `_constants.py/_layout.py/_filters.py/_data_loader.py/_callbacks.py/_chart_builders.py/_custom_logic.py` を生成するが、`__init__.py`・`SPEC.md`・`data_sources.yml`・`app.py` インポート追記は生成対象外。新規ページ完成には手動工程が残る。
+- 2026-02-10: `python3 -m pytest -q tools/page_generator` 実行で 8 件失敗（`tools/page_generator/test_data_loader_gen.py`）。主因は `DataTransformSpec` を dict として扱う旧テスト（`.get` 呼び出し）と import 期待値のずれ。

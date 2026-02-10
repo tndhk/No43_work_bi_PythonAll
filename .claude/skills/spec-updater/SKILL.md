@@ -1,5 +1,5 @@
 ---
-name: dash-spec-updater
+name: spec-updater
 description: Use when user requests dashboard changes or starting implementation of filters, charts, KPIs, tables in src/pages/ - mandatory SPEC.md update checklist must be included in plan before implementation
 ---
 
@@ -17,7 +17,7 @@ Use when:
 - Adding/modifying filters, charts, KPIs, or tables in src/pages/*/
 - Creating new dashboard pages
 - User requests dashboard changes
-- At end of dash-bi-workflow
+- At end of dash-manual
 
 **Triggering symptoms:**
 - Modified _layout.py, _callbacks.py, or _constants.py
@@ -190,15 +190,15 @@ Maps to COLUMN_MAP["date"] = "Date"
 ✅ GOOD: ## 概要 (日本語)
 ```
 
-## Integration with dash-bi-workflow
+## Integration with dash-manual
 
-Add as final step in dash-bi-workflow:
+Add as final step in dash-manual:
 
 ```markdown
 After implementing dashboard changes:
 1. Run tests
 2. Verify UI
-3. **Update SPEC.md** (use dash-spec-updater skill)
+3. **Update SPEC.md** (use spec-updater skill)
 4. Commit changes
 ```
 
