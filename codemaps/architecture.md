@@ -1,6 +1,6 @@
 # Architecture Codemap
 
-Freshness (UTC): 2026-02-10T00:00:00Z
+Freshness (UTC): 2026-02-10T12:00:00Z
 Analysis Scope: `app.py`, `src/`, `backend/`
 
 ## High-Level Structure
@@ -11,6 +11,7 @@ Analysis Scope: `app.py`, `src/`, `backend/`
 4. Visualization contracts: `src/charts/`
 5. Offline ingestion: `backend/etl/`, `backend/scripts/`, `backend/config/`
 6. CI/CD: `.github/workflows/ci.yml` (lint, typecheck, test -- 3 parallel jobs)
+7. Development tools: `tools/page_generator/`, `scripts/`
 
 ## Architecture Relationships
 
@@ -30,6 +31,14 @@ backend/scripts/*
   -> backend/etl/*
     -> src/data/{s3_client,type_inferrer,csv_parser,config}
     -> S3/MinIO (Parquet write)
+
+tools/page_generator/cli.py (dev-time)
+  -> tools/page_generator/parser.py (load page_spec.yaml)
+  -> tools/page_generator/generators/* (code generation)
+  -> generates src/pages/{name}/* (canonical files)
+
+scripts/scaffold_page.py (dev-time)
+  -> generates src/pages/{name}/* (template-based)
 ```
 
 ## Dependency Listing (Top-Level Imports)
@@ -45,6 +54,12 @@ backend/scripts/*
   - transformation helpers `src.data.csv_parser`, `src.data.type_inferrer`
   - masking `backend.etl.masking`
   - storage config/client `src.data.config`, `src.data.s3_client`
+- `tools/page_generator/*` imports:
+  - schema validation `pydantic`
+  - YAML parsing `yaml`
+  - code generation templates (string-based)
+- `scripts/scaffold_page.py` uses template strings (no external page imports)
+- `scripts/upload_csv.py` imports `backend.etl.etl_csv.CsvETL`
 
 ## Export Surface (Major Entrypoints)
 
@@ -55,6 +70,7 @@ backend/scripts/*
 - Callback helpers: `register_clear_callbacks`, `ensure_list`
 - Data helpers: `safe_load_filter_options`, `strip_timezone`, `resolve_single_dataset_id`
 - ETL: `BaseETL`, `CsvETL`, `DomoApiETL`, `resolve_csv_path`, script `main()` functions
+- Dev tools: `load_page_spec`, `cli_main` (page_generator), `scaffold_page.py` main(), `upload_csv.py` main()
 
 ## CI/CD Pipeline
 

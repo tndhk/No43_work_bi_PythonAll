@@ -85,6 +85,15 @@ pytest -v --tb=short
 | `python3 backend/scripts/clear_dataset.py <dataset_id>` | データセットのS3/MinIOオブジェクト削除 |
 | `python3 scripts/upload_csv.py <csv> --dataset-id <id> [--partition-col <col>]` | 単体CSVアップロード |
 
+### スキャフォールド
+
+| コマンド | 用途 |
+|---------|------|
+| `python3 scripts/scaffold_page.py --name <name> --title "<title>" --path "/<path>" --dataset-id "<id>" --prefix "<prefix>-"` | 新規ダッシュボードページのスキャフォールド生成 |
+| `python3 -m tools.page_generator src/pages/<page_name>` | page_spec.yaml からコード生成 |
+| `python3 -m tools.page_generator src/pages/<page_name> --dry-run` | コード生成のドライラン（確認のみ） |
+| `python3 -m tools.page_generator src/pages/<page_name> --files constants layout` | 特定ファイルのみ生成 |
+
 `test` サービスは `profiles: [test]` なので `docker compose up` では自動起動しない。
 
 ## 4. 環境変数 (`.env.example`)
@@ -486,7 +495,469 @@ return apply_compact_chart_layout(
 |------|----------|--------|---------|----------------|------|
 | Cursor Usage Events | cursor-usage | backend/data_sources | team-usage-events-*.csv | Date | enabled |
 
-## 9. Docker Compose サービス構成
+### ETL設定ファイル構造
+
+設定ファイルのフィールド定義:
+
+domo_datasets.yaml:
+
+| フィールド | 必須 | 説明 |
+|-----------|-----|------|
+| `name` | Yes | データセット表示名 |
+| `domo_dataset_id` | Yes | DOMO DataSet UUID |
+| `minio_dataset_id` | Yes | S3/MinIOでの保存先ID |
+| `partition_column` | No | パーティション用日付カラム（null でパーティションなし） |
+| `enabled` | Yes | 有効/無効フラグ |
+| `exclude_filter.column` | No | 除外フィルタ対象カラム |
+| `exclude_filter.keep_value` | No | 保持する値 |
+| `masking.enabled` | No | HMACマスキング有効化 |
+| `masking.columns` | No | マスキング対象カラムリスト |
+| `description` | No | データセット説明 |
+
+csv_datasets.yaml:
+
+| フィールド | 必須 | 説明 |
+|-----------|-----|------|
+| `name` | Yes | データセット表示名 |
+| `minio_dataset_id` | Yes | S3/MinIOでの保存先ID |
+| `source_dir` | Yes | CSVファイルのディレクトリ（project rootからの相対パス） |
+| `file_pattern` | Yes | ファイル名のglobパターン |
+| `partition_column` | No | パーティション用日付カラム |
+| `enabled` | Yes | 有効/無効フラグ |
+| `csv_options.delimiter` | No | 区切り文字（既定: `,`） |
+| `csv_options.encoding` | No | 文字エンコーディング（既定: 自動検出） |
+| `masking.enabled` | No | HMACマスキング有効化 |
+| `masking.columns` | No | マスキング対象カラムリスト |
+| `description` | No | データセット説明 |
+
+### スクリプト一覧
+
+プロジェクト内の全スクリプトとその役割:
+
+| スクリプト | 場所 | 用途 | 引数 |
+|-----------|------|------|------|
+| `load_domo.py` | `backend/scripts/` | DOMO APIからデータを取得しMinIOに保存 | `--list`, `--dataset "<name>"`, `--all`, `--dry-run` |
+| `load_csv.py` | `backend/scripts/` | CSVファイルをParquetに変換しMinIOに保存 | `--list`, `--dataset "<name>"`, `--all`, `--dry-run`, `--config <path>` |
+| `clear_dataset.py` | `backend/scripts/` | 指定データセットのS3/MinIOオブジェクトを全削除 | `<dataset_id>` (位置引数) |
+| `upload_csv.py` | `scripts/` | 単体CSVファイルをParquetとしてS3にアップロード | `<csv_file>`, `--dataset-id <id>`, `--partition-col <col>` |
+| `scaffold_page.py` | `scripts/` | Tier 2ダッシュボードページのスキャフォールド生成 | `--name`, `--title`, `--path`, `--dataset-id`, `--prefix` |
+
+## 9. SPEC-Driven Dashboard Page Creation
+
+### 概要
+
+YAMLベースの `page_spec.yaml` から全ページコードを自動生成する開発手法です。
+
+従来の手書きコード（500-1000行）を100-200行のYAML設定に置き換えることで、開発速度を10倍向上させます。
+
+従来の手書き vs SPEC-Driven:
+
+| 項目 | 従来の手書き | SPEC-Driven |
+|------|-------------|------------|
+| コード量 | 500-1000行 | 100-200行（YAML） |
+| 開発時間 | 2-4時間 | 5-10分 |
+| 保守性 | 散在するロジック | 一元化された設定 |
+| バリデーション | なし | スキーマバリデーション |
+
+### 新規ページ作成手順
+
+#### Step 1: ディレクトリ作成
+
+```bash
+mkdir src/pages/my_new_page
+```
+
+#### Step 2: page_spec.yaml作成
+
+テンプレートをコピーして編集:
+
+```bash
+cp tools/page_generator/templates/new_page_spec.yaml src/pages/my_new_page/page_spec.yaml
+```
+
+または、既存ページを参考にする:
+
+```bash
+cp src/pages/hamm_overview/page_spec.yaml src/pages/my_new_page/page_spec.yaml
+```
+
+#### Step 3: 基本情報の記入
+
+`page_spec.yaml` を編集して、基本情報を設定します。
+
+```yaml
+metadata:
+  dashboard_id: "my_new_page"      # ページID（URL: /my_new_page）
+  id_prefix: "mnp-"                # 2-3文字の接頭辞
+  dataset_id: "my-dataset"         # データセットID
+  title: "My New Page"             # ページタイトル
+  description: "Dashboard description"
+
+column_map:
+  # 論理名: 物理名（Parquetのカラム名）
+  id: "id"
+  name: "name"
+  created_at: "created_at"
+  status: "status"
+  # 必要なカラムを全て定義
+
+derived_columns:
+  # 年月など頻繁に使う軸を定義
+  - name: "_year"
+    type: "year"
+    source_column: "created_at"
+  - name: "_month"
+    type: "month"
+    source_column: "created_at"
+
+filters:
+  # フィルタを定義
+  - type: "slicer"
+    id: "mnp-filter-status"
+    label: "Status"
+    column: "status"
+    has_clear_button: true
+```
+
+#### Step 4: コンポーネントの定義
+
+KPIカード、チャート、テーブルを定義します。
+
+```yaml
+components:
+  # KPIカード
+  - type: "kpi"
+    id: "mnp-kpi-total"
+    title: "Total Count"
+    spec:
+      value_column: "id"
+      agg_func: "count"
+      format: "{:,.0f}"
+    bg_color: "#e3f2fd"
+    accent_color: "#1976d2"
+
+  # チャート
+  - type: "chart"
+    id: "mnp-chart-volume"
+    title: "Volume by Month"
+    spec:
+      title: "Volume by Month"
+      chart_type: "bar"
+      x_column: "_month"
+      y_columns:
+        - "count"
+      height: 460
+    data_transform:
+      operations:
+        - type: "group_by"
+          group_columns:
+            - "_month"
+          agg_funcs:
+            id: "count"
+
+  # テーブル
+  - type: "table"
+    id: "mnp-table-summary"
+    title: "Summary Table"
+    spec:
+      title: "Summary Table"
+      sort_action: "native"
+      page_size: 20
+    data_transform:
+      operations:
+        - type: "group_by"
+          group_columns:
+            - "status"
+          agg_funcs:
+            id: "count"
+```
+
+#### Step 5: レイアウトの設計
+
+コンポーネントの配置を定義します（Bootstrap 12グリッドシステム）。
+
+```yaml
+layout:
+  sections:
+    # Section 1: KPIカード
+    - rows:
+        - items:
+            - component_id: "mnp-kpi-total"
+              md: 12
+          className: "mb-3"
+
+    # Section 2: チャートとテーブル
+    - rows:
+        - items:
+            - component_id: "mnp-chart-volume"
+              md: 6
+            - component_id: "mnp-table-summary"
+              md: 6
+          className: "mb-4"
+```
+
+レイアウトのコツ:
+- KPIカード: `md: 4`（3列）または `md: 3`（4列）
+- チャート/テーブル: `md: 6`（2列）または `md: 12`（全幅）
+- 余白: KPIは `mb-3`、チャート/テーブルは `mb-4`
+
+#### Step 6: コード生成
+
+`page_generator` を実行してコードを生成します。
+
+```bash
+# 全ファイル生成
+python3 -m tools.page_generator src/pages/my_new_page
+
+# 特定ファイルのみ生成
+python3 -m tools.page_generator src/pages/my_new_page --files constants layout
+
+# Dry run（確認のみ、実際には生成しない）
+python3 -m tools.page_generator src/pages/my_new_page --dry-run
+```
+
+生成されるファイル:
+- `_constants.py` - 定数とID定義
+- `_layout.py` - レイアウト構築
+- `_filters.py` - フィルタUI
+- `_data_loader.py` - データ読込
+- `_callbacks.py` - コールバック
+- `_chart_builders.py` - チャート/テーブルビルダー
+- `_custom_logic.py` - カスタムロジック（必要時のみ）
+
+#### Step 7: カスタムロジックの追加（必要に応じて）
+
+複雑なビジネスロジックは `_custom_logic.py` に分離します。
+
+```yaml
+# page_spec.yaml
+custom_logic:
+  imports:
+    - "compute_custom_metric"
+    - "prepare_display_data"
+
+components:
+  - type: "table"
+    id: "mnp-table-details"
+    data_transform:
+      operations:
+        - type: "custom"
+          function: "prepare_display_data"
+```
+
+```python
+# _custom_logic.py
+import pandas as pd
+
+def compute_custom_metric(df: pd.DataFrame) -> pd.DataFrame:
+    """カスタムメトリクス計算."""
+    df["custom_metric"] = df["value_a"] / df["value_b"] * 100
+    return df
+
+def prepare_display_data(df: pd.DataFrame) -> pd.DataFrame:
+    """表示用データ整形."""
+    # 複雑な変換処理
+    return df
+```
+
+#### Step 8: ページ登録
+
+`__init__.py` を作成してページを登録します。
+
+```python
+# src/pages/my_new_page/__init__.py
+import dash
+from ._layout import build_layout
+
+# ページ登録（Dashがこれを自動検出）
+dash.register_page(
+    __name__,
+    path="/my_new_page",
+    title="My New Page",
+    name="My New Page",
+)
+
+# レイアウト関数（Dashが呼び出す）
+def layout():
+    """Page layout builder."""
+    return build_layout()
+
+# コールバック登録（インポートのみで自動登録）
+from . import _callbacks  # noqa: F401, E402
+```
+
+`app.py` に明示的インポート追加:
+
+```python
+# app.py
+import src.pages.my_new_page  # noqa: F401
+```
+
+#### Step 9: 動作確認とデバッグ
+
+アプリを起動して動作確認します。
+
+```bash
+python3 app.py
+```
+
+ブラウザで `http://localhost:8050/my_new_page` にアクセスして確認します。
+
+デバッグポイント:
+1. ページが表示されない → `app.py` へのインポート確認
+2. データが表示されない → データセットIDとS3/MinIOの確認
+3. フィルタが動かない → コールバックのInput/Output確認
+4. バリデーションエラー → `page_spec.yaml` の構文確認
+
+### コマンド例
+
+```bash
+# 全ファイル生成
+python3 -m tools.page_generator src/pages/my_new_page
+
+# 特定ファイルのみ生成
+python3 -m tools.page_generator src/pages/my_new_page --files constants layout
+
+# 複数ファイル指定
+python3 -m tools.page_generator src/pages/my_new_page --files constants layout filters
+
+# Dry run（確認のみ）
+python3 -m tools.page_generator src/pages/my_new_page --dry-run
+
+# 既存ページの再生成
+python3 -m tools.page_generator src/pages/hamm_overview
+```
+
+利用可能なファイル名:
+- `constants` - `_constants.py`
+- `layout` - `_layout.py`
+- `filters` - `_filters.py`
+- `data_loader` - `_data_loader.py`
+- `callbacks` - `_callbacks.py`
+- `chart_builders` - `_chart_builders.py`
+- `custom_logic` - `_custom_logic.py`（custom_logicセクションがある場合のみ）
+
+### トラブルシューティング
+
+#### validation error対処法
+
+バリデーションエラーは、`page_spec.yaml` がスキーマに違反していることを示します。
+
+```bash
+# エラー例
+ValidationError: 1 validation error for PageSpec
+filters.0.column
+  Field required [type=missing, input_value={...}, input_type=dict]
+```
+
+対処法:
+1. エラーメッセージのフィールドパスを確認（例: `filters.0.column`）
+2. `docs/page-spec-reference.md` の該当セクションを参照
+3. 必須フィールドを追加または修正
+4. 再度コード生成を実行
+
+よくあるエラー:
+- `Field required` - 必須フィールドが未設定
+- `Duplicate IDs found` - 重複するID
+- `references unknown column` - column_mapに未定義のカラム参照
+- `references unknown component_id` - layoutで未定義のcomponent_id参照
+
+#### 生成されたコードが動かない場合
+
+1. データセットIDの確認
+
+```bash
+# MinIOにデータセットが存在するか確認
+python3 -c "from src.data.parquet_reader import ParquetReader; \
+  reader = ParquetReader(); \
+  df = reader.read_dataset('my-dataset'); \
+  print(df.head())"
+```
+
+2. カラム名の確認
+
+```python
+# データセットのカラム名を確認
+python3 -c "from src.data.parquet_reader import ParquetReader; \
+  reader = ParquetReader(); \
+  df = reader.read_dataset('my-dataset'); \
+  print(df.columns.tolist())"
+```
+
+3. コールバックエラーの確認
+
+ブラウザの開発者ツール（F12）でコンソールエラーを確認します。
+
+```
+# よくあるコールバックエラー
+- Input/Outputのコンポーネントが存在しない
+- コンポーネントIDの typo
+- データ変換エラー（KeyError, AttributeError）
+```
+
+4. ログの確認
+
+```bash
+# アプリのログを確認
+python3 app.py 2>&1 | grep -i error
+```
+
+#### カスタムロジックの分離方法
+
+以下の場合は `_custom_logic.py` へロジックを分離します。
+
+1. 複雑なビジネスロジック（10行以上）
+2. 複数コンポーネントで使用される処理
+3. 単体テストが必要な処理
+
+分離手順:
+
+1. `page_spec.yaml` に関数名を定義
+
+```yaml
+custom_logic:
+  imports:
+    - "my_custom_function"
+```
+
+2. `_custom_logic.py` を手動作成
+
+```python
+# src/pages/my_new_page/_custom_logic.py
+import pandas as pd
+
+def my_custom_function(df: pd.DataFrame) -> pd.DataFrame:
+    """Custom transformation logic."""
+    # 複雑な処理
+    return df
+```
+
+3. コンポーネントで使用
+
+```yaml
+components:
+  - type: "table"
+    id: "my-table"
+    data_transform:
+      operations:
+        - type: "custom"
+          function: "my_custom_function"
+```
+
+### 参考実装
+
+完全な実装例:
+
+- `src/pages/hamm_overview/page_spec.yaml` - 実稼働ページの完全な実装（KPI、チャート、テーブル、カスタムロジック）
+- `tools/page_generator/test_complex.yaml` - 全機能を網羅したテスト実装（全フィルタタイプ、全コンポーネントタイプ）
+- `tools/page_generator/test_minimal.yaml` - 最小限の実装例
+
+詳細な設定リファレンス:
+
+- `docs/page-spec-reference.md` - `page_spec.yaml` の完全なリファレンスドキュメント
+- `tools/page_generator/README.md` - コード生成ツールの詳細な使い方
+
+## 10. Docker Compose サービス構成
 
 | サービス | 役割 | ポート | 備考 |
 |----------|------|--------|------|
@@ -495,7 +966,7 @@ return apply_compact_chart_layout(
 | `minio-init` | MinIO初期設定 | - | `bi-datasets` バケット作成 |
 | `test` | テスト実行 | - | `profiles: [test]` (手動起動のみ) |
 
-## 10. CI/CD
+## 11. CI/CD
 
 ### GitHub Actions ワークフロー
 

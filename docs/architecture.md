@@ -1,6 +1,6 @@
 # System Architecture
 
-Last Updated: 2026-02-09 (rev.5)
+Last Updated: 2026-02-10 (rev.6)
 
 ## High-Level Architecture
 
@@ -197,14 +197,17 @@ All Tier 2 pages (Cursor Usage, APAC DOT Due Date, HAMM Overview) follow the mod
 ```
 <page_name>/
   __init__.py          -> register_page + layout()
-  _constants.py        -> Dataset ID, column mappings, filter/chart IDs
+  _constants.py        -> Dataset ID, column mappings, filter/chart IDs, ChartSpec/TableSpec
   _data_loader.py      -> Data I/O (testable, no UI)
   _filters.py          -> Filter UI (testable, no I/O) -- slicer/category/chip builders
   _layout.py           -> Full layout builder
   _callbacks.py        -> @callback registration + slicer clear callbacks
+  _chart_builders.py   -> Aggregation + chart/table rendering (uses apply_compact_chart_layout)
   data_sources.yml     -> chart_id -> dataset_id mapping
   SPEC.md              -> User-facing spec (Japanese)
-  charts/              -> (optional) Pure function chart builders
+  _custom_logic.py     -> (optional) Complex business logic separated from callbacks
+  page_spec.yaml       -> (optional) SPEC-Driven page definition for code generation
+  charts/              -> (optional, legacy) Pure function chart builders
     _ch{NN}_{name}.py  -> build(df, ...) -> (title, component)
 ```
 
@@ -213,6 +216,15 @@ This pattern enables:
 - Adding charts without modifying existing code
 - Clear separation of concerns per module
 - Filter UI extraction via `_filters.py` for reusable filter layout builders
+
+### Page Creation Methods
+
+| 手法 | ツール | 用途 |
+|------|--------|------|
+| scaffold | `scripts/scaffold_page.py` | 汎用テンプレートからの雛形生成（手動カスタマイズ前提） |
+| SPEC-Driven | `tools/page_generator` + `page_spec.yaml` | YAMLベースの宣言的コード生成（推奨） |
+
+詳細: [CONTRIB.md](CONTRIB.md) セクション7, 9
 
 ## Phase 2: LLM Integration
 

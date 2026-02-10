@@ -1,6 +1,6 @@
 # Data Codemap
 
-Freshness (UTC): 2026-02-10T00:00:00Z
+Freshness (UTC): 2026-02-10T12:00:00Z
 Analysis Scope: `src/data/`, `src/core/`, `src/utils/`, `src/exceptions.py`, data consumers in pages/backend
 
 ## Data Layer Structure
@@ -18,6 +18,8 @@ Analysis Scope: `src/data/`, `src/core/`, `src/utils/`, `src/exceptions.py`, dat
   - `src/data/csv_parser.py`: CSV parsing with encoding detection
   - `src/data/type_inferrer.py`: schema inference and type application
   - `src/data/models.py`: `ColumnSchema`
+- Data source connectors
+  - `backend/data_sources/__init__.py`: placeholder for future API/RDS connectors
 - Utility modules
   - `src/utils/data_helpers.py`: `safe_load_filter_options`, `strip_timezone`, `resolve_single_dataset_id`
   - `src/utils/filter_helpers.py`: filter construction utilities
@@ -49,6 +51,9 @@ src/utils/callback_helpers.py
 
 src/utils/data_helpers.py
   -> used by src/pages/*/_data_loader.py (safe_load_filter_options, strip_timezone)
+
+backend/data_sources (Phase 1)
+  -> (no active dependencies; skeleton package)
 ```
 
 ## Architecture Relationships

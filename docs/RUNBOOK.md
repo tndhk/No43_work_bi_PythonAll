@@ -227,9 +227,59 @@ docker compose ps
 - `.card` の `transition` を `box-shadow` と `border-color` に限定
 - `.card:hover` の `transform` を削除
 
-## 7. ロールバック
+## 7. 新規ダッシュボードページの追加（運用手順）
 
-### 7.1 アプリのロールバック（Compose運用）
+### 7.1 スキャフォールドによるページ追加
+
+```bash
+# ページ雛形を生成
+python3 scripts/scaffold_page.py \
+    --name my_report \
+    --title "My Report Dashboard" \
+    --path "/my-report" \
+    --dataset-id "my-dataset" \
+    --prefix "mr-"
+
+# app.py に明示的インポートを追加
+# import src.pages.my_report  # noqa: F401
+```
+
+生成されるファイル: `__init__.py`, `_constants.py`, `_data_loader.py`, `_filters.py`, `_layout.py`, `_callbacks.py`, `_chart_builders.py`, `SPEC.md`, `data_sources.yml`
+
+### 7.2 SPEC-Driven ページ生成
+
+```bash
+# page_spec.yaml を作成してからコード生成
+python3 -m tools.page_generator src/pages/my_report
+
+# ドライラン（確認のみ）
+python3 -m tools.page_generator src/pages/my_report --dry-run
+
+# 特定ファイルのみ再生成
+python3 -m tools.page_generator src/pages/my_report --files constants layout
+```
+
+詳細な手順: [CONTRIB.md](CONTRIB.md) セクション7, 9
+
+### 7.3 追加後の確認
+
+```bash
+# アプリ起動
+python3 app.py
+
+# ブラウザで確認
+# http://localhost:8050/<path>
+```
+
+確認ポイント:
+- ページがサイドバーに表示されるか
+- データが正しく読み込まれるか
+- フィルタが動作するか
+- CI が通るか（`ruff check src/`, `mypy src/`, `pytest`）
+
+## 8. ロールバック
+
+### 8.1 アプリのロールバック（Compose運用）
 
 ```bash
 docker compose down
@@ -240,7 +290,7 @@ docker compose up --build -d
 注記:
 - コミット/タグ運用ルールはリポジトリ内に固定定義がないため、チーム運用に従うこと。
 
-### 7.2 データのロールバック
+### 8.2 データのロールバック
 
 ```bash
 python3 backend/scripts/clear_dataset.py <dataset_id>
@@ -249,7 +299,7 @@ python3 backend/scripts/load_domo.py --dataset "<dataset_name>"
 
 CSVデータの場合は `load_csv.py` を使用。
 
-## 8. 環境変数リファレンス
+## 9. 環境変数リファレンス
 
 `.env.example` の全変数一覧は [CONTRIB.md](CONTRIB.md) セクション4 を参照。
 
@@ -266,9 +316,9 @@ DOMO_CLIENT_ID, DOMO_CLIENT_SECRET
 ETL_MASKING_SECRET
 ```
 
-## 9. CI/CD パイプライン
+## 10. CI/CD パイプライン
 
-### 9.1 GitHub Actions CI
+### 10.1 GitHub Actions CI
 
 定義ファイル: `.github/workflows/ci.yml`
 
@@ -278,7 +328,7 @@ ETL_MASKING_SECRET
 
 同一ブランチに対する新しいpushが発生すると、先行するCIジョブは自動キャンセルされる。
 
-### 9.2 ジョブ構成
+### 10.2 ジョブ構成
 
 3つのジョブが並列実行される:
 
@@ -300,7 +350,7 @@ push / pull_request (main)
 
 `typecheck` と `test` は pip キャッシュを使用しており、依存に変更がない限りインストール時間が短縮される。
 
-### 9.3 PR品質チェックプロセス
+### 10.3 PR品質チェックプロセス
 
 PR作成前にローカルで以下を実行し、CIと同等のチェックを事前確認する:
 
@@ -317,7 +367,7 @@ pytest -v --tb=short
 
 3点すべてがパスしてからPRを作成すること。CI上で全ジョブが成功しないとマージ不可（ブランチ保護ルール設定時）。
 
-### 9.4 CI失敗時の対応
+### 10.4 CI失敗時の対応
 
 | 失敗ジョブ | 確認事項 | 対処 |
 |-----------|---------|------|
@@ -325,7 +375,7 @@ pytest -v --tb=short
 | typecheck | `mypy src/` の出力を確認 | 型エラーを修正、または `pyproject.toml` の `[[tool.mypy.overrides]]` で既知のサードパーティ型を除外 |
 | test | `pytest -v --tb=short` の出力を確認 | テスト失敗を修正して再push |
 
-## 10. 未定義事項 [TBD]
+## 11. 未定義事項 [TBD]
 
 - 本番環境の標準デプロイ先（ECS/EKS/VM等） [TBD]
 - 本番監視基盤とアラート通知経路 [TBD]

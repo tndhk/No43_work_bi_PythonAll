@@ -1,6 +1,6 @@
 # Backend Codemap
 
-Freshness (UTC): 2026-02-10T00:00:00Z
+Freshness (UTC): 2026-02-10T12:00:00Z
 Analysis Scope: `backend/`, plus backend dependencies in `src/`
 
 ## Backend Modules
@@ -13,6 +13,8 @@ Analysis Scope: `backend/`, plus backend dependencies in `src/`
 - `backend/etl/etl_api.py`, `backend/etl/etl_rds.py`, `backend/etl/etl_s3.py`: skeleton ETL classes
 - `backend/scripts/load_csv.py`, `backend/scripts/load_domo.py`, `backend/scripts/clear_dataset.py`: CLI entrypoints
 - `backend/config/*.yaml`: dataset config for DOMO/CSV loaders
+- `backend/data_sources/__init__.py`: data source connectors skeleton (Phase 1 placeholder)
+- `scripts/upload_csv.py`: single CSV file upload CLI (wraps CsvETL)
 
 ## Dependency Graph
 
@@ -42,13 +44,19 @@ backend.etl.etl_domo
   -> backend.etl.base_etl
   -> src.data.type_inferrer
   -> backend.etl.masking
+
+scripts/upload_csv.py
+  -> backend.etl.etl_csv
+
+backend/data_sources (placeholder)
+  -> (no dependencies in current phase)
 ```
 
 ## Exports (Operational Surface)
 
 - ETL classes: `BaseETL`, `CsvETL`, `DomoApiETL`, `ApiETL`, `RdsETL`, `S3RawETL`
 - Utilities: `apply_hmac_masking`, `resolve_csv_path`
-- Script entrypoints: `main` (`load_csv.py`, `load_domo.py`, `clear_dataset.py`)
+- Script entrypoints: `main` (`load_csv.py`, `load_domo.py`, `clear_dataset.py`, `scripts/upload_csv.py`)
 
 ## Architecture Relationships
 
