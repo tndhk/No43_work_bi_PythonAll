@@ -129,7 +129,7 @@ dmypy.json
 *.swp
 *.swo
 *~
-./claude/plans/*
+.claude/plans/
 
 # OS
 .DS_Store
