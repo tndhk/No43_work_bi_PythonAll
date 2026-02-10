@@ -128,10 +128,6 @@ def load_and_filter_data(
     df = get_cached_dataset(reader, dataset_id)
 
     date_col = COLUMN_MAP["date"]
-    model_col = COLUMN_MAP["model"]
-    user_col = COLUMN_MAP["user"]
-    kind_col = COLUMN_MAP["kind"]
-
     # Strip timezone for filter compatibility (Parquet returns UTC-aware)
     df[date_col] = pd.to_datetime(df[date_col], utc=True).dt.tz_convert(None)
     df["DateOnly"] = df[date_col].dt.date

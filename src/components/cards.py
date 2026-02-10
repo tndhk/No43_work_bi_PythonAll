@@ -1,5 +1,5 @@
 """KPI card and shared chart/table card components."""
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, cast
 import dash_bootstrap_components as dbc
 from dash import dcc, html
 
@@ -41,7 +41,7 @@ def create_chart_card(
             dcc.Graph(
                 id=chart_id,
                 className=graph_class,
-                config=graph_config,
+                config=cast(Any, graph_config),
             ),
         ], className=body_class),
     ], className=card_class)

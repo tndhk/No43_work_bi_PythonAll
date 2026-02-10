@@ -8,7 +8,7 @@ import pandas as pd
 from src.data.parquet_reader import ParquetReader
 from src.data.data_source_registry import resolve_dataset_id
 from src.core.cache import get_cached_dataset
-from src.utils.data_helpers import extract_unique_values, strip_timezone
+from src.utils.data_helpers import extract_unique_values
 from src.utils.filter_helpers import build_filter_set_from_map
 from src.data.filter_engine import apply_filters
 
@@ -56,6 +56,35 @@ from ._custom_logic import (
     _format_end_date_yearly_vec,
     _compute_total_duration_vec,
 )
+
+__all__ = [
+    "FILTER_COLUMN_MAP",
+    "add_cadence_columns",
+    "prepare_task_display_df",
+    "prepare_language_display_df",
+    "_format_start_date_monthly",
+    "_format_start_date_monthly_vec",
+    "_format_start_date_quarterly",
+    "_format_start_date_quarterly_vec",
+    "_format_end_date_quarterly",
+    "_format_end_date_quarterly_vec",
+    "_format_start_date_yearly",
+    "_format_start_date_yearly_vec",
+    "_format_end_date_yearly",
+    "_format_end_date_yearly_vec",
+    "_compute_total_duration_vec",
+    "load_filter_options",
+    "load_and_filter_data",
+    "build_volume_summary",
+    "build_issues_ratio",
+    "build_intervention_by_screener",
+    "build_user_intervention_breakdown",
+    "build_hamm_intervention_breakdown",
+    "build_original_language_distribution",
+    "build_genre_distribution",
+    "build_dialogue_by_content_type",
+    "resolve_dataset_id_for_dashboard",
+]
 
 
 # ---------------------------------------------------------------------------

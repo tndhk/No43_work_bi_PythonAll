@@ -6,7 +6,6 @@ infrastructure with specs from _constants.py.
 from __future__ import annotations
 
 import pandas as pd
-import plotly.graph_objects as go
 
 from src.charts.chart_builder import build_chart
 from src.charts.table_builder import build_table

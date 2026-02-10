@@ -209,8 +209,8 @@ def add_cadence_columns(df: pd.DataFrame, cadence: str) -> pd.DataFrame:
         df["_start_date"] = _format_start_date_monthly_vec(created)
         # End date = last day of month
         valid = created.dropna()
-        end_dates = (valid.dt.to_period("M") + 1).dt.to_timestamp() - pd.Timedelta(days=1)
-        formatted_end = end_dates.dt.strftime("%-d-%b-%y")
+        end_dates = valid.dt.to_period("M").dt.to_timestamp(how="end")
+        formatted_end = pd.Series(end_dates, index=valid.index).dt.strftime("%-d-%b-%y")
         df["_end_date"] = "Null"
         df.loc[~mask, "_end_date"] = formatted_end.values
         df["_iso_week"] = pd.NA
