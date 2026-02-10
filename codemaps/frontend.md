@@ -33,6 +33,8 @@ app.py
   - `src/components/cards.py`:
     - `create_kpi_card`: Basic KPI display (supports bg_color, accent_color)
     - `create_kpi_card_with_delta`: KPI with change indicator
+    - `create_chart_card`: Chart card with chart-density-card, chart-density-graph, default config
+    - `create_table_card`: Table card with standard header/body (header_id for dynamic titles)
   - `src/components/sidebar.py`: navigation from Dash `page_registry`
 - Utility modules
   - `src/utils/callback_helpers.py`: `register_clear_callbacks` for bulk filter clear registration; `ensure_list` for normalizing callback values (None -> [], scalar -> [scalar])
@@ -58,7 +60,8 @@ app.py
     - `.chart-density-row`, `.chart-density-card`, `.chart-density-graph` for compact layouts
     - `.plotly-container`, `.modebar` styling
   - Reusable Chart Density pattern (reference: `src/pages/hamm_overview/`)
-    - `_layout.py`: set `dcc.Graph` className=`"chart-density-graph"` + `config={"displayModeBar": False, "responsive": True}`; wrap card with className=`"chart-density-card"`; wrap row with className=`"chart-density-row"`
+    - `_layout.py`: use `create_chart_card` / `create_table_card` from `src/components/cards`; wrap row with `row-gap-sm` / `row-gap-md` + `chart-density-row` for chart rows
+    - Tokens: `assets/00-reset.css` defines `--gap-section-sm/md`, `--z-dropdown`, `--transition-base`, `--spacing-compact`; adjust spacing centrally there
     - `_constants.py`: define `ChartSpec` defaults (`height`, `show_legend`, `text_template`)
     - `_chart_builders.py`: use `apply_compact_chart_layout()` from `src/charts/layout_helpers` for consistent margins and title removal (replaces manual `fig.update_layout()` calls)
     - `assets/05-charts.css`: apply scoped spacing rules via `.chart-density-*` classes (avoid global `.card` overrides)

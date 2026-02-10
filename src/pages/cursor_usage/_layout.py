@@ -2,6 +2,7 @@
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 
+from src.components.cards import create_chart_card, create_table_card
 from src.data.parquet_reader import ParquetReader
 from ._constants import (
     CHART_ID_KPI_TOTAL_COST,
@@ -35,7 +36,7 @@ def build_layout():
     filter_rows = build_filter_layout(options)
 
     return html.Div([
-        html.H1("Cursor Usage Dashboard", className="mb-4"),
+        html.H1("Cursor Usage Dashboard", className="row-gap-md"),
 
         # Filters
         filter_rows[0],
@@ -53,67 +54,35 @@ def build_layout():
                 dbc.Col([
                     html.Div(id=CHART_ID_KPI_REQUEST_COUNT),
                 ], md=4),
-            ], className="mb-4"),
+            ], className="row-gap-md"),
         ]),
 
         # Charts Row 1
         dcc.Loading([
             dbc.Row([
                 dbc.Col([
-                    dbc.Card([
-                        dbc.CardHeader(COST_TREND_SPEC.title, className="card-header"),
-                        dbc.CardBody([
-                            dcc.Graph(
-                                id=CHART_ID_COST_TREND,
-                                className="chart-density-graph",
-                                config={"displayModeBar": False, "responsive": True},
-                            ),
-                        ]),
-                    ], className="chart-density-card"),
+                    create_chart_card(COST_TREND_SPEC.title, CHART_ID_COST_TREND),
                 ], md=12),
-            ], className="mb-4 chart-density-row"),
+            ], className="row-gap-md chart-density-row"),
         ]),
 
         # Charts Row 2
         dcc.Loading([
             dbc.Row([
                 dbc.Col([
-                    dbc.Card([
-                        dbc.CardHeader(TOKEN_EFFICIENCY_SPEC.title, className="card-header"),
-                        dbc.CardBody([
-                            dcc.Graph(
-                                id=CHART_ID_TOKEN_EFFICIENCY,
-                                className="chart-density-graph",
-                                config={"displayModeBar": False, "responsive": True},
-                            ),
-                        ]),
-                    ], className="chart-density-card"),
+                    create_chart_card(TOKEN_EFFICIENCY_SPEC.title, CHART_ID_TOKEN_EFFICIENCY),
                 ], md=6),
                 dbc.Col([
-                    dbc.Card([
-                        dbc.CardHeader(MODEL_DISTRIBUTION_SPEC.title, className="card-header"),
-                        dbc.CardBody([
-                            dcc.Graph(
-                                id=CHART_ID_MODEL_DISTRIBUTION,
-                                className="chart-density-graph",
-                                config={"displayModeBar": False, "responsive": True},
-                            ),
-                        ]),
-                    ], className="chart-density-card"),
+                    create_chart_card(MODEL_DISTRIBUTION_SPEC.title, CHART_ID_MODEL_DISTRIBUTION),
                 ], md=6),
-            ], className="mb-4 chart-density-row"),
+            ], className="row-gap-md chart-density-row"),
         ]),
 
         # Data Table
         dcc.Loading([
             dbc.Row([
                 dbc.Col([
-                    dbc.Card([
-                        dbc.CardHeader(DETAIL_TABLE_SPEC.title, className="card-header"),
-                        dbc.CardBody([
-                            html.Div(id=CHART_ID_DATA_TABLE),
-                        ]),
-                    ]),
+                    create_table_card(DETAIL_TABLE_SPEC.title, CHART_ID_DATA_TABLE),
                 ], md=12),
             ]),
         ]),

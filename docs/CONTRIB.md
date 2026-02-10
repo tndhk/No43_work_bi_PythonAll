@@ -379,29 +379,23 @@ from src.utils.data_helpers import (
 
 | ファイル | 役割 | 例 |
 |---------|------|----|
-| `_layout.py` | `dcc.Graph` config と `chart-density-*` class付与 | `className="chart-density-graph"` |
+| `_layout.py` | 共有API `create_chart_card` / `create_table_card` 使用 | `src/components/cards` からインポート |
 | `_constants.py` | `ChartSpec` の高さ・凡例・ラベル方針 | `show_legend=False`, `text_template="%{y}"` |
 | `_chart_builders.py` | `apply_compact_chart_layout()` でマージン・凡例を調整 | `src/charts/layout_helpers` からインポート |
+| `assets/00-reset.css` | 余白・z-index・トランジションのトークン | `--gap-section-sm/md`, `--z-dropdown` |
 | `assets/05-charts.css` | `.chart-density-*` による余白最適化 | `.chart-density-row .chart-density-card .card-body { ... }` |
 
 最小雛形:
 
 ```python
 # _layout.py
+from src.components.cards import create_chart_card, create_table_card
+
 dbc.Row([
     dbc.Col([
-        dbc.Card([
-            dbc.CardHeader("Genre", className="card-header"),
-            dbc.CardBody([
-                dcc.Graph(
-                    id=CHART_ID_GENRE,
-                    className="chart-density-graph",
-                    config={"displayModeBar": False, "responsive": True},
-                ),
-            ]),
-        ], className="chart-density-card"),
+        create_chart_card("Genre", CHART_ID_GENRE),
     ], md=4),
-], className="mb-4 chart-density-row")
+], className="row-gap-md chart-density-row")
 ```
 
 ```python
@@ -699,7 +693,7 @@ layout:
 レイアウトのコツ:
 - KPIカード: `md: 4`（3列）または `md: 3`（4列）
 - チャート/テーブル: `md: 6`（2列）または `md: 12`（全幅）
-- 余白: KPIは `mb-3`、チャート/テーブルは `mb-4`
+- 余白: セマンティッククラス `row-gap-sm`（KPI等） / `row-gap-md`（チャート/テーブル）を使用。中央調整は `assets/00-reset.css` の `--gap-section-sm` / `--gap-section-md`
 
 #### Step 6: コード生成
 

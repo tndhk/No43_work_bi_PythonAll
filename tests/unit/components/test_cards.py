@@ -1,7 +1,13 @@
-"""Tests for KPI card components."""
+"""Tests for KPI card and shared chart/table card components."""
 import pytest
 import dash_bootstrap_components as dbc
-from src.components.cards import create_kpi_card
+from dash import dcc, html
+from src.components.cards import (
+    create_kpi_card,
+    create_chart_card,
+    create_table_card,
+    DEFAULT_GRAPH_CONFIG,
+)
 
 
 def test_create_kpi_card_with_int_value():
@@ -186,3 +192,73 @@ class TestCreateKpiCardBgAndAccentCombined:
         style = card.style or {}
         assert "backgroundColor" not in style
         assert "borderTop" not in style
+
+
+# ---------------------------------------------------------------------------
+# create_chart_card
+# ---------------------------------------------------------------------------
+
+class TestCreateChartCard:
+    """Tests for create_chart_card shared API."""
+
+    def test_returns_card_with_header_and_graph(self):
+        """Given title and chart_id, When creating chart card, Then Card with CardHeader and dcc.Graph."""
+        # Given: 有効なカードタイトルとチャートID
+        card = create_chart_card("Test Chart", "chart-id")
+        # When: 共有チャートカードを生成する
+        assert isinstance(card, dbc.Card)
+        assert "chart-density-card" in (card.className or "")
+        # CardHeader + CardBody with dcc.Graph
+        header = card.children[0]
+        body = card.children[1]
+        # Then: 標準ヘッダー/ボディ/Graph構成と既定設定が適用される
+        assert isinstance(header, dbc.CardHeader)
+        assert header.children == "Test Chart"
+        assert "card-header" in (header.className or "")
+        assert isinstance(body, dbc.CardBody)
+        graph = body.children[0]
+        assert isinstance(graph, dcc.Graph)
+        assert graph.id == "chart-id"
+        assert "chart-density-graph" in (graph.className or "")
+        assert graph.config == {"displayModeBar": False, "responsive": True}
+
+    def test_default_config_used(self):
+        """When no graph_config provided, Then DEFAULT_GRAPH_CONFIG is applied."""
+        # Given: graph_config を明示しない入力
+        card = create_chart_card("X", "y")
+        # When: カードを生成する
+        body = card.children[1]
+        graph = body.children[0]
+        # Then: 既定の Graph 設定が利用される
+        assert graph.config == DEFAULT_GRAPH_CONFIG
+
+
+# ---------------------------------------------------------------------------
+# create_table_card
+# ---------------------------------------------------------------------------
+
+class TestCreateTableCard:
+    """Tests for create_table_card shared API."""
+
+    def test_returns_card_with_header_and_div(self):
+        """Given title and table_id, When creating table card, Then Card with CardHeader and html.Div."""
+        # Given: 有効なタイトルとテーブルID
+        card = create_table_card("Test Table", "table-id")
+        # When: 共有テーブルカードを生成する
+        assert isinstance(card, dbc.Card)
+        header = card.children[0]
+        body = card.children[1]
+        # Then: ヘッダーとテーブルコンテナDivが作成される
+        assert isinstance(header, dbc.CardHeader)
+        assert header.children == "Test Table"
+        assert body.children[0].id == "table-id"
+        assert isinstance(body.children[0], html.Div)
+
+    def test_header_id_for_dynamic_title(self):
+        """When header_id provided, Then CardHeader has id attribute."""
+        # Given: 動的ヘッダー向けの header_id が指定される
+        card = create_table_card("", "t1", header_id="header-1")
+        # When: テーブルカードを生成する
+        header = card.children[0]
+        # Then: CardHeader に id が設定される
+        assert header.id == "header-1"

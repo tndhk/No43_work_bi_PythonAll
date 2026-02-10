@@ -33,6 +33,19 @@
   --spacing-md: 1rem;
   --spacing-lg: 1.5rem;
   --spacing-xl: 2rem;
+  /* Compact spacing for chart density */
+  --spacing-compact: 0.25rem;
+
+  /* Section gaps (semantic row spacing; aligned with Bootstrap mb-3/mb-4) */
+  --gap-section-sm: 1rem;
+  --gap-section-md: 1.5rem;
+
+  /* z-index */
+  --z-dropdown: 9999;
+  --z-sidebar: 1000;
+
+  /* Transitions */
+  --transition-base: 0.3s ease;
 
   /* Shadows */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);

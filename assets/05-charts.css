@@ -27,12 +27,12 @@
 }
 
 .chart-density-row .chart-density-card .card-header {
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--spacing-sm);
   padding-bottom: 0.35rem;
 }
 
 .chart-density-row .chart-density-card .card-body {
-  padding: 0.25rem;
+  padding: var(--spacing-compact);
 }
 
 .chart-density-row .chart-density-graph {

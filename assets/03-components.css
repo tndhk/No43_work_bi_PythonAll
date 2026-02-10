@@ -7,7 +7,7 @@
   border: 1px solid var(--border-subtle);
   border-radius: 8px;
   padding: var(--spacing-lg);
-  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+  transition: box-shadow var(--transition-base), border-color var(--transition-base);
   box-shadow: var(--shadow-sm);
 }
 
@@ -42,7 +42,7 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+  transition: box-shadow var(--transition-base), border-color var(--transition-base);
   position: relative;
   z-index: 1;
 }
@@ -263,13 +263,13 @@
   background-color: var(--bg-elevated) !important;
   border-color: var(--border-subtle) !important;
   color: var(--text-primary) !important;
-  z-index: 9999 !important;
+  z-index: var(--z-dropdown) !important;
   position: absolute !important;
 }
 
 /* DatePicker popup */
 .DateRangePicker_picker {
-  z-index: 9999 !important;
+  z-index: var(--z-dropdown) !important;
 }
 
 .Select-placeholder,
@@ -291,7 +291,7 @@
 
 /* Dash 4.x (radix) -- let Radix handle positioning, only set z-index */
 [data-radix-popper-content-wrapper] {
-  z-index: 9999 !important;
+  z-index: var(--z-dropdown) !important;
 }
 
 /* Dropdown popup panel */
@@ -333,7 +333,7 @@
 .dash-datepicker-content,
 .dash-datepicker-popover,
 .dash-datepicker-overlay {
-  z-index: 9999 !important;
+  z-index: var(--z-dropdown) !important;
 }
 
 /* Date Picker */

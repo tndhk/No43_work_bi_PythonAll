@@ -1,7 +1,81 @@
-"""KPI card components."""
-from typing import Optional, Union
+"""KPI card and shared chart/table card components."""
+from typing import Any, Optional, Union
 import dash_bootstrap_components as dbc
-from dash import html
+from dash import dcc, html
+
+
+# Default config for dcc.Graph in chart cards
+DEFAULT_GRAPH_CONFIG = {"displayModeBar": False, "responsive": True}
+
+
+def create_chart_card(
+    title: str,
+    chart_id: str,
+    *,
+    card_class: Optional[str] = None,
+    body_class: Optional[str] = None,
+    graph_class: Optional[str] = None,
+    graph_config: Optional[dict[str, Any]] = None,
+) -> dbc.Card:
+    """Create a card containing a chart with standard header/body/classes.
+
+    Args:
+        title: Card header text.
+        chart_id: Dash component id for dcc.Graph.
+        card_class: Card className (default: chart-density-card).
+        body_class: CardBody className (default: p-1).
+        graph_class: dcc.Graph className (default: chart-density-graph).
+        graph_config: dcc.Graph config (default: displayModeBar=False, responsive=True).
+
+    Returns:
+        dbc.Card with CardHeader, CardBody, and dcc.Graph.
+    """
+    card_class = card_class or "chart-density-card"
+    body_class = body_class or "p-1"
+    graph_class = graph_class or "chart-density-graph"
+    graph_config = graph_config if graph_config is not None else DEFAULT_GRAPH_CONFIG
+
+    return dbc.Card([
+        dbc.CardHeader(title, className="card-header"),
+        dbc.CardBody([
+            dcc.Graph(
+                id=chart_id,
+                className=graph_class,
+                config=graph_config,
+            ),
+        ], className=body_class),
+    ], className=card_class)
+
+
+def create_table_card(
+    title: str,
+    table_id: str,
+    *,
+    card_class: Optional[str] = None,
+    body_class: Optional[str] = None,
+    header_id: Optional[str] = None,
+) -> dbc.Card:
+    """Create a card containing a table container with standard header/body/classes.
+
+    Args:
+        title: Card header text (or placeholder when header_id is set).
+        table_id: Dash component id for the table container (html.Div).
+        card_class: Card className (default: standard card styling).
+        body_class: CardBody className (default: p-1).
+        header_id: Optional id for CardHeader (for dynamic title from callbacks).
+
+    Returns:
+        dbc.Card with CardHeader, CardBody, and html.Div table container.
+    """
+    body_class = body_class or "p-1"
+    header = dbc.CardHeader(title, className="card-header", id=header_id) if header_id else dbc.CardHeader(title, className="card-header")
+
+    return dbc.Card([
+        header,
+        dbc.CardBody([
+            html.Div(id=table_id),
+        ], className=body_class),
+    ], className=card_class or "")
 
 
 def create_kpi_card(

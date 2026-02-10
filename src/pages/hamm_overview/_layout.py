@@ -7,6 +7,7 @@ import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 from dash import dcc, html
 
+from src.components.cards import create_chart_card, create_table_card
 from src.data.parquet_reader import ParquetReader
 from ._constants import (
     KPI_ID_KPI_TOTAL_SCREENS,
@@ -27,30 +28,6 @@ from ._constants import (
 )
 from ._filters import build_filter_layout
 from ._data_loader import load_filter_options, resolve_dataset_id_for_dashboard
-
-
-def _chart_card(title: str, chart_id: str) -> dbc.Card:
-    """Create a card containing a chart with density styling."""
-    return dbc.Card([
-        dbc.CardHeader(title, className="card-header"),
-        dbc.CardBody([
-            dcc.Graph(
-                id=chart_id,
-                className="chart-density-graph",
-                config={"displayModeBar": False, "responsive": True},
-            ),
-        ], className="p-1"),
-    ], className="chart-density-card")
-
-
-def _table_card(title: str, table_id: str) -> dbc.Card:
-    """Create a card containing a table."""
-    return dbc.Card([
-        dbc.CardHeader(title, className="card-header"),
-        dbc.CardBody([
-            html.Div(id=table_id),
-        ], className="p-1"),
-    ])
 
 
 def build_layout() -> html.Div:
@@ -128,52 +105,52 @@ def build_layout() -> html.Div:
     content.append(dbc.Row([
         dbc.Col([volume_section], md=9, className="d-flex"),
         dbc.Col([cadence_card], md=3, className="d-flex"),
-    ], className="mb-3 align-items-stretch"))
+    ], className="row-gap-sm align-items-stretch"))
 
     # -----------------------------------------------------------------------
     # Volume table + chart
     # -----------------------------------------------------------------------
     content.append(dbc.Row([
-        dbc.Col([_table_card("Volume Summary", TABLE_ID_VOLUME_TABLE)], md=6),
-        dbc.Col([_chart_card("Volume Chart", CHART_ID_VOLUME_CHART)], md=6),
-    ], className="mb-4 chart-density-row"))
+        dbc.Col([create_table_card("Volume Summary", TABLE_ID_VOLUME_TABLE)], md=6),
+        dbc.Col([create_chart_card("Volume Chart", CHART_ID_VOLUME_CHART)], md=6),
+    ], className="row-gap-md chart-density-row"))
 
     # -----------------------------------------------------------------------
     # Task Details
     # -----------------------------------------------------------------------
     content.append(dbc.Row([
-        dbc.Col([_table_card("Task Details", TABLE_ID_TASK_TABLE)], md=12),
-    ], className="mb-4"))
+        dbc.Col([create_table_card("Task Details", TABLE_ID_TASK_TABLE)], md=12),
+    ], className="row-gap-md"))
 
     # -----------------------------------------------------------------------
     # Content Metadata section
     # -----------------------------------------------------------------------
     content.append(html.H3("Content Metadata"))
     content.append(dbc.Row([
-        dbc.Col([_chart_card("Original Language", CHART_ID_METADATA_ORIGINAL_LANGUAGE)], md=4),
-        dbc.Col([_chart_card("Was dialogue Provided?", CHART_ID_METADATA_DIALOGUE)], md=4),
-        dbc.Col([_chart_card("Genre", CHART_ID_METADATA_GENRE)], md=4),
-    ], className="mb-4 chart-density-row"))
+        dbc.Col([create_chart_card("Original Language", CHART_ID_METADATA_ORIGINAL_LANGUAGE)], md=4),
+        dbc.Col([create_chart_card("Was dialogue Provided?", CHART_ID_METADATA_DIALOGUE)], md=4),
+        dbc.Col([create_chart_card("Genre", CHART_ID_METADATA_GENRE)], md=4),
+    ], className="row-gap-md chart-density-row"))
 
     # -----------------------------------------------------------------------
     # Error Details section
     # -----------------------------------------------------------------------
     content.append(dbc.Row([
-        dbc.Col([_chart_card("Issues Ratio (HAMM vs Human Intervention)", CHART_ID_ERROR_RATIO)], md=6),
-        dbc.Col([_chart_card("Intervention per Screener Type", CHART_ID_ERROR_BY_SCREENER)], md=6),
-    ], className="mb-3 chart-density-row"))
+        dbc.Col([create_chart_card("Issues Ratio (HAMM vs Human Intervention)", CHART_ID_ERROR_RATIO)], md=6),
+        dbc.Col([create_chart_card("Intervention per Screener Type", CHART_ID_ERROR_BY_SCREENER)], md=6),
+    ], className="row-gap-sm chart-density-row"))
 
     content.append(dbc.Row([
-        dbc.Col([_chart_card("User Intervention Breakdown", CHART_ID_USER_BREAKDOWN)], md=6),
-        dbc.Col([_chart_card("HAMM Intervention Breakdown", CHART_ID_BREAKDOWN)], md=6),
-    ], className="mb-4 chart-density-row"))
+        dbc.Col([create_chart_card("User Intervention Breakdown", CHART_ID_USER_BREAKDOWN)], md=6),
+        dbc.Col([create_chart_card("HAMM Intervention Breakdown", CHART_ID_BREAKDOWN)], md=6),
+    ], className="row-gap-md chart-density-row"))
 
     # -----------------------------------------------------------------------
     # Language Details
     # -----------------------------------------------------------------------
     content.append(dbc.Row([
-        dbc.Col([_table_card("Language Details", TABLE_ID_LANGUAGE_TABLE)], md=12),
-    ], className="mb-3"))
+        dbc.Col([create_table_card("Language Details", TABLE_ID_LANGUAGE_TABLE)], md=12),
+    ], className="row-gap-sm"))
 
     return html.Div([
         dmc.MantineProvider([

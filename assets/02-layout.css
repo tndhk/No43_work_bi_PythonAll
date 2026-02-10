@@ -10,8 +10,8 @@
   background-color: var(--bg-surface);
   border-right: 1px solid var(--border-subtle);
   overflow-y: auto;
-  z-index: 1000;
-  transition: transform 0.3s ease;
+  z-index: var(--z-sidebar);
+  transition: transform var(--transition-base);
 }
 
 .sidebar-content {
@@ -107,7 +107,7 @@
   background-color: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: 8px;
-  transition: all 0.3s ease;
+  transition: all var(--transition-base);
   cursor: pointer;
   height: 100%;
 }
@@ -159,6 +159,22 @@
   color: var(--text-secondary);
   font-size: 1.125rem;
   text-align: center;
+}
+
+/* Semantic row spacing utilities */
+.row-gap-sm {
+  margin-bottom: var(--gap-section-sm);
+}
+
+.row-gap-md {
+  margin-bottom: var(--gap-section-md);
+}
+
+/* Header wrap policy (ellipsis for long titles) */
+.header-wrap-ellipsis {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Responsive */

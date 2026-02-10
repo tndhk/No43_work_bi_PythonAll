@@ -6,35 +6,12 @@ import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 from dash import dcc, html
 
+from src.components.cards import create_chart_card, create_table_card
 from src.data.parquet_reader import ParquetReader
 from src.data.data_source_registry import resolve_dataset_id
 from ._constants import *
 from ._filters import build_filter_layout
 from ._data_loader import load_filter_options
-
-
-def _chart_card(title: str, chart_id: str) -> dbc.Card:
-    """Create a card containing a chart."""
-    return dbc.Card([
-        dbc.CardHeader(title, className="card-header"),
-        dbc.CardBody([
-            dcc.Graph(
-                id=chart_id,
-                className="chart-density-graph",
-                config={"displayModeBar": False, "responsive": True},
-            ),
-        ], className="p-1"),
-    ], className="chart-density-card")
-
-
-def _table_card(title: str, table_id: str) -> dbc.Card:
-    """Create a card containing a table."""
-    return dbc.Card([
-        dbc.CardHeader(title, className="card-header"),
-        dbc.CardBody([
-            html.Div(id=table_id),
-        ], className="p-1"),
-    ])
 
 
 def build_layout() -> html.Div:
@@ -65,12 +42,12 @@ def build_layout() -> html.Div:
 {% if component.type == 'kpi' %}
         dbc.Col([html.Div(id=KPI_ID_{{ clean_comp_id | upper | replace('-', '_') }})], md={{ item.md }}),
 {% elif component.type == 'chart' %}
-        dbc.Col([_chart_card("{{ component.title }}", CHART_ID_{{ clean_comp_id | upper | replace('-', '_') }})], md={{ item.md }}),
+        dbc.Col([create_chart_card("{{ component.title }}", CHART_ID_{{ clean_comp_id | upper | replace('-', '_') }})], md={{ item.md }}),
 {% elif component.type == 'table' %}
-        dbc.Col([_table_card("{{ component.title }}", TABLE_ID_{{ clean_comp_id | upper | replace('-', '_') }})], md={{ item.md }}),
+        dbc.Col([create_table_card("{{ component.title }}", TABLE_ID_{{ clean_comp_id | upper | replace('-', '_') }})], md={{ item.md }}),
 {% endif %}
 {% endfor %}
-    ], className="{{ row.className or 'mb-3' }}"))
+    ], className="{{ row.className or 'row-gap-sm' }}"))
 {% endfor %}
 {% endfor %}
 

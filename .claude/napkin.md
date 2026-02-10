@@ -11,6 +11,7 @@
 | 2026-02-09 | self | 依存確認前に pytest を実行し `boto3`/`dash` 未インストールで停止 | この環境では最初に依存確認し、未導入時は `py_compile` と差分レビューを優先する |
 | 2026-02-10 | self | セッション開始直後に napkin を読む前に `ls` を実行した | 毎セッション開始時は最初のコマンド前に `.claude/napkin.md` を確認する |
 | 2026-02-10 | self | `tools/page_generator` 健全性確認で `pytest tools/page_generator` の失敗を見落としかけた | 「運用可否」の回答前に対象サブシステムのテスト結果を必ず確認し、失敗件数と内容を明示する |
+| 2026-02-10 | self | 共通カード化の置換後に `dcc.Loading` を使うファイルで `dcc` import が抜けた | レイアウト共通化時は `py_compile` 前に `rg "dcc\\.Loading"` で import 整合を確認する |
 
 ## User Preferences
 - Prefer YAML only for look/labels; keep calculation logic in Python templates.

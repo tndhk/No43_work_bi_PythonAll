@@ -44,22 +44,22 @@ codemapsは実装変更時に更新すること（`doc-updater` サブエージ�
 
 #### チャート/テーブルのカード配置（必須）
 
-全てのチャート、テーブル、KPIカードは `dbc.Card` で囲むこと。
+全てのチャート、テーブル、KPIカードは `dbc.Card` で囲むこと。チャート・テーブルは共有APIを使用する。
 
 ```python
-# 必須構造
-dbc.Card([
-    dbc.CardHeader("Chart Title", className="card-header"),
-    dbc.CardBody([
-        dcc.Graph(id=CHART_ID),
-    ]),
-])
+# 必須構造（共有API使用）
+from src.components.cards import create_chart_card, create_table_card
+
+create_chart_card("Chart Title", CHART_ID)   # chart-density-card + chart-density-graph を自動付与
+create_table_card("Table Title", TABLE_ID)  # header_id で動的タイトル対応可
 ```
 
 理由:
 - ページ全体の灰色背景（`var(--bg-base)`）との対比で視認性向上
 - フィルターエリアとのデザイン統一
 - `assets/03-components.css` のカードスタイル（白背景、境界線、ホバー効果）が自動適用
+- 余白・z-index・トランジションは `assets/00-reset.css` のトークン（`--gap-section-sm/md`, `--z-dropdown`, `--transition-base`）で一元管理
+- 行間隔は `row-gap-sm` / `row-gap-md` で統一
 
 参考実装: `src/pages/hamm_overview/_layout.py`
 
