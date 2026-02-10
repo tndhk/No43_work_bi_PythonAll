@@ -149,6 +149,7 @@
   grid-column: span 1;
 }
 
+
 /* Filter row with 7 equal columns using CSS Grid */
 .filter-row-7col {
   display: grid !important;
@@ -539,14 +540,22 @@ tbody tr:hover {
   gap: 4px !important;
 }
 
-/* Cadence filter: 2x2 grid layout for chips */
-.cadence-chip-body {
-  display: block !important;
+/* Cadence filter: compact card, horizontal chips */
+.cadence-card {
+  padding: 0 !important;
 }
 
-.cadence-chip-body > * {
-  display: grid !important;
-  grid-template-columns: 1fr 1fr !important;
+.cadence-chip-body {
+  padding: 0.5rem !important;
+}
+
+.cadence-chip-body .mantine-ChipGroup-root {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
   gap: 6px !important;
-  flex-wrap: unset !important;
+}
+
+.cadence-chip-body .mantine-Chip-root {
+  flex: 0 0 auto !important;
 }

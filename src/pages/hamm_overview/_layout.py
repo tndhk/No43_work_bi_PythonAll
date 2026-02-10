@@ -64,7 +64,16 @@ def build_layout() -> html.Div:
     # Build title element with 32px font size
     title_element = html.Div(
         "HAMM Overview",
-        style={"fontSize": "32px", "fontWeight": "bold"},
+        style={
+            "fontSize": "32px",
+            "fontWeight": "bold",
+            "color": "white",
+            "backgroundColor": "#4a7fb5",
+            "borderRadius": "8px",
+            "padding": "12px 16px",
+            "display": "flex",
+            "alignItems": "center",
+        },
     )
 
     # Build filters
@@ -114,7 +123,7 @@ def build_layout() -> html.Div:
             ],
             className="cadence-chip-body",
         ),
-    ], style={"height": "100%"})
+    ], className="cadence-card", style={"height": "100%"})
 
     content.append(dbc.Row([
         dbc.Col([volume_section], md=9, className="d-flex"),

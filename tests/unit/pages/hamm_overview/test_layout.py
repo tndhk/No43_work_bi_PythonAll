@@ -42,7 +42,7 @@ def layout():
     ), patch.object(
         _layout_mod, "ParquetReader", return_value=MagicMock()
     ), patch.object(
-        _layout_mod, "resolve_dataset_id", return_value="hamm-dashboard"
+        _layout_mod, "resolve_dataset_id_for_dashboard", return_value="hamm-dashboard"
     ):
         return _layout_mod.build_layout()
 
@@ -471,4 +471,123 @@ class TestLanguageTableInLayout:
         )
         assert len(all_components) >= 1, (
             f"Component with id='{CHART_ID_LANGUAGE_TABLE}' not found in layout"
+        )
+
+
+class TestRow1HeaderBarStyle:
+    """Row 1 title must have DOMO-style blue background."""
+
+    def _get_title(self, layout):
+        divs = find_components(
+            layout,
+            lambda c: isinstance(c, html.Div)
+            and "filter-row-title-3filters" in (getattr(c, "className", None) or ""),
+        )
+        assert len(divs) >= 1, "filter-row-title-3filters div not found"
+        children = divs[0].children if isinstance(divs[0].children, list) else [divs[0].children]
+        return children[0]
+
+    def test_title_has_blue_background(self, layout):
+        """The title element must have backgroundColor='#4a7fb5'."""
+        title_div = self._get_title(layout)
+        style = getattr(title_div, "style", {})
+        assert style.get("backgroundColor") == "#4a7fb5", (
+            f"Title should have backgroundColor='#4a7fb5', got '{style.get('backgroundColor')}'"
+        )
+
+    def test_title_has_white_color(self, layout):
+        """The title element must have style color='white'."""
+        title_div = self._get_title(layout)
+        style = getattr(title_div, "style", {})
+        assert style.get("color") == "white", (
+            f"Title should have color='white', got '{style.get('color')}'"
+        )
+
+
+class TestFilterPlacement:
+    """Filters must be placed in correct rows matching DOMO layout."""
+
+    def _get_row1(self, layout):
+        divs = find_components(
+            layout,
+            lambda c: isinstance(c, html.Div)
+            and "filter-row-title-3filters" in (getattr(c, "className", None) or ""),
+        )
+        assert len(divs) >= 1
+        return divs[0]
+
+    def _get_row2(self, layout):
+        divs = find_components(
+            layout,
+            lambda c: isinstance(c, html.Div)
+            and "filter-row-7col" in (getattr(c, "className", None) or ""),
+        )
+        assert len(divs) >= 1
+        return divs[0]
+
+    def _find_filter_ids_in(self, component) -> list[str]:
+        """Extract all filter IDs (from Dropdown and ChipGroup) within a component."""
+        all_ids = find_components(
+            component,
+            lambda c: getattr(c, "id", None) is not None,
+        )
+        return [getattr(c, "id", None) for c in all_ids]
+
+    def test_month_in_row1(self, layout):
+        """Month filter (hamm-filter-month) must be in Row 1."""
+        row1 = self._get_row1(layout)
+        ids = self._find_filter_ids_in(row1)
+        assert "hamm-filter-month" in ids, (
+            f"'hamm-filter-month' should be in Row 1, found IDs: {ids}"
+        )
+
+    def test_content_type_in_row2(self, layout):
+        """Content Type filter (hamm-filter-content-type) must be in Row 2."""
+        row2 = self._get_row2(layout)
+        ids = self._find_filter_ids_in(row2)
+        assert "hamm-filter-content-type" in ids, (
+            f"'hamm-filter-content-type' should be in Row 2, found IDs: {ids}"
+        )
+
+    def test_content_type_not_in_row1(self, layout):
+        """Content Type filter must NOT be in Row 1."""
+        row1 = self._get_row1(layout)
+        ids = self._find_filter_ids_in(row1)
+        assert "hamm-filter-content-type" not in ids, (
+            "Content Type should not be in Row 1"
+        )
+
+    def test_month_not_in_row2(self, layout):
+        """Month filter must NOT be in Row 2."""
+        row2 = self._get_row2(layout)
+        ids = self._find_filter_ids_in(row2)
+        assert "hamm-filter-month" not in ids, (
+            "Month should not be in Row 2"
+        )
+
+    def test_row2_filter_order(self, layout):
+        """Row 2 filters must follow DOMO order: Task ID, Content Type, Original Language, Dialogue, Genre, Error Code, Error Type."""
+        row2 = self._get_row2(layout)
+        children = row2.children if isinstance(row2.children, list) else [row2.children]
+
+        # Each child is a dbc.Card; extract the filter ID from each card
+        card_filter_ids = []
+        for child in children:
+            ids = self._find_filter_ids_in(child)
+            # Filter out clear button IDs (they contain "ctrl-clear")
+            filter_ids = [fid for fid in ids if "ctrl-clear" not in fid]
+            if filter_ids:
+                card_filter_ids.append(filter_ids[0])
+
+        expected_order = [
+            "hamm-filter-task-id",
+            "hamm-filter-content-type",
+            "hamm-filter-original-language",
+            "hamm-filter-dialogue",
+            "hamm-filter-genre",
+            "hamm-filter-error-code",
+            "hamm-filter-error-type",
+        ]
+        assert card_filter_ids == expected_order, (
+            f"Row 2 filter order mismatch.\nExpected: {expected_order}\nGot: {card_filter_ids}"
         )

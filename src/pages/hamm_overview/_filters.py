@@ -53,11 +53,10 @@ def build_filter_layout(opts: dict, title_element=None) -> list:
             options=opts["years"],
             clear_button_id=CTRL_ID_CLEAR_YEAR,
         ),
-        create_slicer_filter(
-            filter_id=FILTER_ID_FILTER_CONTENT_TYPE,
-            column_name="Content Type",
-            options=opts["content_types"],
-            clear_button_id=CTRL_ID_CLEAR_CONTENT_TYPE,
+        create_category_filter(
+            filter_id=FILTER_ID_FILTER_MONTH,
+            column_name="Month",
+            options=opts["months"],
         ),
     ]
 
@@ -74,6 +73,18 @@ def build_filter_layout(opts: dict, title_element=None) -> list:
 
     # Row 2: 7 columns (4 slicer filters + 3 category filters)
     row2_items = [
+        create_category_filter(
+            filter_id=FILTER_ID_FILTER_TASK_ID,
+            column_name="Task ID",
+            options=opts["task_ids"],
+            multi=True,
+        ),
+        create_slicer_filter(
+            filter_id=FILTER_ID_FILTER_CONTENT_TYPE,
+            column_name="Content Type",
+            options=opts["content_types"],
+            clear_button_id=CTRL_ID_CLEAR_CONTENT_TYPE,
+        ),
         create_slicer_filter(
             filter_id=FILTER_ID_FILTER_ORIGINAL_LANGUAGE,
             column_name="Original Language",
@@ -92,27 +103,16 @@ def build_filter_layout(opts: dict, title_element=None) -> list:
             options=opts["genres"],
             clear_button_id=CTRL_ID_CLEAR_GENRE,
         ),
+        create_category_filter(
+            filter_id=FILTER_ID_FILTER_ERROR_CODE,
+            column_name="Error Code",
+            options=opts["error_codes"],
+        ),
         create_slicer_filter(
             filter_id=FILTER_ID_FILTER_ERROR_TYPE,
             column_name="Error Type",
             options=opts["error_types"],
             clear_button_id=CTRL_ID_CLEAR_ERROR_TYPE,
-        ),
-        create_category_filter(
-            filter_id=FILTER_ID_FILTER_MONTH,
-            column_name="Month",
-            options=opts["months"],
-        ),
-        create_category_filter(
-            filter_id=FILTER_ID_FILTER_TASK_ID,
-            column_name="Task ID",
-            options=opts["task_ids"],
-            multi=True,
-        ),
-        create_category_filter(
-            filter_id=FILTER_ID_FILTER_ERROR_CODE,
-            column_name="Error Code",
-            options=opts["error_codes"],
         ),
     ]
 

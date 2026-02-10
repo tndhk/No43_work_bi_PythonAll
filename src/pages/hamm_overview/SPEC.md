@@ -8,6 +8,12 @@ HAMMタスクのボリュームと詳細を追跡するダッシュボードで�
 
 ## フィルタの使い方
 
+### レイアウト
+フィルタは2段に分かれています。
+
+- ヘッダーバー（青背景）: Region, Year, Month
+- フィルタ行（白カード）: Task ID, Content Type, Original Language, Was Dialogue Provided, Genre, Error Code, Error Type
+
 ### SlicerのClear（標準）
 Slicer形式のフィルタには個別のClear操作があります。対象のSlicerだけ選択を解除できます。
 
