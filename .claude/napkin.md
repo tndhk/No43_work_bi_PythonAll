@@ -13,6 +13,8 @@
 | 2026-02-10 | self | `tools/page_generator` 健全性確認で `pytest tools/page_generator` の失敗を見落としかけた | 「運用可否」の回答前に対象サブシステムのテスト結果を必ず確認し、失敗件数と内容を明示する |
 | 2026-02-10 | self | 共通カード化の置換後に `dcc.Loading` を使うファイルで `dcc` import が抜けた | レイアウト共通化時は `py_compile` 前に `rg "dcc\\.Loading"` で import 整合を確認する |
 | 2026-02-10 | self | GitHub CIエラー調査で `gh` コマンド未導入のためリモート実行ログを直接参照できなかった | この環境では `.github/workflows/ci.yml` の定義コマンド（ruff/mypy/pytest）を Docker test サービスで再現して原因特定する |
+| 2026-02-11 | self | napkin skill のパスを `.claude/skills/napkin/SKILL.md` と誤認して最初の探索で失敗 | napkin skill は `~/.codex/skills/napkin/SKILL.md` を参照し、セッション開始直後に先に `.claude/napkin.md` を読む |
+| 2026-02-11 | self | `multiprocessing.queues.Queue` 型注釈を使い、Python実行環境で `AttributeError` が発生 | `multiprocessing` の内部モジュール型に依存せず `Any` か公開API型を使う |
 
 ## User Preferences
 - Prefer YAML only for look/labels; keep calculation logic in Python templates.
@@ -23,6 +25,10 @@
 - 2026-02-09: `git checkout -b codex/...` can fail in sandbox because writing `.git/refs/heads/*` is blocked. Retry with escalated permissions.
 
 ## Patterns That Work
+- 2026-02-11: ドキュメント同期では pyproject.toml（Python version）、.env.example（環境変数）、CI yml（ランタイム）の3ソースを横断チェックし、CONTRIB/RUNBOOK/tech-specへの反映漏れを検出する。3ファイル並列エージェントで高速化。
+- 2026-02-11: Phase 2 LLM機能の並列TDD実装: 2-A(sandbox)と2-B(parser/prompt)は独立なので並列エージェントで実行可能。2-C(client)と2-D(config)も並列実行可。依存関係が正しければ大幅な時間短縮になる。
+- 2026-02-11: pyproject.toml の mypy override で `module = ["google", "google.*"]` としても `from google import genai` の `import-not-found` は解消しない（パッケージ未インストール時）。CI環境ではパッケージがインストールされるため問題なし。
+- 2026-02-11: sandbox セキュリティレビューで pd.read_csv/np.load 等のI/O脱出パターンを発見。正規表現ブラックリスト方式には限界があり、将来的に ast.NodeVisitor ベースの検証に移行すべき。
 - 2026-02-08: DOMO ETL (`python3 backend/scripts/load_domo.py --dataset ...`) works when network is available. Previous DNS failure was transient.
 - 2026-02-08: ISO week calculation fix in `_add_cadence_columns` - use Monday start (weekday 0 → offset 0) not Tuesday start.
 - 2026-02-08: Vendor component docs (e.g., Dash Dropdown) are better captured as concise "reference notes" unless they include project-specific guardrails or repeated failure patterns.
