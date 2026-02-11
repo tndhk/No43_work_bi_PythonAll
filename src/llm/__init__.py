@@ -5,9 +5,12 @@ from src.llm.exceptions import LLMError, SandboxError, SandboxTimeoutError
 from src.llm.prompt_templates import build_system_prompt
 from src.llm.response_parser import ParsedResponse, parse_response
 from src.llm.sandbox import execute_in_sandbox
+from src.llm.page_context import DashboardContext, KPIValue
 
 __all__ = [
+    "DashboardContext",
     "GeminiClient",
+    "KPIValue",
     "LLMError",
     "ParsedResponse",
     "SandboxError",

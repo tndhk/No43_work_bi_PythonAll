@@ -12,7 +12,7 @@ import pandas as pd
 import pytest
 
 from src.pages.hamm_overview._constants import ERV_LABEL, PRELIM_LABEL, COLUMN_MAP
-from src.pages.hamm_overview._callbacks import compute_volume_kpis
+from src.pages.hamm_overview._custom_logic import compute_volume_kpis
 
 
 # ---------------------------------------------------------------------------

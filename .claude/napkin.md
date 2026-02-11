@@ -14,6 +14,7 @@
 | 2026-02-10 | self | 共通カード化の置換後に `dcc.Loading` を使うファイルで `dcc` import が抜けた | レイアウト共通化時は `py_compile` 前に `rg "dcc\\.Loading"` で import 整合を確認する |
 | 2026-02-10 | self | GitHub CIエラー調査で `gh` コマンド未導入のためリモート実行ログを直接参照できなかった | この環境では `.github/workflows/ci.yml` の定義コマンド（ruff/mypy/pytest）を Docker test サービスで再現して原因特定する |
 | 2026-02-11 | self | napkin skill のパスを `.claude/skills/napkin/SKILL.md` と誤認して最初の探索で失敗 | napkin skill は `~/.codex/skills/napkin/SKILL.md` を参照し、セッション開始直後に先に `.claude/napkin.md` を読む |
+| 2026-02-11 | self | このセッションでも napkin skill を `.claude/skills/napkin/SKILL.md` で探索して失敗 | セッション開始時は `~/.codex/skills/napkin/SKILL.md` を直接参照し、同ミスを繰り返さない |
 | 2026-02-11 | self | `multiprocessing.queues.Queue` 型注釈を使い、Python実行環境で `AttributeError` が発生 | `multiprocessing` の内部モジュール型に依存せず `Any` か公開API型を使う |
 
 ## User Preferences
@@ -25,6 +26,9 @@
 - 2026-02-09: `git checkout -b codex/...` can fail in sandbox because writing `.git/refs/heads/*` is blocked. Retry with escalated permissions.
 
 ## Patterns That Work
+- 2026-02-11: 乖離レポート修正は依存関係を分析し独立Fixを並列実行（Fix-1,2,4並列→Fix-3→最終検証）で効率化。4Fix + レビュー指摘修正を含めて全388テスト通過。
+- 2026-02-11: 関数移動時はimport先を3箇所確認: 元ファイル（import追加）、コンテキストプロバイダ、テストファイル。grepで旧import残存を確認すること。
+- 2026-02-11: タプル返り値変更（df→(df,bool)）は呼び出し元全箇所+テスト全箇所の更新が必要。monkeypatch mockのlambda返り値もタプルに更新忘れに注意。
 - 2026-02-11: ドキュメント同期では pyproject.toml（Python version）、.env.example（環境変数）、CI yml（ランタイム）の3ソースを横断チェックし、CONTRIB/RUNBOOK/tech-specへの反映漏れを検出する。3ファイル並列エージェントで高速化。
 - 2026-02-11: Phase 2 LLM機能の並列TDD実装: 2-A(sandbox)と2-B(parser/prompt)は独立なので並列エージェントで実行可能。2-C(client)と2-D(config)も並列実行可。依存関係が正しければ大幅な時間短縮になる。
 - 2026-02-11: pyproject.toml の mypy override で `module = ["google", "google.*"]` としても `from google import genai` の `import-not-found` は解消しない（パッケージ未インストール時）。CI環境ではパッケージがインストールされるため問題なし。

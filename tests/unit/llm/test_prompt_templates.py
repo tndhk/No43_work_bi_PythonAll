@@ -37,3 +37,9 @@ class TestBuildSystemPrompt:
         prompt = build_system_prompt("")
         assert isinstance(prompt, str)
         assert len(prompt) > 0
+
+    def test_contains_kpi_reference_guidance(self):
+        """KPI参照ガイダンスがテンプレートに含まれること"""
+        prompt = build_system_prompt("test context")
+        assert "現在のKPI値" in prompt
+        assert "計算条件" in prompt

@@ -71,6 +71,7 @@ from ._chart_builders import (
     build_dialogue_chart,
     build_genre_chart,
 )
+from ._custom_logic import compute_volume_kpis
 
 
 @callback(
@@ -233,42 +234,6 @@ def update_dashboard(
 
 
 # ---------------------------------------------------------------------------
-# Volume KPI computation
-# ---------------------------------------------------------------------------
-
-def compute_volume_kpis(df: pd.DataFrame) -> dict:
-    """Compute volume KPI values from a filtered DataFrame.
-
-    Excludes rows with Cancelled status, then counts total screens,
-    ERV-type records, and Prelim-type records.
-
-    Args:
-        df: Filtered DataFrame with COLUMN_MAP columns.
-
-    Returns:
-        dict with keys "total_screens", "total_erv", "total_prelim" (all int).
-    """
-    status_col = COLUMN_MAP["status"]
-    content_type_col = COLUMN_MAP["content_type"]
-
-    # Exclude Cancelled status
-    if df.empty:
-        return {"total_screens": 0, "total_erv": 0, "total_prelim": 0}
-
-    non_cancelled = df[df[status_col] != "Cancelled"]
-
-    total_screens = len(non_cancelled)
-    total_erv = int((non_cancelled[content_type_col] == ERV_LABEL).sum())
-    total_prelim = int((non_cancelled[content_type_col] == PRELIM_LABEL).sum())
-
-    return {
-        "total_screens": total_screens,
-        "total_erv": total_erv,
-        "total_prelim": total_prelim,
-    }
-
-
-# ---------------------------------------------------------------------------
 # Chat filter-state sync
 # ---------------------------------------------------------------------------
 @callback(
@@ -283,6 +248,7 @@ def compute_volume_kpis(df: pd.DataFrame) -> dict:
     Input(FILTER_ID_FILTER_MONTH, "value"),
     Input(FILTER_ID_FILTER_TASK_ID, "value"),
     Input(FILTER_ID_FILTER_ERROR_CODE, "value"),
+    Input(FILTER_ID_FILTER_CADENCE, "value"),
 )
 def sync_chat_filter_state(
     filter_region_values,
@@ -295,6 +261,7 @@ def sync_chat_filter_state(
     filter_month_values,
     filter_task_id_values,
     filter_error_code_values,
+    filter_cadence_values,
 ):
     """Mirror active page filters for chat-context data reconstruction."""
     return {
@@ -308,6 +275,7 @@ def sync_chat_filter_state(
         "filter_month_values": filter_month_values,
         "filter_task_id_values": filter_task_id_values,
         "filter_error_code_values": filter_error_code_values,
+        "filter_cadence_values": filter_cadence_values,
     }
 
 

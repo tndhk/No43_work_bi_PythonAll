@@ -7,7 +7,7 @@ import calendar
 
 import pandas as pd
 
-from ._constants import COLUMN_MAP, LANGUAGE_TABLE_SPEC
+from ._constants import COLUMN_MAP, ERV_LABEL, LANGUAGE_TABLE_SPEC, PRELIM_LABEL
 
 
 # ---------------------------------------------------------------------------
@@ -309,3 +309,39 @@ def prepare_language_display_df(df: pd.DataFrame) -> pd.DataFrame:
     out = out.sort_values("_sort_key").drop(columns=["_sort_key"]).reset_index(drop=True)
 
     return out[column_order]
+
+
+# ---------------------------------------------------------------------------
+# Volume KPI computation
+# ---------------------------------------------------------------------------
+
+def compute_volume_kpis(df: pd.DataFrame) -> dict:
+    """Compute volume KPI values from a filtered DataFrame.
+
+    Excludes rows with Cancelled status, then counts total screens,
+    ERV-type records, and Prelim-type records.
+
+    Args:
+        df: Filtered DataFrame with COLUMN_MAP columns.
+
+    Returns:
+        dict with keys "total_screens", "total_erv", "total_prelim" (all int).
+    """
+    status_col = COLUMN_MAP["status"]
+    content_type_col = COLUMN_MAP["content_type"]
+
+    # Exclude Cancelled status
+    if df.empty:
+        return {"total_screens": 0, "total_erv": 0, "total_prelim": 0}
+
+    non_cancelled = df[df[status_col] != "Cancelled"]
+
+    total_screens = len(non_cancelled)
+    total_erv = int((non_cancelled[content_type_col] == ERV_LABEL).sum())
+    total_prelim = int((non_cancelled[content_type_col] == PRELIM_LABEL).sum())
+
+    return {
+        "total_screens": total_screens,
+        "total_erv": total_erv,
+        "total_prelim": total_prelim,
+    }

@@ -1,6 +1,10 @@
 """Chat panel callbacks for LLM interaction."""
+from __future__ import annotations
+
 import logging
 from typing import Any
+
+import pandas as pd
 
 from dash import Input, Output, State, callback_context, html, no_update
 
@@ -8,6 +12,7 @@ from src.data.config import settings
 from src.llm.client import GeminiClient
 from src.llm.context_builder import build_llm_context
 from src.llm.exceptions import LLMError, SandboxError, SandboxTimeoutError
+from src.llm.page_context import DashboardContext
 from src.llm.prompt_templates import build_system_prompt
 from src.llm.response_parser import parse_response
 from src.llm.sandbox import execute_in_sandbox
@@ -113,7 +118,7 @@ def _load_filtered_dataframe_for_chat(
     cursor_filter_state: dict[str, Any] | None,
     hamm_filter_state: dict[str, Any] | None,
     apac_filter_state: dict[str, Any] | None,
-):
+) -> tuple[pd.DataFrame, bool]:
     """Load filtered DataFrame matching the currently visible dashboard state."""
     from src.core.cache import get_cached_dataset
 
@@ -128,7 +133,7 @@ def _load_filtered_dataframe_for_chat(
 
             state = cursor_filter_state or {}
             resolved_dataset_id = resolve_dataset_id_for_dashboard()
-            return load_and_filter_data(
+            return (load_and_filter_data(
                 reader=reader,
                 dataset_id=resolved_dataset_id,
                 start_date=state.get("start_date"),
@@ -136,7 +141,7 @@ def _load_filtered_dataframe_for_chat(
                 model_values=state.get("model_values"),
                 user_values=state.get("user_values"),
                 kind_values=state.get("kind_values"),
-            )
+            ), True)
         except Exception as e:
             logger.warning("Cursor filter-state load failed, fallback to raw dataset: %s", e)
 
@@ -162,12 +167,12 @@ def _load_filtered_dataframe_for_chat(
                 ("error_code", state.get("filter_error_code_values")),
             ]
             resolved_dataset_id = resolve_dataset_id_for_dashboard()
-            return load_and_filter_data(
+            return (load_and_filter_data(
                 reader=reader,
                 dataset_id=resolved_dataset_id,
                 column_map=FILTER_COLUMN_MAP,
                 filter_pairs=filter_pairs,
-            )
+            ), True)
         except Exception as e:
             logger.warning("HAMM filter-state load failed, fallback to raw dataset: %s", e)
 
@@ -186,7 +191,7 @@ def _load_filtered_dataframe_for_chat(
                 DASHBOARD_ID,
                 DATASETS["reference"].chart_id,
             )
-            return load_and_filter_data(
+            return (load_and_filter_data(
                 reader=reader,
                 dataset_id=resolved_dataset_id,
                 column_map=DATASETS["reference"].column_map,
@@ -197,11 +202,37 @@ def _load_filtered_dataframe_for_chat(
                 vendor_values=state.get("vendor_values"),
                 amp_av_values=state.get("amp_av_values"),
                 order_type_values=None,
-            )
+            ), True)
         except Exception as e:
             logger.warning("APAC filter-state load failed, fallback to raw dataset: %s", e)
 
-    return get_cached_dataset(reader, dataset_id)
+    return (get_cached_dataset(reader, dataset_id), False)
+
+
+def _get_dashboard_context(
+    pathname: str | None,
+    df: pd.DataFrame,
+    hamm_filter_state: dict[str, Any] | None = None,
+) -> DashboardContext | None:
+    """Build page-specific DashboardContext for LLM chat.
+
+    Uses lazy imports to avoid circular dependencies. Returns None
+    for unsupported pages or on error (graceful fallback).
+    """
+    clean_path = (pathname or "").rstrip("/")
+
+    if clean_path == "/hamm-overview":
+        try:
+            from src.pages.hamm_overview._context_provider import (
+                build_hamm_dashboard_context,
+            )
+
+            return build_hamm_dashboard_context(df, hamm_filter_state)
+        except Exception as e:
+            logger.warning("Failed to build dashboard context for HAMM: %s", e)
+            return None
+
+    return None
 
 
 def register_chat_callbacks(app: Any) -> None:
@@ -314,7 +345,7 @@ def register_chat_callbacks(app: Any) -> None:
                 from src.data.parquet_reader import ParquetReader
 
                 reader = ParquetReader()
-                df = _load_filtered_dataframe_for_chat(
+                df, used_page_filter = _load_filtered_dataframe_for_chat(
                     reader=reader,
                     pathname=pathname,
                     dataset_id=dataset_id,
@@ -322,7 +353,14 @@ def register_chat_callbacks(app: Any) -> None:
                     hamm_filter_state=hamm_filter_state,
                     apac_filter_state=apac_filter_state,
                 )
-                context_str = build_llm_context(df, display_name)
+                dashboard_ctx = None
+                if used_page_filter:
+                    dashboard_ctx = _get_dashboard_context(
+                        pathname, df, hamm_filter_state=hamm_filter_state,
+                    )
+                context_str = build_llm_context(
+                    df, display_name, dashboard_context=dashboard_ctx,
+                )
             except Exception as e:
                 logger.warning(
                     "Failed to load dataset for chat context: %s", e

@@ -1,11 +1,57 @@
 """Build LLM context from DataFrame for chat interactions."""
+from __future__ import annotations
+
 import pandas as pd
+
+from src.llm.page_context import DashboardContext
 
 MAX_SAMPLE_ROWS = 5
 MAX_TOP_VALUES = 5
 
 
-def build_llm_context(df: pd.DataFrame, dataset_name: str) -> str:
+def _build_dashboard_section(dashboard_context: DashboardContext) -> list[str]:
+    """Build the dashboard context sections (description, KPIs, filters).
+
+    Returns a list of string parts to prepend to the main context.
+    """
+    parts: list[str] = []
+
+    # Dashboard description
+    parts.append("## ダッシュボード情報")
+    parts.append(dashboard_context.page_description)
+
+    # KPIs (only if non-empty)
+    if dashboard_context.kpis:
+        parts.append("\n## 現在のKPI値")
+        for kpi in dashboard_context.kpis:
+            parts.append(f"- {kpi.name}: {kpi.value} ({kpi.logic})")
+
+    # Active filters (only if non-empty)
+    if dashboard_context.active_filters:
+        parts.append("\n## アクティブフィルタ")
+        for name, values in dashboard_context.active_filters.items():
+            if values is None:
+                parts.append(f"- {name}: 全選択")
+            elif isinstance(values, str):
+                parts.append(f"- {name}: {values}")
+            elif len(values) > 20:
+                shown = ", ".join(values[:20])
+                parts.append(
+                    f"- {name}: {shown} ... (他{len(values) - 20}件)"
+                )
+            else:
+                parts.append(f"- {name}: {', '.join(values)}")
+
+    parts.append("")  # blank line separator before dataset info
+    return parts
+
+
+def build_llm_context(
+    df: pd.DataFrame,
+    dataset_name: str,
+    *,
+    dashboard_context: DashboardContext | None = None,
+) -> str:
     """Build a context string from a DataFrame for LLM consumption.
 
     Generates schema information, basic statistics, and sample data
@@ -14,11 +60,15 @@ def build_llm_context(df: pd.DataFrame, dataset_name: str) -> str:
     Args:
         df: The DataFrame to summarize.
         dataset_name: Human-readable name for the dataset.
+        dashboard_context: Optional dashboard-level context (KPIs, filters, etc.).
 
     Returns:
         Context string suitable for injection into a system prompt.
     """
     parts: list[str] = []
+
+    if dashboard_context is not None:
+        parts.extend(_build_dashboard_section(dashboard_context))
 
     parts.append(f"データセット名: {dataset_name}")
     parts.append(f"行数: {len(df)}")
