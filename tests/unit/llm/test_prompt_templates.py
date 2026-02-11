@@ -43,3 +43,21 @@ class TestBuildSystemPrompt:
         prompt = build_system_prompt("test context")
         assert "現在のKPI値" in prompt
         assert "計算条件" in prompt
+
+    def test_contains_code_mandatory_for_calculations(self):
+        """数値計算にはコード生成が必須であることを示す指示がプロンプトに含まれること"""
+        prompt = build_system_prompt("test context")
+        assert "定量的" in prompt
+        assert "必ずPythonコードを生成" in prompt
+
+    def test_contains_no_approximation_rule(self):
+        """概算・推測の禁止指示が含まれること"""
+        prompt = build_system_prompt("test context")
+        assert "概算" in prompt
+        assert "禁止" in prompt
+
+    def test_contains_statistics_purpose_clarification(self):
+        """統計情報はデータ構造理解用であるという説明が含まれること"""
+        prompt = build_system_prompt("test context")
+        assert "統計情報" in prompt
+        assert "参考情報" in prompt
