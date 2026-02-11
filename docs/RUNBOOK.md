@@ -1,6 +1,6 @@
 # 運用ガイド (RUNBOOK)
 
-最終更新: 2026-02-10
+最終更新: 2026-02-11
 
 このRUNBOOKは、現行リポジトリで確認できる手順のみを記載する。
 クラウド本番基盤（ECS/EKS/VMなど）の標準手順は、このリポジトリ内に定義がないため [TBD]。
@@ -11,7 +11,7 @@
 |------|------|
 | コンテナ実行 | `docker compose` が利用可能 (`docker-compose` は非推奨) |
 | 設定ファイル | `.env` が存在し、必要変数が設定済み |
-| 依存関係 | `Dockerfile.dev` (Python 3.9-slim) と `requirements.txt` + `requirements-dev.txt` で解決 |
+| 依存関係 | `Dockerfile.dev` (Python 3.11-slim) と `requirements.txt` + `requirements-dev.txt` で解決 |
 
 最低チェック:
 
@@ -314,6 +314,9 @@ DOMO_CLIENT_ID, DOMO_CLIENT_SECRET
 
 # マスキング有効データセットで追加で必要
 ETL_MASKING_SECRET
+
+# LLM質問機能（Phase 2）利用時に追加で必要
+GEMINI_API_KEY
 ```
 
 ## 10. CI/CD パイプライン
@@ -344,9 +347,9 @@ push / pull_request (main)
 
 | ジョブ | Python | 依存インストール | 環境変数 |
 |--------|--------|-----------------|----------|
-| lint | 3.9 | ruff のみ | なし |
-| typecheck | 3.9 | requirements.txt + requirements-dev.txt | なし |
-| test | 3.9 | requirements.txt + requirements-dev.txt | ENV=test, S3_ENDPOINT="", 他テスト用最小セット |
+| lint | 3.11 | ruff のみ | なし |
+| typecheck | 3.11 | requirements.txt + requirements-dev.txt | なし |
+| test | 3.11 | requirements.txt + requirements-dev.txt | ENV=test, S3_ENDPOINT="", 他テスト用最小セット |
 
 `typecheck` と `test` は pip キャッシュを使用しており、依存に変更がない限りインストール時間が短縮される。
 

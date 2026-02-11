@@ -9,9 +9,10 @@ Analysis Scope: `app.py`, `src/`, `backend/`, `tools/`
 2. Frontend/UI: `src/pages/`, `src/components/`, `src/auth/`, `src/layout.py`
 3. Data access: `src/data/`, `src/core/cache.py`, `src/utils/`
 4. Visualization contracts: `src/charts/`
-5. Offline ingestion: `backend/etl/`, `backend/scripts/`, `backend/config/`
-6. CI/CD: `.github/workflows/ci.yml` (lint, typecheck, test -- 3 parallel jobs)
-7. Development tools: `tools/page_generator/`, `scripts/`
+5. LLM integration (Phase 2): `src/llm/`, `src/components/chat_panel.py`, `src/components/chat_callbacks.py`
+6. Offline ingestion: `backend/etl/`, `backend/scripts/`, `backend/config/`
+7. CI/CD: `.github/workflows/ci.yml` (lint, typecheck, test -- 3 parallel jobs)
+8. Development tools: `tools/page_generator/`, `scripts/`
 
 ## Architecture Relationships
 
@@ -26,6 +27,11 @@ Browser
       -> src/charts/* (figure/table build, layout_helpers)
       -> src/utils/* (callback_helpers, data_helpers, filter_helpers)
     -> S3/MinIO via src/data/s3_client.py + src/data/parquet_reader.py
+    -> src/components/chat_panel.py + chat_callbacks.py (LLM chat UI)
+      -> src/llm/* (Gemini client, context builder, sandbox exec)
+      -> src/pages/*/_data_loader.py (filter-state から filtered DF 再構築)
+      -> src/core/cache.py (filter-state失敗時のfallback)
+      -> src/data/config.py (settings.gemini_api_key)
 
 backend/scripts/*
   -> backend/etl/*
@@ -65,6 +71,37 @@ src/pages/{name}/
 
 `_custom_logic.py` is optional. It contains domain-specific transformation functions (e.g., cadence column generation, date formatting, display DataFrame preparation) that are imported and re-exported by `_data_loader.py`. The page_spec.yaml `custom_logic.imports` section declares which functions are needed.
 
+## src/llm/ - LLM質問機能（Phase 2）
+
+```text
+src/llm/
+  __init__.py            # 公開API
+  client.py              # GeminiClient (google-genai, API key認証)
+  context_builder.py     # build_llm_context(): DataFrame -> コンテキスト文字列
+  prompt_templates.py    # システムプロンプトテンプレート
+  response_parser.py     # parse_response(): LLM応答をテキスト/コード分離
+  sandbox.py             # execute_in_sandbox(): 制限付きexec（pandas/numpy許可）
+  exceptions.py          # LLMError, SandboxError, SandboxTimeoutError
+```
+
+依存関係:
+- `src/llm/context_builder.py` -> `pandas` (DataFrame操作)
+- `src/llm/client.py` -> `google-genai` (Gemini API)
+- `src/llm/sandbox.py` -> `pandas`, `numpy` (サンドボックス内で利用可能)
+
+## src/components/chat_panel.py, chat_callbacks.py
+
+```text
+chat_panel.py       # create_chat_panel(), create_chat_toggle_button()
+chat_callbacks.py   # register_chat_callbacks(app) - パネル開閉/メッセージ送受信
+```
+
+依存関係:
+- `chat_callbacks.py` -> `src/llm/*` (全LLMモジュール)
+- `chat_callbacks.py` -> `src/pages/*/_data_loader.py` (現在フィルタを反映したDF取得)
+- `chat_callbacks.py` -> `src/core/cache.py` (fallbackでget_cached_dataset)
+- `chat_callbacks.py` -> `src/data/config.py` (settings.gemini_api_key)
+
 ## Dependency Listing (Top-Level Imports)
 
 - `app.py` imports `src.auth.*`, `src.components.sidebar_callbacks`, `src.core.cache`, `src.layout`, `src.data.config`, and explicit page packages (`src.pages.apac_dot_due_date`, `src.pages.cursor_usage`, `src.pages.hamm_overview`).
@@ -86,6 +123,13 @@ src/pages/{name}/
   - Jinja2 templates (`.j2` files in `templates/`)
   - code generation modules in `generators/` (constants, layout, filters, data_loader, callbacks, chart_builders)
   - runtime operations via `operations.py`
+- `src/llm/*` imports:
+  - `google.genai` (Gemini API client)
+  - `pandas`, `numpy` (context building / sandbox execution)
+- `src/components/chat_callbacks.py` imports:
+  - `src.llm` (client, context_builder, response_parser, sandbox, exceptions)
+  - `src.core.cache` (get_cached_dataset)
+  - `src.data.config` (settings.gemini_api_key)
 - `scripts/scaffold_page.py` uses template strings (no external page imports)
 - `scripts/upload_csv.py` imports `backend.etl.etl_csv.CsvETL`
 
@@ -100,6 +144,9 @@ src/pages/{name}/
 - Data helpers: `safe_load_filter_options`, `strip_timezone`, `resolve_single_dataset_id`, `extract_unique_values`
 - Filter helpers: `build_filter_set_from_map`
 - ETL: `BaseETL`, `CsvETL`, `DomoApiETL`, `resolve_csv_path`, script `main()` functions
+- LLM: `GeminiClient`, `build_llm_context`, `parse_response`, `execute_in_sandbox`
+- Chat UI: `create_chat_panel`, `create_chat_toggle_button`, `register_chat_callbacks`
+- LLM exceptions: `LLMError`, `SandboxError`, `SandboxTimeoutError`
 - Dev tools: `load_page_spec`, `cli_main` (page_generator), `scaffold_page.py` main(), `upload_csv.py` main()
 - Page generator schema: `PageSpec`, `MetadataSpec`, `FilterSpec`, `ComponentSpec`, `ChartSpecYAML`, `TableSpecYAML`, `KPICardSpec`, `DataTransformSpec`
 

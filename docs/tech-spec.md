@@ -1,6 +1,6 @@
 # Plotly Dash BI Dashboard 技術仕様書 v0.2
 
-Last Updated: 2026-02-10
+Last Updated: 2026-02-11
 
 ## このドキュメントについて
 
@@ -31,14 +31,14 @@ Dash アプリは S3 のクリーンデータを読んで可視化するだけ�
 | UIコンポーネント | Dash Bootstrap Components | >=1.5.0 | Bootstrap統合 |
 | 認証（ローカル） | Flask-Login | >=0.6.3 | フォームログイン（FormAuthProvider） |
 | 認証（本番） | SAML | - | 会社の IdP と連携（Phase 3） |
-| 言語 | Python | 3.9+ | 安定性、パフォーマンス |
+| 言語 | Python | 3.11+ | 安定性、パフォーマンス |
 | DataFrame | Pandas | >=2.0.0 | 標準的 |
 | Parquet | PyArrow | >=14.0.0 | 高速、メモリ効率 |
 | S3 | boto3 | >=1.34.0 | AWS SDK |
 | 可視化 | Plotly | >=5.0.0 | インタラクティブグラフ |
 | ログ | structlog | >=23.0.0 | 構造化ログ |
 | キャッシュ | flask-caching | >=2.0.0 | TTL キャッシュ（SimpleCache, 3600秒） |
-| LLM（Phase 2） | Vertex AI SDK | - | Gemini Flash |
+| LLM（Phase 2） | google-genai | >=1.0.0 | Gemini 2.0 Flash（API key認証） |
 
 ### 1.3 アーキテクチャ
 
@@ -547,7 +547,7 @@ register_layout_callbacks(app)
 ```toml
 [tool.ruff]
 line-length = 100
-target-version = "py39"
+target-version = "py311"
 ```
 
 ### 10.2 mypy設定
@@ -556,7 +556,7 @@ target-version = "py39"
 
 ```toml
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.11"
 warn_return_any = false
 warn_unused_configs = true
 disallow_untyped_defs = false
@@ -568,7 +568,7 @@ exclude = ["venv/", ".venv/", "build/", "dist/"]
 ```
 
 モジュール別オーバーライド（サードパーティ型スタブ不足の回避）:
-- `pyarrow.*`, `botocore.*`, `dash.*`, `dash_table.*`, `dash_bootstrap_components.*`, `dash_mantine_components.*`, `flask_caching.*`, `flask_login.*`, `plotly.*`: `ignore_missing_imports = true`
+- `pyarrow.*`, `botocore.*`, `dash.*`, `dash_table.*`, `dash_bootstrap_components.*`, `dash_mantine_components.*`, `flask_caching.*`, `flask_login.*`, `plotly.*`, `google.*`: `ignore_missing_imports = true`
 - `_pytest.*`: `follow_imports = "skip"`
 - 一部 `src` モジュール: 特定エラーコードを個別抑制（`[tool.mypy.overrides]]` 参照）
 
@@ -593,58 +593,119 @@ addopts = "--cov=src --cov=backend --cov-report=term-missing"
 
 ---
 
-## 11. LLM 質問機能 (Phase 2)
+## 11. LLM 質問機能 (Phase 2) -- 実装済み
 
 ダッシュボードに表示中のデータについて、LLM に質問して深掘りできる機能。
 
 ### 11.1 基本仕様
 
-- モデル: Gemini Flash (Vertex AI) -- コスト重視
-- UI: 右サイドパネルにチャット UI（トグルで開閉）
-- 会話履歴: セッション中のみ保持（ページ遷移/リロードで消える）
-- コスト管理: 制限なし（チーム内利用のため）
+| 項目 | 仕様 |
+|------|------|
+| モデル | Gemini 2.0 Flash (`gemini-2.0-flash`) |
+| APIパッケージ | `google-genai>=1.0.0` (API key認証) |
+| UI | 右サイドパネル（FABトグルで開閉、400px幅） |
+| 会話履歴 | セッション中のみ保持（`dcc.Store` memory） |
+| コンテキスト構築 | チャット送信時に遅延構築（既存ページ変更不要） |
 
-### 11.2 LLM に渡すコンテキスト
+### 11.2 モジュール構成
 
-- DatasetSummary（スキーマ、統計情報、行数・列数）
-- フィルタ適用後のサンプルデータ
+```
+src/llm/
+  __init__.py            # 公開API (GeminiClient, build_llm_context, etc.)
+  client.py              # GeminiClient: API呼び出し
+  context_builder.py     # build_llm_context(): DF → コンテキスト文字列
+  prompt_templates.py    # システムプロンプトテンプレート
+  response_parser.py     # parse_response(): テキスト/コード分離
+  sandbox.py             # execute_in_sandbox(): 制限付きexec
+  exceptions.py          # LLMError, SandboxError, SandboxTimeoutError
 
-### 11.3 LLM の出力
+src/components/
+  chat_panel.py          # create_chat_panel(), create_chat_toggle_button()
+  chat_callbacks.py      # register_chat_callbacks(app)
 
-- テキスト回答（分析コメント、示唆）
-- pandas コード生成 + サンドボックス実行 + 結果表示
+assets/
+  07-chat-panel.css      # パネル・メッセージバブル・コードブロックCSS
+```
 
-### 11.4 コード実行の安全策
+### 11.3 LLM に渡すコンテキスト
 
-- サンドボックス実行（制限付き exec）
-- 許可する操作を限定（ファイルシステムアクセス、ネットワーク呼び出し等は禁止）
-- 許可する pandas 操作の一覧は実装時に決定
+`build_llm_context(df, dataset_name)` で以下を生成:
+- データセット名、行数、列数
+- スキーマ（カラム名、型、null数）
+- 統計情報（数値: min/max/mean、カテゴリ: unique/top_values、日時: min/max）
+- サンプルデータ（先頭5行）
 
-### 11.5 データフロー
+### 11.4 LLM の出力
+
+- テキスト回答（分析コメント、示唆）-- 日本語
+- pandas コード生成（```python ブロック）→ サンドボックス実行 → 結果表示
+
+### 11.5 サンドボックス設計
+
+二重防御:
+1. 静的パターンチェック: 正規表現でimport/open/eval/exec/dunder/os/sys/subprocess + pandas/numpy I/O関数をブロック
+2. ビルトインホワイトリスト: `__builtins__` を制限（abs, len, sum, sorted等のみ許可）
+
+| 項目 | 仕様 |
+|------|------|
+| 許可 | `pd`, `np`, `df`（コピー）、安全なビルトイン |
+| 禁止 | import, open, exec, eval, dunder, os/sys, pd.read_csv, np.load, np.memmap等 |
+| タイムアウト | ワーカープロセス実行 + `join(timeout)`（30秒、超過時 `terminate`） |
+| 副作用防止 | `df.copy()` で元データ保護 |
+| 結果取得 | `result` 変数への代入必須 |
+
+### 11.6 UIレイアウト
+
+```
++----------+---------------------------+----------+
+| Sidebar  |     Main Content          |  Chat    |
+| (250px)  |  (margin-right: 400px     | Panel    |
+|          |   when panel open)        | (400px)  |
+|  fixed   |                           |  fixed   |
++----------+---------------------------+----------+
+                                       [AI] <- FAB toggle
+```
+
+- パネル開閉: CSS `transform: translateX(100%)` / `translateX(0)` トグル
+- CSSトークン: 既存の `--z-sidebar`, `--spacing-*`, `--bg-surface` を活用
+- レスポンシブ: 768px以下でパネル幅100%
+
+### 11.7 dcc.Store 構成
+
+| Store ID | type | data | 用途 |
+|----------|------|------|------|
+| `chat-session-store` | memory | `[{role, content}]` | 会話履歴 |
+| `chat-context-store` | memory | `{context_str, dataset_id}` | データコンテキスト |
+| `chat-panel-state` | memory | `bool` | パネル開閉状態 |
+| `chat-filter-state-cursor` | memory | `{start_date, end_date, model_values, ...}` | Cursor Usage の現在フィルタ |
+| `chat-filter-state-hamm` | memory | `{filter_region_values, filter_year_values, ...}` | HAMM Overview の現在フィルタ |
+| `chat-filter-state-apac` | memory | `{selected_months, prc_filter_value, ...}` | APAC DOT Due Date の現在フィルタ |
+
+### 11.8 データフロー
 
 ```mermaid
 flowchart TB
     User[User Question] --> ChatPanel[Chat Panel]
-    ChatPanel --> BuildCtx[Build Context]
-    
-    DatasetSummary[DatasetSummary] --> BuildCtx
-    FilteredSample[Filtered Sample] --> BuildCtx
-    
-    BuildCtx --> VertexAPI[Vertex AI Gemini Flash]
-    VertexAPI --> Parse[Parse Response]
-    
-    Parse --> TextReply[Text Reply]
-    Parse --> CodeBlock[pandas Code]
-    
-    CodeBlock --> Sandbox[Sandbox Exec]
+    ChatPanel --> ResolveDS[URL → dataset_id]
+    ResolveDS --> ResolveFilterState[Page filter-state store]
+    ResolveFilterState --> GetFilteredDF[page load_and_filter_data]
+    GetFilteredDF --> BuildCtx[build_llm_context]
+    ResolveFilterState --> FallbackDF[get_cached_dataset fallback]
+    FallbackDF --> BuildCtx
+    BuildCtx --> SysPrompt[build_system_prompt]
+    SysPrompt --> Gemini[GeminiClient.send_message]
+    Gemini --> Parse[parse_response]
+    Parse --> TextReply[Text Reply → message bubble]
+    Parse --> CodeBlock[Python Code → sandbox]
+    CodeBlock --> Sandbox[execute_in_sandbox]
     Sandbox --> Result[Result Display]
-    
     TextReply --> ChatPanel
     Result --> ChatPanel
 ```
 
-### 11.6 実装時の設計判断
+### 11.9 設定
 
-- LLM サンドボックスの具体的な制限範囲（許可する pandas 操作の一覧）
-- LLM へのプロンプトテンプレート設計
-- Vertex AI SDK の認証方式（サービスアカウント / ADC）
+| 環境変数 | 設定キー | デフォルト | 説明 |
+|----------|----------|-----------|------|
+| `GEMINI_API_KEY` | `gemini_api_key` | None | Gemini APIキー |
+| `GEMINI_MODEL_NAME` | `gemini_model_name` | `gemini-2.0-flash` | 使用モデル名 |

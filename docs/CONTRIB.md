@@ -1,12 +1,12 @@
 # 開発者ガイド (CONTRIB)
 
-最終更新: 2026-02-10
+最終更新: 2026-02-11
 
 ## 1. 前提条件
 
 | 項目 | 要件 |
 |------|------|
-| Python | 3.9以上 (`pyproject.toml` の `requires-python`) |
+| Python | 3.11以上 (`pyproject.toml` の `requires-python`) |
 | Docker | `docker compose` が使えること (`docker-compose` は非推奨) |
 | 環境変数 | `.env.example` を `.env` にコピーして設定 |
 | OS | macOS の場合 `python3` を使用 (`python` コマンドは存在しない場合あり) |
@@ -110,6 +110,7 @@ pytest -v --tb=short
 | `DOMO_CLIENT_ID` | DOMO API認証 | 文字列 | 空 | `backend/etl/etl_domo.py` でDOMO ETL実行時は必須 |
 | `DOMO_CLIENT_SECRET` | DOMO API認証 | 文字列 | 空 | `backend/etl/etl_domo.py` でDOMO ETL実行時は必須 |
 | `ETL_MASKING_SECRET` | ETLマスキング用秘密鍵 (HMAC-SHA256) | 文字列 | 空 | `masking.enabled: true` のdatasetでは必須 (`backend/etl/masking.py`) |
+| `GEMINI_API_KEY` | Gemini LLM APIキー (Phase 2) | 文字列 | 空 | `src/llm/client.py` で LLM質問機能利用時は必須 |
 
 補足:
 - `.env` の値にダブルクォートを含めない運用が前提（`CLAUDE.md` のETL注意点）。
@@ -135,6 +136,7 @@ tests/
       test_table_builder.py
     components/            # UIコンポーネントテスト
       test_cards.py
+      test_chat_panel.py
       test_filters.py
       test_sidebar.py
     core/                  # キャッシュ・ログテスト
@@ -181,6 +183,12 @@ tests/
       test_callback_helpers_ensure_list.py
       test_data_helpers.py
       test_filter_helpers.py
+    llm/                   # LLMモジュールテスト
+      test_client.py
+      test_context_builder.py
+      test_prompt_templates.py
+      test_response_parser.py
+      test_sandbox.py
     test_exceptions.py
     test_layout.py
   etl/                     # ETLパイプラインテスト
@@ -238,6 +246,8 @@ src/
     sidebar_callbacks.py   # サイドバーコールバック (logout等)
     filters.py             # フィルタ選択コンポーネント
     cards.py               # KPIカードコンポーネント
+    chat_panel.py           # チャットパネルUI (Phase 2)
+    chat_callbacks.py       # チャットコールバック (Phase 2)
   core/                    # インフラ (cache, logging)
     cache.py               # TTLキャッシュ初期化 (flask-caching)
     logging.py             # 構造化ログ (structlog)
@@ -251,6 +261,14 @@ src/
     dataset_summarizer.py  # データプロファイリング & 統計
     filter_engine.py       # フィルタロジック (カテゴリ, 日付範囲)
     models.py              # Pydanticモデル
+  llm/                     # LLM質問機能 (Phase 2)
+    __init__.py            # 公開API
+    client.py              # GeminiClient: API呼び出し
+    context_builder.py     # build_llm_context(): DF → コンテキスト文字列
+    prompt_templates.py    # システムプロンプトテンプレート
+    response_parser.py     # parse_response(): テキスト/コード分離
+    sandbox.py             # execute_in_sandbox(): 制限付きexec
+    exceptions.py          # LLMError, SandboxError, SandboxTimeoutError
   pages/                   # ダッシュボードページ
     dashboard_home.py      # ホームページ (カードグリッド) -- Tier 1
     cursor_usage/          # Cursor Usage ダッシュボード -- Tier 2
@@ -983,7 +1001,7 @@ components:
 3ジョブは独立して並列実行される。全ジョブが成功しないとPRのマージはできない（ブランチ保護ルール設定時）。
 
 共通設定:
-- Python 3.9（`pyproject.toml` の `requires-python` と一致）
+- Python 3.11（`pyproject.toml` の `requires-python` と一致）
 - `typecheck` と `test` は pip キャッシュを使用（`cache-dependency-path` で `requirements.txt` と `requirements-dev.txt` を参照）
 - `test` ジョブにはS3/MinIO不要の最小環境変数が設定済み（`ENV=test`, `S3_ENDPOINT=""` 等）
 
