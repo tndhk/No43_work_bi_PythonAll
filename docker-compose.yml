@@ -20,6 +20,7 @@ services:
       - S3_SECRET_KEY=minioadmin
       - BASIC_AUTH_USERNAME=${BASIC_AUTH_USERNAME:-admin}
       - BASIC_AUTH_PASSWORD=${BASIC_AUTH_PASSWORD:-changeme}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
     depends_on:
       minio:
         condition: service_healthy
