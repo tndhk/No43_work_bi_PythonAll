@@ -80,6 +80,9 @@ class GeminiClient:
                     "max_output_tokens": 4096,
                 },
             )
-            return response.text  # type: ignore[no-any-return]
         except Exception as e:
             raise LLMError(f"Gemini API error: {e}") from e
+        text = response.text
+        if text is None:
+            raise LLMError("Gemini API returned empty response")
+        return text

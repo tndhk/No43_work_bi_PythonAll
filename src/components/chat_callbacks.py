@@ -150,13 +150,13 @@ def _load_filtered_dataframe_for_chat(
     if clean_path == "/cursor-usage":
         try:
             from src.pages.cursor_usage._data_loader import (
-                load_and_filter_data,
+                load_and_filter_data as _cu_load_data,
                 resolve_dataset_id_for_dashboard,
             )
 
             state = cursor_filter_state or {}
             resolved_dataset_id = resolve_dataset_id_for_dashboard()
-            return (load_and_filter_data(
+            return (_cu_load_data(
                 reader=reader,
                 dataset_id=resolved_dataset_id,
                 start_date=state.get("start_date"),
@@ -172,7 +172,7 @@ def _load_filtered_dataframe_for_chat(
         try:
             from src.pages.hamm_overview._data_loader import (
                 FILTER_COLUMN_MAP,
-                load_and_filter_data,
+                load_and_filter_data as _hamm_load_data,
                 resolve_dataset_id_for_dashboard,
             )
 
@@ -190,7 +190,7 @@ def _load_filtered_dataframe_for_chat(
                 ("error_code", state.get("filter_error_code_values")),
             ]
             resolved_dataset_id = resolve_dataset_id_for_dashboard()
-            return (load_and_filter_data(
+            return (_hamm_load_data(
                 reader=reader,
                 dataset_id=resolved_dataset_id,
                 column_map=FILTER_COLUMN_MAP,
@@ -203,7 +203,7 @@ def _load_filtered_dataframe_for_chat(
         try:
             from src.data.data_source_registry import resolve_dataset_id
             from src.pages.apac_dot_due_date._constants import DASHBOARD_ID, DATASETS
-            from src.pages.apac_dot_due_date._data_loader import load_and_filter_data
+            from src.pages.apac_dot_due_date._data_loader import load_and_filter_data as _apac_load_data
 
             state = apac_filter_state or {}
             prc_value = _coerce_single_value(
@@ -214,7 +214,7 @@ def _load_filtered_dataframe_for_chat(
                 DASHBOARD_ID,
                 DATASETS["reference"].chart_id,
             )
-            return (load_and_filter_data(
+            return (_apac_load_data(
                 reader=reader,
                 dataset_id=resolved_dataset_id,
                 column_map=DATASETS["reference"].column_map,

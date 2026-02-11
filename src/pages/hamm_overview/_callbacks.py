@@ -6,16 +6,12 @@ This module is the slim orchestration layer. All chart/table rendering
 lives in ``_chart_builders``, data aggregation in ``_data_loader``, and
 clear-filter callbacks are registered via ``register_clear_callbacks``.
 """
-import pandas as pd
 from dash import callback, Input, Output, html
 from src.data.parquet_reader import ParquetReader
 from src.charts.empty_states import create_error_figure
 from src.utils.callback_helpers import ensure_list, register_clear_callbacks
 from src.components.cards import create_kpi_card
 from ._constants import (
-    COLUMN_MAP,
-    ERV_LABEL,
-    PRELIM_LABEL,
     KPI_ID_KPI_TOTAL_SCREENS,
     KPI_ID_KPI_TOTAL_ERV,
     KPI_ID_KPI_TOTAL_PRELIM,
