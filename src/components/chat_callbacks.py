@@ -6,7 +6,7 @@ from typing import Any
 
 import pandas as pd
 
-from dash import Input, Output, State, callback_context, html, no_update
+from dash import Input, Output, State, callback_context, dcc, html, no_update
 
 from src.data.config import settings
 from src.llm.client import GeminiClient
@@ -64,6 +64,29 @@ def _build_message_bubble(role: str, content: str) -> html.Div:
     """
     css_class = f"chat-message chat-message-{role}"
     return html.Div(content, className=css_class)
+
+
+def _build_assistant_message(content: str) -> html.Div:
+    """Create an assistant message bubble with Markdown rendering.
+
+    Uses dcc.Markdown to render tables, headings, lists, code blocks,
+    and other Markdown formatting in assistant responses.
+
+    Args:
+        content: Markdown-formatted message text.
+
+    Returns:
+        Styled Div containing a dcc.Markdown component.
+    """
+    return html.Div(
+        dcc.Markdown(
+            content,
+            className="chat-markdown-content",
+            highlight_config={"theme": "dark"},
+            link_target="_blank",
+        ),
+        className="chat-message chat-message-assistant",
+    )
 
 
 def _build_code_block(code: str) -> html.Div:
@@ -323,8 +346,7 @@ def register_chat_callbacks(app: Any) -> None:
         # Check API key
         if not settings.gemini_api_key:
             current_messages.append(
-                _build_message_bubble(
-                    "assistant",
+                _build_assistant_message(
                     "GEMINI_API_KEY が設定されていません。"
                     ".env ファイルに設定してください。",
                 )
@@ -389,7 +411,7 @@ def register_chat_callbacks(app: Any) -> None:
             logger.error("LLM API error: %s", e)
             error_msg = f"LLMエラー: {e}"
             current_messages.append(
-                _build_message_bubble("assistant", error_msg)
+                _build_assistant_message(error_msg)
             )
             return current_messages, history, ""
 
@@ -399,7 +421,7 @@ def register_chat_callbacks(app: Any) -> None:
         # Add assistant text
         if parsed.text:
             current_messages.append(
-                _build_message_bubble("assistant", parsed.text)
+                _build_assistant_message(parsed.text)
             )
 
         # Handle code execution

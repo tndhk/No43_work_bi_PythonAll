@@ -24,18 +24,14 @@ _PYTHON_CODE_PATTERN = re.compile(
     re.DOTALL,
 )
 
-# Match any python code block for removal from text
-_ANY_CODE_BLOCK_PATTERN = re.compile(
-    r"```python\s*\n.*?```",
-    re.DOTALL,
-)
-
 
 def parse_response(raw: str) -> ParsedResponse:
     """Parse an LLM response into text and optional code.
 
-    Extracts the first ```python code block as code.
-    Remaining text (with code blocks removed) becomes the text field.
+    Extracts the first ```python code block as executable code.
+    Only that first python block is removed from the text field.
+    All other code blocks (sql, json, language-less, and subsequent
+    python blocks) are preserved in the text for Markdown rendering.
 
     Args:
         raw: Raw LLM response string.
@@ -49,10 +45,12 @@ def parse_response(raw: str) -> ParsedResponse:
     # Extract first python code block
     code_match = _PYTHON_CODE_PATTERN.search(raw)
     code: Optional[str] = None
+
     if code_match:
         code = code_match.group(1).strip()
-
-    # Remove all python code blocks from text
-    text = _ANY_CODE_BLOCK_PATTERN.sub("", raw).strip()
+        # Remove only the first python block from text (positional removal)
+        text = (raw[: code_match.start()] + raw[code_match.end() :]).strip()
+    else:
+        text = raw.strip()
 
     return ParsedResponse(text=text, code=code)

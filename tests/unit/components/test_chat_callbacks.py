@@ -7,6 +7,7 @@ from unittest.mock import MagicMock
 
 import pandas as pd
 import pandas.testing as pdt
+from dash import dcc, html
 
 
 class _DummyApp:
@@ -316,3 +317,56 @@ def test_send_chat_message_fallback_no_dashboard_context(monkeypatch):
     )
 
     assert captured["dashboard_context_kwarg"] is None
+
+
+class TestBuildAssistantMessage:
+    """Tests for _build_assistant_message helper."""
+
+    def test_build_assistant_message_returns_dcc_markdown(self):
+        """assistant応答が dcc.Markdown を含むこと"""
+        from src.components.chat_callbacks import _build_assistant_message
+
+        result = _build_assistant_message("## 見出し\n\nテキスト")
+        assert isinstance(result, html.Div)
+        # The Div should contain a dcc.Markdown as its child
+        children = result.children
+        assert isinstance(children, dcc.Markdown)
+
+    def test_build_assistant_message_highlight_config(self):
+        """highlight_configが設定されていること"""
+        from src.components.chat_callbacks import _build_assistant_message
+
+        result = _build_assistant_message("```sql\nSELECT 1;\n```")
+        md = result.children
+        assert isinstance(md, dcc.Markdown)
+        assert md.highlight_config is not None
+        assert "theme" in md.highlight_config
+
+    def test_build_assistant_message_link_target_blank(self):
+        """link_targetが_blankであること"""
+        from src.components.chat_callbacks import _build_assistant_message
+
+        result = _build_assistant_message("https://example.com")
+        md = result.children
+        assert isinstance(md, dcc.Markdown)
+        assert md.link_target == "_blank"
+
+    def test_build_assistant_message_no_dangerous_html(self):
+        """dangerously_allow_htmlがFalse/未設定であること"""
+        from src.components.chat_callbacks import _build_assistant_message
+
+        result = _build_assistant_message("<script>alert('xss')</script>")
+        md = result.children
+        assert isinstance(md, dcc.Markdown)
+        # dangerously_allow_html should be falsy (default is False)
+        assert not getattr(md, "dangerously_allow_html", False)
+
+    def test_build_message_bubble_user_still_plain_div(self):
+        """ユーザーメッセージは引き続き html.Div であること"""
+        from src.components.chat_callbacks import _build_message_bubble
+
+        result = _build_message_bubble("user", "ユーザーメッセージ")
+        assert isinstance(result, html.Div)
+        # User messages should be plain text, not dcc.Markdown
+        assert result.children == "ユーザーメッセージ"
+        assert "chat-message-user" in result.className

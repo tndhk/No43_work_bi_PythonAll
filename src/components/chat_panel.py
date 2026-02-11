@@ -41,7 +41,7 @@ def create_chat_panel() -> html.Div:
                     dcc.Textarea(
                         id="chat-input",
                         className="chat-input",
-                        placeholder="Ask questions about your data...",
+                        placeholder="質問を入力... (Shift+Enterで送信)",
                         style={"resize": "none"},
                     ),
                     html.Button(

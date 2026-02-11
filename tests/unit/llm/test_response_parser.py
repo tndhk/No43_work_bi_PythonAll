@@ -94,3 +94,82 @@ result = grouped.to_dict()
 ```"""
         result = parse_response(raw)
         assert result.code == "result = df.describe()"
+
+    def test_non_python_code_blocks_remain_in_text(self):
+        """sql/json/言語なしのfencedコードブロックがtextに残ること"""
+        raw = """SQLの例:
+
+```sql
+SELECT * FROM users WHERE age > 30;
+```
+
+JSONの例:
+
+```json
+{"key": "value"}
+```
+
+言語指定なし:
+
+```
+plain text block
+```"""
+        result = parse_response(raw)
+        assert result.code is None
+        assert "```sql" in result.text
+        assert "SELECT * FROM users" in result.text
+        assert "```json" in result.text
+        assert '{"key": "value"}' in result.text
+        assert "plain text block" in result.text
+
+    def test_only_first_python_block_extracted_rest_stays(self):
+        """2つ目のpythonブロックがtextに残ること"""
+        raw = """最初の分析:
+
+```python
+result = df.head()
+```
+
+追加の分析:
+
+```python
+result = df.tail()
+```"""
+        result = parse_response(raw)
+        assert result.code == "result = df.head()"
+        # First python block should be removed from text
+        assert "result = df.head()" not in result.text
+        # Second python block should remain in text
+        assert "```python" in result.text
+        assert "result = df.tail()" in result.text
+
+    def test_mixed_code_blocks(self):
+        """pythonは抽出、sql等はtext内に保持される混合パターン"""
+        raw = """データ分析の手順:
+
+まずSQLで確認:
+
+```sql
+SELECT COUNT(*) FROM orders;
+```
+
+Pythonで集計:
+
+```python
+result = df.groupby('category').sum()
+```
+
+結果をJSON形式で:
+
+```json
+{"total": 100}
+```"""
+        result = parse_response(raw)
+        assert result.code == "result = df.groupby('category').sum()"
+        # SQL and JSON blocks should remain in text
+        assert "```sql" in result.text
+        assert "SELECT COUNT(*)" in result.text
+        assert "```json" in result.text
+        assert '{"total": 100}' in result.text
+        # Python block should be removed from text
+        assert "result = df.groupby('category').sum()" not in result.text
