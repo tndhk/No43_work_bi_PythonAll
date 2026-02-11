@@ -213,6 +213,40 @@ def update_dashboard(
 
 
 # ---------------------------------------------------------------------------
+# Chat filter-state sync
+# ---------------------------------------------------------------------------
+@callback(
+    Output("chat-filter-state-apac", "data"),
+    Input(FILTER_ID_MONTH, "value"),
+    Input(FILTER_ID_PRC, "value"),
+    Input(FILTER_ID_AREA, "value"),
+    Input(FILTER_ID_CATEGORY, "value"),
+    Input(FILTER_ID_VENDOR, "value"),
+    Input(FILTER_ID_AMP_AV, "value"),
+    Input(FILTER_ID_ORDER_TYPE, "value"),
+)
+def sync_chat_filter_state(
+    selected_months,
+    prc_filter_value,
+    area_values,
+    category_values,
+    vendor_values,
+    amp_av_values,
+    order_type_values,
+):
+    """Mirror active page filters for chat-context data reconstruction."""
+    return {
+        "selected_months": selected_months,
+        "prc_filter_value": prc_filter_value,
+        "area_values": area_values,
+        "category_values": category_values,
+        "vendor_values": vendor_values,
+        "amp_av_values": amp_av_values,
+        "order_type_values": order_type_values,
+    }
+
+
+# ---------------------------------------------------------------------------
 # Clear-filter callbacks (registered via shared helper)
 # ---------------------------------------------------------------------------
 

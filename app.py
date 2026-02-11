@@ -39,6 +39,10 @@ register_login_callbacks(app)
 register_layout_callbacks(app)
 register_sidebar_callbacks(app)
 
+# Register chat callbacks (Phase 2: LLM feature)
+from src.components.chat_callbacks import register_chat_callbacks  # noqa: E402
+register_chat_callbacks(app)
+
 # Initialize cache
 init_cache(app.server)
 

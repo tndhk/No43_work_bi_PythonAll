@@ -105,3 +105,7 @@ disable_error_code = ["union-attr", "return-value", "assignment", "attr-defined"
 [[tool.mypy.overrides]]
 module = "src.pages.apac_dot_due_date._data_loader"
 disable_error_code = ["assignment"]
+
+[[tool.mypy.overrides]]
+module = ["google", "google.*"]
+ignore_missing_imports = true

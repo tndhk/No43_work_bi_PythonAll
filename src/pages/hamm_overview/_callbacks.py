@@ -269,6 +269,49 @@ def compute_volume_kpis(df: pd.DataFrame) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Chat filter-state sync
+# ---------------------------------------------------------------------------
+@callback(
+    Output("chat-filter-state-hamm", "data"),
+    Input(FILTER_ID_FILTER_REGION, "value"),
+    Input(FILTER_ID_FILTER_YEAR, "value"),
+    Input(FILTER_ID_FILTER_CONTENT_TYPE, "value"),
+    Input(FILTER_ID_FILTER_ORIGINAL_LANGUAGE, "value"),
+    Input(FILTER_ID_FILTER_DIALOGUE, "value"),
+    Input(FILTER_ID_FILTER_GENRE, "value"),
+    Input(FILTER_ID_FILTER_ERROR_TYPE, "value"),
+    Input(FILTER_ID_FILTER_MONTH, "value"),
+    Input(FILTER_ID_FILTER_TASK_ID, "value"),
+    Input(FILTER_ID_FILTER_ERROR_CODE, "value"),
+)
+def sync_chat_filter_state(
+    filter_region_values,
+    filter_year_values,
+    filter_content_type_values,
+    filter_original_language_values,
+    filter_dialogue_values,
+    filter_genre_values,
+    filter_error_type_values,
+    filter_month_values,
+    filter_task_id_values,
+    filter_error_code_values,
+):
+    """Mirror active page filters for chat-context data reconstruction."""
+    return {
+        "filter_region_values": filter_region_values,
+        "filter_year_values": filter_year_values,
+        "filter_content_type_values": filter_content_type_values,
+        "filter_original_language_values": filter_original_language_values,
+        "filter_dialogue_values": filter_dialogue_values,
+        "filter_genre_values": filter_genre_values,
+        "filter_error_type_values": filter_error_type_values,
+        "filter_month_values": filter_month_values,
+        "filter_task_id_values": filter_task_id_values,
+        "filter_error_code_values": filter_error_code_values,
+    }
+
+
+# ---------------------------------------------------------------------------
 # Clear-filter callbacks (registered via shared helper)
 # ---------------------------------------------------------------------------
 register_clear_callbacks(CLEAR_PAIRS)

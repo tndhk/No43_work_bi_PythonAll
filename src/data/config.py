@@ -27,5 +27,9 @@ class Settings(BaseSettings):
     domo_client_id: Optional[str] = None
     domo_client_secret: Optional[str] = None
 
+    # Gemini LLM
+    gemini_api_key: Optional[str] = None
+    gemini_model_name: str = "gemini-2.0-flash"
+
 
 settings = Settings()

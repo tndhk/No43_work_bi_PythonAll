@@ -136,6 +136,34 @@ def update_dashboard(start_date, end_date, model_values, user_values, kind_value
 
 
 # ---------------------------------------------------------------------------
+# Chat filter-state sync
+# ---------------------------------------------------------------------------
+@callback(
+    Output("chat-filter-state-cursor", "data"),
+    Input(f"{ID_PREFIX}filter-date", "start_date"),
+    Input(f"{ID_PREFIX}filter-date", "end_date"),
+    Input(f"{ID_PREFIX}filter-model", "value"),
+    Input(f"{ID_PREFIX}filter-user", "value"),
+    Input(f"{ID_PREFIX}filter-kind", "value"),
+)
+def sync_chat_filter_state(
+    start_date,
+    end_date,
+    model_values,
+    user_values,
+    kind_values,
+):
+    """Mirror active page filters for chat-context data reconstruction."""
+    return {
+        "start_date": start_date,
+        "end_date": end_date,
+        "model_values": model_values,
+        "user_values": user_values,
+        "kind_values": kind_values,
+    }
+
+
+# ---------------------------------------------------------------------------
 # Clear-filter callbacks (registered via shared helper)
 # ---------------------------------------------------------------------------
 register_clear_callbacks(CLEAR_PAIRS)
