@@ -26,6 +26,7 @@
 - 2026-02-09: `git checkout -b codex/...` can fail in sandbox because writing `.git/refs/heads/*` is blocked. Retry with escalated permissions.
 
 ## Patterns That Work
+- 2026-02-12: LLMテキストとPython実行結果の乖離問題は2パスLLM呼び出しで解決。1回目でコード生成→sandbox実行→2回目で結果を自然言語要約。ユーザーには要約テキスト+折りたたみ(コード/結果)を表示。`GeminiClient.summarize_result()` と `build_summarize_prompt()` を追加。要約失敗時は元テキストにフォールバック。
 - 2026-02-11: 乖離レポート修正は依存関係を分析し独立Fixを並列実行（Fix-1,2,4並列→Fix-3→最終検証）で効率化。4Fix + レビュー指摘修正を含めて全388テスト通過。
 - 2026-02-11: 関数移動時はimport先を3箇所確認: 元ファイル（import追加）、コンテキストプロバイダ、テストファイル。grepで旧import残存を確認すること。
 - 2026-02-11: タプル返り値変更（df→(df,bool)）は呼び出し元全箇所+テスト全箇所の更新が必要。monkeypatch mockのlambda返り値もタプルに更新忘れに注意。

@@ -36,3 +36,40 @@ def build_system_prompt(context: str) -> str:
         Complete system prompt string.
     """
     return SYSTEM_PROMPT_TEMPLATE.format(context=context)
+
+
+SUMMARIZE_RESULT_TEMPLATE = """以下のPythonコード実行結果を、ユーザーの質問に対する自然言語の回答として要約してください。
+
+## ルール
+- 日本語で回答してください
+- コード実行結果の数値をそのまま正確に使ってください
+- Pythonコードは含めないでください（```python ブロック禁止）
+- 簡潔に、結果をわかりやすく伝えてください
+
+## ユーザーの質問
+{user_question}
+
+## 実行されたコード
+{code}
+
+## 実行結果
+{result}
+"""
+
+
+def build_summarize_prompt(user_question: str, code: str, result: str) -> str:
+    """Build a prompt for summarizing code execution results.
+
+    Args:
+        user_question: The original user question.
+        code: The Python code that was executed.
+        result: The execution result string.
+
+    Returns:
+        Complete prompt for the summarization LLM call.
+    """
+    return SUMMARIZE_RESULT_TEMPLATE.format(
+        user_question=user_question,
+        code=code,
+        result=result,
+    )

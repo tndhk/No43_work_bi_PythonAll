@@ -86,3 +86,38 @@ class GeminiClient:
         if text is None:
             raise LLMError("Gemini API returned empty response")
         return text
+
+    def summarize_result(self, prompt: str) -> str:
+        """Summarize code execution result into natural language.
+
+        This is a simpler call without history or system prompt,
+        used to convert raw Python output into a user-friendly response.
+        Uses lower temperature for accuracy.
+
+        Args:
+            prompt: The summarization prompt (from build_summarize_prompt).
+
+        Returns:
+            Natural language summary of the execution result.
+
+        Raises:
+            LLMError: If API call fails.
+        """
+        contents = [{"role": "user", "parts": [{"text": prompt}]}]
+
+        try:
+            response = self._client.models.generate_content(
+                model=self.model_name,
+                contents=contents,
+                config={
+                    "temperature": 0.1,
+                    "max_output_tokens": 1024,
+                },
+            )
+        except Exception as e:
+            raise LLMError(f"Gemini API error during summarization: {e}") from e
+
+        text = response.text
+        if text is None:
+            raise LLMError("Gemini API returned empty summarization response")
+        return text

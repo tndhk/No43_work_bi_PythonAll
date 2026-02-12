@@ -370,3 +370,319 @@ class TestBuildAssistantMessage:
         # User messages should be plain text, not dcc.Markdown
         assert result.children == "ユーザーメッセージ"
         assert "chat-message-user" in result.className
+
+
+class TestSummarizeExecutionResult:
+    """Tests for 2-pass LLM flow: code execution + summarization.
+
+    When LLM generates code that executes successfully, a second LLM call
+    summarizes the result into natural language. The summary is displayed
+    prominently, with code/result in a collapsible section.
+    """
+
+    def test_summary_displayed_with_collapsible(self, monkeypatch):
+        """コード実行成功時は要約テキスト + 折りたたみ（コード+結果）を表示"""
+        # Given: LLM returns code that executes successfully
+        # When: Code is executed and summarized
+        # Then: Summary text + collapsible with code/result are displayed
+        import src.components.chat_callbacks as cb
+
+        app = _DummyApp()
+        cb.register_chat_callbacks(app)
+        send_chat_message = app.callbacks[1]
+
+        test_df = pd.DataFrame({"language": ["Japanese", "Korean"], "count": [15, 9]})
+
+        monkeypatch.setattr(cb.settings, "gemini_api_key", "dummy-key")
+        monkeypatch.setattr(cb.settings, "gemini_model_name", "gemini-2.0-flash")
+        monkeypatch.setattr(
+            cb,
+            "_resolve_dataset_for_page",
+            lambda pathname: ("test-dataset", "Test Dataset"),
+        )
+        monkeypatch.setattr(
+            cb,
+            "_load_filtered_dataframe_for_chat",
+            lambda **kwargs: (test_df, True),
+        )
+        monkeypatch.setattr(
+            cb, "build_llm_context", lambda df, name, **kw: "context"
+        )
+        monkeypatch.setattr(
+            cb, "build_system_prompt", lambda ctx: "system prompt"
+        )
+
+        class _Client:
+            def __init__(self, api_key, model_name):
+                pass
+
+            def send_message(self, user_message, history, system_prompt):
+                return "LLM response with code"
+
+            def summarize_result(self, prompt):
+                return "Japanese: 15件、Korean: 9件です。"
+
+        monkeypatch.setattr(cb, "GeminiClient", _Client)
+        monkeypatch.setattr(
+            cb,
+            "parse_response",
+            lambda raw: _Parsed(
+                text="Japanese: 11件\nKorean: 13件",  # Wrong numbers (ignored)
+                code="result = df.groupby('language')['count'].sum()",
+            ),
+        )
+        monkeypatch.setattr(
+            cb,
+            "execute_in_sandbox",
+            lambda code, df: "Japanese    15\nKorean       9",
+        )
+        monkeypatch.setattr(
+            "src.data.parquet_reader.ParquetReader",
+            lambda: MagicMock(),
+        )
+
+        messages, history, cleared = send_chat_message(
+            1,
+            "言語別に集計して",
+            [],
+            [],
+            "/test-page",
+            {},
+            {},
+            {},
+        )
+
+        # Filter out user message
+        assistant_messages = [
+            m for m in messages
+            if hasattr(m, "className") and "chat-message-user" not in m.className
+        ]
+
+        class_names = [getattr(m, "className", "") for m in assistant_messages]
+        # Summary text should be displayed
+        assert any("chat-message-assistant" in cn for cn in class_names)
+        # Collapsible should be present
+        assert any("chat-code-collapsible" in cn for cn in class_names)
+
+    def test_fallback_to_original_text_on_summarization_failure(self, monkeypatch):
+        """要約失敗時は元のテキスト + 折りたたみを表示"""
+        # Given: LLM code executes but summarization fails
+        # When: summarize_result raises LLMError
+        # Then: Original text is displayed as fallback
+        import src.components.chat_callbacks as cb
+        from src.llm.exceptions import LLMError
+
+        app = _DummyApp()
+        cb.register_chat_callbacks(app)
+        send_chat_message = app.callbacks[1]
+
+        test_df = pd.DataFrame({"x": [1, 2, 3]})
+
+        monkeypatch.setattr(cb.settings, "gemini_api_key", "dummy-key")
+        monkeypatch.setattr(cb.settings, "gemini_model_name", "gemini-2.0-flash")
+        monkeypatch.setattr(
+            cb,
+            "_resolve_dataset_for_page",
+            lambda pathname: ("test-dataset", "Test Dataset"),
+        )
+        monkeypatch.setattr(
+            cb,
+            "_load_filtered_dataframe_for_chat",
+            lambda **kwargs: (test_df, True),
+        )
+        monkeypatch.setattr(
+            cb, "build_llm_context", lambda df, name, **kw: "context"
+        )
+        monkeypatch.setattr(
+            cb, "build_system_prompt", lambda ctx: "system prompt"
+        )
+
+        class _Client:
+            def __init__(self, api_key, model_name):
+                pass
+
+            def send_message(self, user_message, history, system_prompt):
+                return "response"
+
+            def summarize_result(self, prompt):
+                raise LLMError("Summarization failed")
+
+        monkeypatch.setattr(cb, "GeminiClient", _Client)
+        monkeypatch.setattr(
+            cb,
+            "parse_response",
+            lambda raw: _Parsed(
+                text="フォールバックテキスト",
+                code="result = df.sum()",
+            ),
+        )
+        monkeypatch.setattr(
+            cb,
+            "execute_in_sandbox",
+            lambda code, df: "6",
+        )
+        monkeypatch.setattr(
+            "src.data.parquet_reader.ParquetReader",
+            lambda: MagicMock(),
+        )
+
+        messages, history, cleared = send_chat_message(
+            1,
+            "合計して",
+            [],
+            [],
+            "/test-page",
+            {},
+            {},
+            {},
+        )
+
+        # Filter out user message
+        assistant_messages = [
+            m for m in messages
+            if hasattr(m, "className") and "chat-message-user" not in m.className
+        ]
+
+        class_names = [getattr(m, "className", "") for m in assistant_messages]
+        # Fallback text should be displayed
+        assert any("chat-message-assistant" in cn for cn in class_names)
+        # Collapsible should still be present
+        assert any("chat-code-collapsible" in cn for cn in class_names)
+
+    def test_text_shown_when_code_present_but_no_df(self, monkeypatch):
+        """dfがない場合はコードがあってもテキストを表示する"""
+        # Given: LLM returns text AND code
+        # When: df is None (code cannot execute)
+        # Then: Text IS displayed (along with code and error message)
+        import src.components.chat_callbacks as cb
+
+        app = _DummyApp()
+        cb.register_chat_callbacks(app)
+        send_chat_message = app.callbacks[1]
+
+        monkeypatch.setattr(cb.settings, "gemini_api_key", "dummy-key")
+        monkeypatch.setattr(cb.settings, "gemini_model_name", "gemini-2.0-flash")
+        # Return None for dataset resolution (no df available)
+        monkeypatch.setattr(
+            cb,
+            "_resolve_dataset_for_page",
+            lambda pathname: None,
+        )
+
+        class _Client:
+            def __init__(self, api_key, model_name):
+                pass
+
+            def send_message(self, user_message, history, system_prompt):
+                return "response"
+
+        monkeypatch.setattr(cb, "GeminiClient", _Client)
+        monkeypatch.setattr(
+            cb,
+            "parse_response",
+            lambda raw: _Parsed(
+                text="説明テキスト",
+                code="result = df.sum()",
+            ),
+        )
+
+        messages, history, cleared = send_chat_message(
+            1,
+            "集計して",
+            [],
+            [],
+            "/unknown-page",
+            {},
+            {},
+            {},
+        )
+
+        # Filter out user message
+        assistant_messages = [
+            m for m in messages
+            if hasattr(m, "className") and "chat-message-user" not in m.className
+        ]
+
+        class_names = [getattr(m, "className", "") for m in assistant_messages]
+        # Text SHOULD be displayed since code won't execute
+        assert any("chat-message-assistant" in cn for cn in class_names)
+        # Code block should be shown
+        assert any("chat-code-block" in cn for cn in class_names)
+        # Error result should be shown
+        assert any("chat-code-error" in cn for cn in class_names)
+
+    def test_text_shown_when_no_code(self, monkeypatch):
+        """コードがない場合はテキストを表示する"""
+        # Given: LLM returns only text (no code)
+        # When: Message is processed
+        # Then: Text IS displayed
+        import src.components.chat_callbacks as cb
+
+        app = _DummyApp()
+        cb.register_chat_callbacks(app)
+        send_chat_message = app.callbacks[1]
+
+        test_df = pd.DataFrame({"x": [1, 2, 3]})
+
+        monkeypatch.setattr(cb.settings, "gemini_api_key", "dummy-key")
+        monkeypatch.setattr(cb.settings, "gemini_model_name", "gemini-2.0-flash")
+        monkeypatch.setattr(
+            cb,
+            "_resolve_dataset_for_page",
+            lambda pathname: ("test-dataset", "Test Dataset"),
+        )
+        monkeypatch.setattr(
+            cb,
+            "_load_filtered_dataframe_for_chat",
+            lambda **kwargs: (test_df, True),
+        )
+        monkeypatch.setattr(
+            cb, "build_llm_context", lambda df, name, **kw: "context"
+        )
+        monkeypatch.setattr(
+            cb, "build_system_prompt", lambda ctx: "system prompt"
+        )
+
+        class _Client:
+            def __init__(self, api_key, model_name):
+                pass
+
+            def send_message(self, user_message, history, system_prompt):
+                return "response"
+
+        monkeypatch.setattr(cb, "GeminiClient", _Client)
+        # LLM returns only text, no code
+        monkeypatch.setattr(
+            cb,
+            "parse_response",
+            lambda raw: _Parsed(text="これは説明テキストです", code=None),
+        )
+        monkeypatch.setattr(
+            "src.data.parquet_reader.ParquetReader",
+            lambda: MagicMock(),
+        )
+
+        messages, history, cleared = send_chat_message(
+            1,
+            "説明して",
+            [],
+            [],
+            "/test-page",
+            {},
+            {},
+            {},
+        )
+
+        # Filter out user message
+        assistant_messages = [
+            m for m in messages
+            if hasattr(m, "className") and "chat-message-user" not in m.className
+        ]
+
+        class_names = [getattr(m, "className", "") for m in assistant_messages]
+        # Text SHOULD be displayed
+        assert any("chat-message-assistant" in cn for cn in class_names)
+        # No code block
+        assert not any("chat-code-block" in cn for cn in class_names)
+        # No collapsible
+        assert not any("chat-code-collapsible" in cn for cn in class_names)

@@ -13,7 +13,7 @@ from src.llm.client import GeminiClient
 from src.llm.context_builder import build_llm_context
 from src.llm.exceptions import LLMError, SandboxError, SandboxTimeoutError
 from src.llm.page_context import DashboardContext
-from src.llm.prompt_templates import build_system_prompt
+from src.llm.prompt_templates import build_summarize_prompt, build_system_prompt
 from src.llm.response_parser import parse_response
 from src.llm.sandbox import execute_in_sandbox
 
@@ -122,6 +122,33 @@ def _build_code_result(
     return html.Div(
         html.Pre(result_str),
         className=css,
+    )
+
+
+def _build_collapsible_code(code: str, result_str: str) -> html.Details:
+    """Create a collapsible section containing code and execution result.
+
+    Used to show code and result in a collapsed state, with the summary
+    text (from LLM) displayed prominently above.
+
+    Args:
+        code: Python code that was executed.
+        result_str: String representation of the execution result.
+
+    Returns:
+        html.Details element with code block and result inside.
+    """
+    return html.Details(
+        children=[
+            html.Summary("コードと実行結果を表示"),
+            html.Div(
+                [
+                    _build_code_block(code),
+                    _build_code_result(result_str),
+                ],
+            ),
+        ],
+        className="chat-code-collapsible",
     )
 
 
@@ -418,20 +445,44 @@ def register_chat_callbacks(app: Any) -> None:
         # Parse response
         parsed = parse_response(raw_response)
 
-        # Add assistant text
-        if parsed.text:
-            current_messages.append(
-                _build_assistant_message(parsed.text)
-            )
-
-        # Handle code execution
+        # Handle code execution with 2-pass summarization
         if parsed.code and df is not None:
-            current_messages.append(_build_code_block(parsed.code))
             try:
                 result = execute_in_sandbox(parsed.code, df)
                 result_str = str(result)
-                current_messages.append(_build_code_result(result_str))
+
+                # 2nd LLM call: Summarize the execution result
+                try:
+                    summarize_prompt = build_summarize_prompt(
+                        user_question=user_msg,
+                        code=parsed.code,
+                        result=result_str,
+                    )
+                    summary_text = client.summarize_result(summarize_prompt)
+                    # Display summary text as the main answer
+                    current_messages.append(
+                        _build_assistant_message(summary_text)
+                    )
+                except LLMError as e:
+                    # Fallback to original text if summarization fails
+                    logger.warning("Summarization failed, using fallback: %s", e)
+                    if parsed.text:
+                        current_messages.append(
+                            _build_assistant_message(parsed.text)
+                        )
+
+                # Add collapsible code and result
+                current_messages.append(
+                    _build_collapsible_code(parsed.code, result_str)
+                )
+
             except SandboxTimeoutError:
+                # On timeout, show original text (if any) + error
+                if parsed.text:
+                    current_messages.append(
+                        _build_assistant_message(parsed.text)
+                    )
+                current_messages.append(_build_code_block(parsed.code))
                 current_messages.append(
                     _build_code_result(
                         "コード実行がタイムアウトしました。",
@@ -439,13 +490,24 @@ def register_chat_callbacks(app: Any) -> None:
                     )
                 )
             except SandboxError as e:
+                # On error, show original text (if any) + error
+                if parsed.text:
+                    current_messages.append(
+                        _build_assistant_message(parsed.text)
+                    )
+                current_messages.append(_build_code_block(parsed.code))
                 current_messages.append(
                     _build_code_result(
                         f"コード実行エラー: {e}", is_error=True
                     )
                 )
+
         elif parsed.code:
-            # Code present but no df
+            # Code present but no df - show text + code + error
+            if parsed.text:
+                current_messages.append(
+                    _build_assistant_message(parsed.text)
+                )
             current_messages.append(_build_code_block(parsed.code))
             current_messages.append(
                 _build_code_result(
@@ -454,7 +516,14 @@ def register_chat_callbacks(app: Any) -> None:
                 )
             )
 
-        # Update history with assistant response
+        else:
+            # No code - just display text
+            if parsed.text:
+                current_messages.append(
+                    _build_assistant_message(parsed.text)
+                )
+
+        # Update history with assistant response (original, not summary)
         history.append({"role": "assistant", "content": raw_response})
 
         return current_messages, history, ""

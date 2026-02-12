@@ -143,6 +143,40 @@
   border: 1px solid #fecaca;
 }
 
+/* Collapsible code section */
+.chat-code-collapsible {
+  margin-top: var(--spacing-sm);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background-color: var(--bg-elevated);
+}
+
+.chat-code-collapsible summary {
+  padding: var(--spacing-sm) var(--spacing-md);
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  user-select: none;
+}
+
+.chat-code-collapsible summary:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-base);
+}
+
+.chat-code-collapsible[open] summary {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.chat-code-collapsible > div {
+  padding: var(--spacing-xs);
+}
+
+.chat-code-collapsible .chat-code-block,
+.chat-code-collapsible .chat-code-result {
+  margin-top: var(--spacing-xs);
+}
+
 /* Input Area */
 .chat-input-area {
   display: flex;
