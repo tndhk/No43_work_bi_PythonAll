@@ -288,12 +288,14 @@ def build_volume_summary(df: pd.DataFrame, cadence: str) -> pd.DataFrame:
             pivot["Start Date"], format="%-d-%b-%y", errors="coerce"
         )
 
-    pivot = pivot.sort_values("_sort_start_dt").reset_index(drop=True)
+    pivot = pivot.sort_values("_sort_start_dt", ascending=False).reset_index(drop=True)
+
+    # Drop sort helper column
+    pivot = pivot.drop(columns=["_sort_start_dt"], errors="ignore")
 
     # Reorder columns
     out_cols = [c for c in expected_cols if c in pivot.columns]
-    extra = [c for c in pivot.columns if c not in expected_cols]
-    return pivot[out_cols + extra]
+    return pivot[out_cols]
 
 
 # ---------------------------------------------------------------------------

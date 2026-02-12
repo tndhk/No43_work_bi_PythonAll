@@ -318,7 +318,7 @@ def prepare_language_display_df(df: pd.DataFrame) -> pd.DataFrame:
 def compute_volume_kpis(df: pd.DataFrame) -> dict:
     """Compute volume KPI values from a filtered DataFrame.
 
-    Excludes rows with Cancelled status, then counts total screens,
+    Counts only rows with Completed status for total screens,
     ERV-type records, and Prelim-type records.
 
     Args:
@@ -330,15 +330,15 @@ def compute_volume_kpis(df: pd.DataFrame) -> dict:
     status_col = COLUMN_MAP["status"]
     content_type_col = COLUMN_MAP["content_type"]
 
-    # Exclude Cancelled status
+    # Only count Completed status
     if df.empty:
         return {"total_screens": 0, "total_erv": 0, "total_prelim": 0}
 
-    non_cancelled = df[df[status_col] != "Cancelled"]
+    completed = df[df[status_col] == "Completed"]
 
-    total_screens = len(non_cancelled)
-    total_erv = int((non_cancelled[content_type_col] == ERV_LABEL).sum())
-    total_prelim = int((non_cancelled[content_type_col] == PRELIM_LABEL).sum())
+    total_screens = len(completed)
+    total_erv = int((completed[content_type_col] == ERV_LABEL).sum())
+    total_prelim = int((completed[content_type_col] == PRELIM_LABEL).sum())
 
     return {
         "total_screens": total_screens,

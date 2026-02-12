@@ -122,6 +122,16 @@ def build_volume_chart(df: pd.DataFrame) -> go.Figure:
         margin={"l": 30, "r": 10, "t": 8, "b": 60},
         legend={"orientation": "h", "y": -0.25},
     )
+    # Sort X-axis by actual date (oldest to newest, left to right)
+    if "Start Date" in df.columns and not df.empty:
+        sorted_dates = (
+            df.assign(
+                _dt=pd.to_datetime(df["Start Date"], format="%d-%b-%y", errors="coerce")
+            )
+            .sort_values("_dt")["Start Date"]
+            .tolist()
+        )
+        fig.update_xaxes(categoryorder="array", categoryarray=sorted_dates)
     return fig
 
 
